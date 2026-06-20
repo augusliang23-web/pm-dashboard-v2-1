@@ -488,8 +488,10 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 .strategy-track-chip.active { background:#EDF5FB; color:#47799A; border-color:#B8D5E8; box-shadow:inset 0 0 0 1px rgba(71,121,154,.08); }
 .quarter-exec-head { display:grid; gap:8px; padding:11px 13px; background:#EDF5FB; border-bottom:1px solid var(--border); }
 .quarter-exec-top { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; }
-.quarter-exec-summary { font-size:11px; line-height:1.45; color:var(--text-light); }
-.quarter-health { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.quarter-goal-list { display:grid; gap:7px; }
+.quarter-exec-goal { border:1px solid rgba(200,221,235,.75); background:#fff; border-radius:8px; padding:7px 8px; display:grid; gap:5px; }
+.quarter-exec-goal-text { font-size:11px; line-height:1.45; color:var(--text-light); }
+.quarter-exec-goal-track { font-family:'IBM Plex Mono', monospace; font-size:9px; color:#47799A; font-weight:800; }
 .health-dots { display:flex; gap:6px; flex-wrap:wrap; }
 .health-dot { display:inline-flex; align-items:center; gap:4px; font-family:'IBM Plex Mono', monospace; font-size:9px; color:var(--muted); }
 .health-dot::before { content:''; width:8px; height:8px; border-radius:50%; background:var(--green); }
@@ -503,9 +505,15 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 .strategy-modal-grid { display:grid; gap:18px; }
 .strategy-section { border:1px solid var(--border); border-radius:10px; background:var(--s2); padding:16px; }
 .strategy-section-title { font-size:13px; font-weight:800; color:var(--text); margin-bottom:10px; }
+.strategy-editor-head { display:grid; gap:8px; align-items:center; margin:0 0 7px; font-family:'IBM Plex Mono', monospace; font-size:9px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
 .strategy-track-row, .quarter-goal-row, .project-map-row { display:grid; gap:8px; align-items:center; margin-bottom:8px; }
 .strategy-track-row { grid-template-columns:1fr 1.4fr; }
-.quarter-goal-row { grid-template-columns:.7fr 2fr .75fr .75fr .75fr; }
+.quarter-goal-group { border-top:1px dashed var(--border); padding-top:12px; margin-top:12px; }
+.quarter-goal-group:first-child { border-top:0; padding-top:0; margin-top:0; }
+.quarter-goal-group-title { font-size:12px; font-weight:800; color:var(--text); margin-bottom:8px; }
+.quarter-goal-head, .quarter-goal-row { grid-template-columns:2fr .85fr .7fr .7fr .7fr 34px; }
+.quarter-goal-add { width:100%; margin-top:4px; }
+.qg-delete { border:none; background:none; cursor:pointer; font-size:15px; line-height:1; }
 .project-map-row { grid-template-columns:1.1fr .9fr 1.4fr .9fr; }
 .copilot-prompt-box { font-family:'IBM Plex Mono', monospace; font-size:11px; line-height:1.55; min-height:220px; background:#FBFDFF; }
 .ai-assist-box { background:var(--s2); border:1px solid var(--border); border-radius:8px; padding:18px; margin-bottom:18px; }
@@ -1511,6 +1519,27 @@ function getStrategyQuarters(projs, layer = getStrategyLayer()) {
   return [...new Set([...preferred, ...fromProjects, ...fromGoals])].sort((a, b) => (parseQuarterLabel(a)?.index ?? 999999) - (parseQuarterLabel(b)?.index ?? 999999));
 }
 
+function normalizeQuarterGoalEntry(entry) {
+  return {
+    summary: entry?.summary || '',
+    trackId: entry?.trackId || 'all',
+    health: {
+      schedule: entry?.health?.schedule || 'green',
+      resource: entry?.health?.resource || 'green',
+      risk: entry?.health?.risk || 'green'
+    }
+  };
+}
+
+function getQuarterGoalList(quarter, layer = getStrategyLayer(), activeTrack = 'all') {
+  const raw = layer.quarterGoals?.[quarter];
+  let goals = [];
+  if (Array.isArray(raw?.goals)) goals = raw.goals.map(normalizeQuarterGoalEntry);
+  else if (raw?.summary || raw?.health || raw?.trackId) goals = [normalizeQuarterGoalEntry(raw)];
+  if (activeTrack && activeTrack !== 'all') goals = goals.filter(g => !g.trackId || g.trackId === 'all' || g.trackId === activeTrack);
+  return goals;
+}
+
 function getProjectStrategy(project, layer = getStrategyLayer()) {
   const mapped = project ? (layer.projectMap?.[project.code] || {}) : {};
   return {
@@ -1534,6 +1563,19 @@ function renderQuarterHealthDots(health = {}) {
     const state = health[key] || 'green';
     const label = HEALTH_OPTIONS.find(([v]) => v === state)?.[1] || 'On Track';
     return `<span class="health-dot ${state === 'green' ? '' : state}" title="${HEALTH_LABELS[key]}: ${label}">${HEALTH_LABELS[key]}</span>`;
+  }).join('')}</div>`;
+}
+
+function renderQuarterExecutiveGoals(quarter, layer, activeTrack) {
+  const goals = getQuarterGoalList(quarter, layer, activeTrack).filter(g => g.summary.trim());
+  if (!goals.length) return '<div class="quarter-exec-goal"><div class="quarter-exec-goal-text">No executive quarterly goals defined for this strategic filter.</div></div>';
+  return `<div class="quarter-goal-list">${goals.map(g => {
+    const track = layer.tracks.find(t => t.id === g.trackId);
+    return `<div class="quarter-exec-goal">
+      <div class="quarter-exec-goal-track">${escHtml(track?.label || 'All strategic tracks')}</div>
+      <div class="quarter-exec-goal-text">${escHtml(g.summary)}</div>
+      ${renderQuarterHealthDots(g.health)}
+    </div>`;
   }).join('')}</div>`;
 }
 
@@ -1789,13 +1831,11 @@ function renderQuarterlyBoard(projs, layer = getStrategyLayer(), activeTrack = '
   const visibleProjects = filterProjectsByTrack(projs, activeTrack, layer);
   const quarters = getStrategyQuarters(projs, layer);
   return `<div class="quarter-board">${quarters.map(q => {
-    const goal = layer.quarterGoals?.[q] || {};
     const items = visibleProjects.flatMap(p => getQuarterlyMilestones(p).filter(m => m.quarter === q).map(m => ({...m, project:p.name, code:p.code, owner:p.owner, strategy:getProjectStrategy(p, layer)})));
     return `<section class="quarter-col">
       <div class="quarter-exec-head">
         <div class="quarter-exec-top"><b>${escHtml(q)}</b><span class="reason-pill">${items.length}</span></div>
-        <div class="quarter-exec-summary">${escHtml(goal.summary || 'No executive quarterly objective defined.')}</div>
-        <div class="quarter-health">${renderQuarterHealthDots(goal.health || {})}</div>
+        ${renderQuarterExecutiveGoals(q, layer, activeTrack)}
       </div>
       <div class="quarter-items">${items.length ? items.map(i => `
       <div class="quarter-item ${i.status || ''}">
@@ -2355,17 +2395,18 @@ window.openStrategyLayerModal = () => {
     </div>
   `).join('');
 
-  document.getElementById('quarterGoalEditor').innerHTML = quarters.map(q => {
-    const goal = layer.quarterGoals?.[q] || {};
-    const health = goal.health || {};
-    return `<div class="quarter-goal-row" data-quarter="${escHtml(q)}">
-      <input class="fi qg-quarter" value="${escHtml(q)}" readonly style="background:var(--s3); color:var(--muted);">
-      <input class="fi qg-summary" value="${escHtml(goal.summary || '')}" placeholder="Executive quarterly objective">
-      <select class="fs qg-schedule">${healthSelectOptions(health.schedule || 'green')}</select>
-      <select class="fs qg-resource">${healthSelectOptions(health.resource || 'green')}</select>
-      <select class="fs qg-risk">${healthSelectOptions(health.risk || 'green')}</select>
-    </div>`;
-  }).join('');
+  document.getElementById('quarterGoalEditor').innerHTML = quarters.map(q => `
+    <div class="quarter-goal-group" data-quarter="${escHtml(q)}">
+      <div class="quarter-goal-group-title">${escHtml(q)}</div>
+      <div class="strategy-editor-head quarter-goal-head"><span>Executive Goal</span><span>Track</span><span>Schedule</span><span>Resource</span><span>Risk</span><span></span></div>
+      <div class="quarter-goal-rows"></div>
+      <button class="btn btn-ghost quarter-goal-add" onclick="addQuarterExecutiveGoalRow('${escHtml(q)}')">+ Add Executive Goal</button>
+    </div>
+  `).join('');
+  quarters.forEach(q => {
+    const goals = getQuarterGoalList(q, layer, 'all');
+    (goals.length ? goals : [normalizeQuarterGoalEntry({})]).forEach(goal => addQuarterExecutiveGoalRow(q, goal, layer));
+  });
 
   const trackOptions = layer.tracks.filter(t => t.id !== 'all').map(t => `<option value="${escHtml(t.id)}">${escHtml(t.label)}</option>`).join('');
   const checkpointOptions = UNIVERSAL_CHECKPOINTS.map(c => `<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('');
@@ -2387,6 +2428,24 @@ window.openStrategyLayerModal = () => {
   document.getElementById('strategyOverlay').classList.add('open');
 };
 
+window.addQuarterExecutiveGoalRow = (quarter, goal = {}, layer = getStrategyLayer()) => {
+  const group = Array.from(document.querySelectorAll('.quarter-goal-group')).find(el => el.dataset.quarter === quarter);
+  if (!group) return;
+  const normalized = normalizeQuarterGoalEntry(goal);
+  const trackOptions = layer.tracks.map(t => `<option value="${escHtml(t.id)}" ${t.id === normalized.trackId ? 'selected' : ''}>${escHtml(t.label)}</option>`).join('');
+  const row = document.createElement('div');
+  row.className = 'quarter-goal-row';
+  row.innerHTML = `
+    <input class="fi qg-summary" value="${escHtml(normalized.summary)}" placeholder="Executive goal / business target">
+    <select class="fs qg-track">${trackOptions}</select>
+    <select class="fs qg-schedule">${healthSelectOptions(normalized.health.schedule)}</select>
+    <select class="fs qg-resource">${healthSelectOptions(normalized.health.resource)}</select>
+    <select class="fs qg-risk">${healthSelectOptions(normalized.health.risk)}</select>
+    <button class="qg-delete" onclick="this.parentElement.remove();" title="Delete executive goal">&#128465;&#65039;</button>
+  `;
+  group.querySelector('.quarter-goal-rows').appendChild(row);
+};
+
 window.saveStrategyLayer = async () => {
   const week = allWeeks[currentIdx];
   if (!week || !currentUser) return;
@@ -2396,16 +2455,17 @@ window.saveStrategyLayer = async () => {
     return row ? {...track, label: row.querySelector('.st-label').value.trim() || track.label, description: row.querySelector('.st-desc').value.trim()} : track;
   });
   const quarterGoals = {};
-  document.querySelectorAll('.quarter-goal-row').forEach(row => {
-    const summary = row.querySelector('.qg-summary').value.trim();
-    quarterGoals[row.dataset.quarter] = {
-      summary,
+  document.querySelectorAll('.quarter-goal-group').forEach(group => {
+    const goals = Array.from(group.querySelectorAll('.quarter-goal-row')).map(row => ({
+      summary: row.querySelector('.qg-summary').value.trim(),
+      trackId: row.querySelector('.qg-track').value || 'all',
       health: {
         schedule: row.querySelector('.qg-schedule').value,
         resource: row.querySelector('.qg-resource').value,
         risk: row.querySelector('.qg-risk').value
       }
-    };
+    })).filter(goal => goal.summary);
+    if (goals.length) quarterGoals[group.dataset.quarter] = { goals };
   });
   const projectMap = {};
   document.querySelectorAll('.project-map-row').forEach(row => {
