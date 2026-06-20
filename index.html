@@ -2015,6 +2015,17 @@ function renderExec(projs, summary) {
   const riskEnd = total ? ((critical + atRisk) / total) * 100 : 0;
 
   view.innerHTML = `
+    <div class="exec-decision-panel">
+      <div class="exec-decision-head">
+        <div>
+          <div class="exec-eyebrow">Quarterly Target Roadmap</div>
+          <div class="exec-decision-title">Quarterly milestones across projects</div>
+        </div>
+        <div class="exec-panel-note">Executive view of what each project is targeting by quarter</div>
+      </div>
+      ${renderQuarterlyBoard(projs)}
+    </div>
+
     <div class="exec-overview">
       <section class="exec-panel">
         <div class="exec-panel-head">
@@ -2089,17 +2100,6 @@ function renderExec(projs, summary) {
         </div>
         ${renderSummaryContent(summary, projs)}
       </div>
-    </div>
-
-    <div class="exec-decision-panel">
-      <div class="exec-decision-head">
-        <div>
-          <div class="exec-eyebrow">Quarterly Target Roadmap</div>
-          <div class="exec-decision-title">Quarterly milestones across projects</div>
-        </div>
-        <div class="exec-panel-note">Executive view of what each project is targeting by quarter</div>
-      </div>
-      ${renderQuarterlyBoard(projs)}
     </div>
 
     <div class="exec-decision-panel">
