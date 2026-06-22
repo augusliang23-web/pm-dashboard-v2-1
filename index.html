@@ -426,6 +426,8 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 .exec-summary-project-body { display:block; line-height:1.72; color:var(--text-light); }
 .exec-empty-summary { border:1px dashed var(--border2); background:var(--s2); border-radius:10px; padding:13px 14px; color:var(--muted); font-size:12px; }
 .quarter-board { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+.roadmap-year-control { display:flex; align-items:center; gap:8px; color:var(--muted); font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; }
+.roadmap-year-select { min-width:92px; border:1px solid var(--border2); border-radius:999px; background:#fff; color:var(--text); padding:6px 28px 6px 11px; font-size:12px; font-weight:800; outline:none; }
 .quarter-col { border:1px solid var(--border); border-radius:10px; overflow:hidden; background:#FBFDFF; }
 .quarter-head { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:11px 13px; background:#EDF5FB; border-bottom:1px solid var(--border); }
 .quarter-head b { font-size:13px; }
@@ -1115,6 +1117,7 @@ let currentUser = null;
 let currentRole = 'pm';
 let currentPMFilter = 'all';
 let activeStrategicTrack = 'all';
+let activeRoadmapYear = null;
 let isOverview = false;
 let editingProjCode = null;
 let isCreatingNew = false;
@@ -1780,10 +1783,42 @@ function getStrategyLayer(week = allWeeks[currentIdx]) {
 }
 
 function getStrategyQuarters(projs, layer = getStrategyLayer()) {
-  const preferred = ['Q2 2026', 'Q3 2026', 'Q4 2026', 'Q1 2027'];
+  const preferred = getQuarterLabelsForYear(new Date().getFullYear());
   const fromProjects = projs.flatMap(p => getQuarterlyMilestones(p).map(q => q.quarter).filter(Boolean));
   const fromGoals = Object.keys(layer.quarterGoals || {});
   return [...new Set([...preferred, ...fromProjects, ...fromGoals])].sort((a, b) => (parseQuarterLabel(a)?.index ?? 999999) - (parseQuarterLabel(b)?.index ?? 999999));
+}
+
+function getQuarterLabelsForYear(year) {
+  return [1, 2, 3, 4].map(q => `Q${q} ${year}`);
+}
+
+function getStrategyYears(projs, layer = getStrategyLayer(), options = {}) {
+  const currentYear = new Date().getFullYear();
+  const fromProjects = projs.flatMap(p => getQuarterlyMilestones(p).map(q => parseQuarterLabel(q.quarter)?.year).filter(Number.isFinite));
+  const fromGoals = Object.keys(layer.quarterGoals || {}).map(q => parseQuarterLabel(q)?.year).filter(Number.isFinite);
+  const years = new Set([currentYear, ...fromProjects, ...fromGoals]);
+  if (options.includeNextYear) years.add(currentYear + 1);
+  return [...years].sort((a, b) => a - b);
+}
+
+function getDefaultRoadmapYear(projs, layer = getStrategyLayer()) {
+  const years = getStrategyYears(projs, layer);
+  const currentYear = new Date().getFullYear();
+  if (years.includes(activeRoadmapYear)) return activeRoadmapYear;
+  if (years.includes(currentYear)) return currentYear;
+  return years[0] || currentYear;
+}
+
+function renderRoadmapYearSelector(projs, layer) {
+  const years = getStrategyYears(projs, layer);
+  const selectedYear = getDefaultRoadmapYear(projs, layer);
+  activeRoadmapYear = selectedYear;
+  return `<label class="roadmap-year-control no-print">Roadmap Year
+    <select class="roadmap-year-select" onchange="setRoadmapYear(this.value)">
+      ${years.map(year => `<option value="${year}" ${year === selectedYear ? 'selected' : ''}>${year}</option>`).join('')}
+    </select>
+  </label>`;
 }
 
 function normalizeQuarterGoalEntry(entry) {
@@ -2096,9 +2131,9 @@ function formatDetailQuarterlyMilestones(project) {
   `).join('');
 }
 
-function renderQuarterlyBoard(projs, layer = getStrategyLayer(), activeTrack = 'all') {
+function renderQuarterlyBoard(projs, layer = getStrategyLayer(), activeTrack = 'all', year = getDefaultRoadmapYear(projs, layer)) {
   const visibleProjects = filterProjectsByTrack(projs, activeTrack, layer);
-  const quarters = getStrategyQuarters(projs, layer);
+  const quarters = getQuarterLabelsForYear(year);
   return `<div class="quarter-board">${quarters.map(q => {
     const items = visibleProjects.flatMap(p => getQuarterlyMilestones(p).filter(m => m.quarter === q).map(m => ({...m, project:p.name, code:p.code, owner:p.owner, strategy:getProjectStrategy(p, layer)})));
     return `<section class="quarter-col">
@@ -2455,6 +2490,7 @@ function renderExec(projs, summary) {
   const editableDecisionView = currentRole !== 'vip' && !isWeekReleased(allWeeks[currentIdx]);
   const strategyLayer = getStrategyLayer(allWeeks[currentIdx]);
   const activeTrack = activeStrategicTrack || strategyLayer.activeTrack || 'all';
+  const roadmapYear = getDefaultRoadmapYear(projs, strategyLayer);
 
   const total = projs.length;
   const critical = projs.filter(p => p.status === 'red').length;
@@ -2474,8 +2510,9 @@ function renderExec(projs, summary) {
           <div class="exec-decision-title">Quarterly milestones across projects</div>
         </div>
         <div class="exec-panel-note">Executive view of what each project is targeting by quarter</div>
+        ${renderRoadmapYearSelector(projs, strategyLayer)}
       </div>
-      ${renderQuarterlyBoard(projs, strategyLayer, activeTrack)}
+      ${renderQuarterlyBoard(projs, strategyLayer, activeTrack, roadmapYear)}
     </div>
 
     <div class="exec-overview">
@@ -2650,12 +2687,18 @@ window.setStrategicTrack = (trackId) => {
   render();
 };
 
+window.setRoadmapYear = (year) => {
+  const parsed = parseInt(year, 10);
+  if (Number.isFinite(parsed)) activeRoadmapYear = parsed;
+  render();
+};
+
 window.openStrategyLayerModal = () => {
   const week = allWeeks[currentIdx];
   if (!week) return;
   const layer = getStrategyLayer(week);
   const projs = (week.projects || []).filter(p => !p.visibility || p.visibility === 'active');
-  const quarters = getStrategyQuarters(projs, layer);
+  const quarters = getStrategyYears(projs, layer, { includeNextYear: true }).flatMap(getQuarterLabelsForYear);
 
   document.getElementById('strategyTrackEditor').innerHTML = layer.tracks.filter(t => t.id !== 'all').map(track => `
     <div class="strategy-track-row" data-track="${escHtml(track.id)}">
