@@ -298,7 +298,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 .exec-project-meta { margin-top: 6px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 .exec-ms-row td { padding: 8px 10px 22px; background:#fff; border-bottom: 2px solid var(--border2); }
 .exec-ms-row:hover td { background:#fff; }
-.exec-project-timeline { width:100%; }
+.exec-project-timeline { width:100%; display:grid; gap:14px; }
 .exec-project-timeline-track { position:relative; display:grid; gap:0; width:100%; align-items:start; }
 .exec-project-timeline-track::before { content:''; position:absolute; top:63px; left:calc(50% / var(--step-count)); right:calc(50% / var(--step-count)); height:2px; background-image: repeating-linear-gradient(to right, var(--border2) 0 6px, transparent 6px 10px); background-repeat:repeat-x; background-position:center; background-size:auto 2px; }
 .exec-project-timeline-track.single-step::before { display:none; }
@@ -768,6 +768,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
   .exec-signal { min-height:58px !important; padding:7px 8px !important; }
   .exec-signal .stext { font-size:8.8px !important; line-height:1.35 !important; -webkit-line-clamp:4 !important; }
   .exec-project-milestones { padding:8px 13px 10px 18px !important; }
+  .exec-project-timeline { gap: 8px !important; }
   .exec-table .role-badge { min-width: 78px !important; padding: 4px 7px !important; font-size: 10px !important; line-height: 1.05 !important; }
   .exec-ms-row td { padding: 8px 8px 18px !important; }
   .exec-project-step { padding: 0 3px !important; grid-template-rows: 42px 14px 14px !important; }
@@ -2117,16 +2118,27 @@ function formatExecMilestones(milestones) {
     </li>`).join('') + `</ul>`;
 }
 
+function chunkTimelineMilestones(list, maxPerRow = 12) {
+  if (list.length <= maxPerRow) return [list];
+  const rowCount = Math.ceil(list.length / maxPerRow);
+  const rowSize = Math.ceil(list.length / rowCount);
+  const rows = [];
+  for (let i = 0; i < list.length; i += rowSize) rows.push(list.slice(i, i + rowSize));
+  return rows;
+}
+
 function formatExecProjectMilestones(milestones) {
   const list = milestones || [];
   if (list.length === 0) return '<div class="exec-note">No milestones yet.</div>';
-  const singleClass = list.length === 1 ? ' single-step' : '';
-  return `<div class="exec-project-timeline"><div class="exec-project-timeline-track${singleClass}" style="--step-count:${list.length}; grid-template-columns: repeat(${list.length}, minmax(0, 1fr));">` + list.map(m => `
-    <div class="exec-project-step ${m.status || 'to-do'}">
-      <div class="exec-project-step-label">${m.name || '-'}</div>
-      <div class="exec-project-step-line"><span class="exec-project-step-dot"></span></div>
-      <div class="exec-project-step-date">${m.date || ''}</div>
-    </div>`).join('') + `</div></div>`;
+  return `<div class="exec-project-timeline">` + chunkTimelineMilestones(list).map(row => {
+    const singleClass = row.length === 1 ? ' single-step' : '';
+    return `<div class="exec-project-timeline-track${singleClass}" style="--step-count:${row.length}; grid-template-columns: repeat(${row.length}, minmax(0, 1fr));">` + row.map(m => `
+      <div class="exec-project-step ${escHtml(m.status || 'to-do')}">
+        <div class="exec-project-step-label">${escHtml(m.name || '-')}</div>
+        <div class="exec-project-step-line"><span class="exec-project-step-dot"></span></div>
+        <div class="exec-project-step-date">${escHtml(m.date || '')}</div>
+      </div>`).join('') + `</div>`;
+  }).join('') + `</div>`;
 }
 
 function formatDetailQuarterlyMilestones(project) {
