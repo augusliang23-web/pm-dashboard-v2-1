@@ -2178,17 +2178,25 @@ function weekShortLabel(week) {
   return String(week?.weekLabel || week?.week || '').replace(/\s+20(\d{2})$/, " '$1") || '-';
 }
 
+function projectRiskEntryCount(project) {
+  const structured = getRiskActionPairs(project).filter(item => item.risk).length;
+  if (structured) return structured;
+  return rawRiskItems(project).length;
+}
+
 function weeklyTrendPoints(weeks) {
   return weeks.map(week => {
     const projects = week.projects || [];
     const total = projects.length || 1;
-    const atRisk = projects.filter(p => p.status === 'yellow').length;
-    const critical = projects.filter(p => p.status === 'red').length;
-    const riskPressure = atRisk + critical * 2;
+    const riskPressure = projects.reduce((sum, p) => {
+      const count = projectRiskEntryCount(p);
+      const severity = p.status === 'red' ? 1.5 : 1;
+      return sum + count * severity;
+    }, 0);
     const avgProgress = Math.round(projects.reduce((sum, p) => sum + Number(p.progress || 0), 0) / total);
     const primaryRisks = projects.filter(p => getPrimaryRiskActionPair(p)?.risk).length;
     const updateLines = projects.reduce((sum, p) => sum + textLines(p.highlight).length + textLines(p.risk).length + textLines(p.next).length, 0);
-    return { label: weekShortLabel(week), riskPressure, avgProgress, primaryRisks, updateLines };
+    return { label: weekShortLabel(week), riskPressure: Math.round(riskPressure * 10) / 10, avgProgress, primaryRisks, updateLines };
   });
 }
 
@@ -2234,7 +2242,7 @@ function renderWeeklyTrendPanel() {
     <div class="weekly-trend-grid">
       <section class="weekly-trend-card">
         <div class="weekly-trend-head">
-          <div><div class="weekly-trend-title">Risk pressure</div><div class="weekly-trend-sub">At Risk counts as 1, Critical counts as 2</div></div>
+          <div><div class="weekly-trend-title">Risk pressure</div><div class="weekly-trend-sub">Total risk entries across projects; Critical risk entries count 1.5x</div></div>
           <div class="weekly-trend-value">${latest.riskPressure}<span class="exec-panel-note"> ${riskDelta >= 0 ? '+' : ''}${riskDelta}</span></div>
         </div>
         ${renderTrendSvg(points, 'riskPressure', 'risk')}
