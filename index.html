@@ -1528,6 +1528,17 @@ const showSaveToast = (msg = "Saved successfully") => {
   _toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
 };
 
+function cleanFirestoreData(value) {
+  if (Array.isArray(value)) return value.map(cleanFirestoreData).filter(v => v !== undefined);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value)
+      .filter(([key, v]) => key && v !== undefined)
+      .map(([key, v]) => [key, cleanFirestoreData(v)])
+      .filter(([, v]) => v !== undefined));
+  }
+  return value === undefined ? undefined : value;
+}
+
 function getEmailKey(userOrEmail) {
   const email = typeof userOrEmail === 'string' ? userOrEmail : userOrEmail?.email;
   return (email || '').trim().toLowerCase();
@@ -3441,31 +3452,38 @@ window.addQuarterExecutiveGoalRow = (quarter, goal = {}, layer = getStrategyLaye
 window.saveStrategyLayer = async () => {
   const week = allWeeks[currentIdx];
   if (!week || !currentUser) return;
-  const base = getStrategyLayer(week);
-  const executiveMilestoneTimeline = collectExecutiveMilestoneTimeline();
-  const projectMap = {};
-  document.querySelectorAll('.project-map-row').forEach(row => {
-    const businessObjective = row.querySelector('.pm-objective').value.trim();
-    const checkpoint = row.querySelector('.pm-checkpoint').value;
-    if (businessObjective || checkpoint) {
-      projectMap[row.dataset.code] = { businessObjective, checkpoint };
-    }
-  });
-  week.strategyLayer = {
-    activeTrack: 'all',
-    tracks: base.tracks || STRATEGIC_TRACKS,
-    quarterGoals: base.quarterGoals || {},
-    executiveMilestoneTimeline,
-    projectMap
-  };
-  week.lastModifiedBy = currentUser.email;
-  closeModal('strategyOverlay');
   showLoader("Saving Strategy Layer...");
-  await setDoc(doc(db, "weeks", week.weekLabel.replace(/\s+/g, '-')), week);
-  await new Promise(r => setTimeout(r, 500));
-  hideLoader();
-  render();
-  showSaveToast("Strategy layer saved");
+  try {
+    const base = getStrategyLayer(week);
+    const executiveMilestoneTimeline = collectExecutiveMilestoneTimeline();
+    const projectMap = {};
+    document.querySelectorAll('.project-map-row').forEach(row => {
+      const code = row.dataset.code || '';
+      const businessObjective = row.querySelector('.pm-objective').value.trim();
+      const checkpoint = row.querySelector('.pm-checkpoint').value;
+      if (code && (businessObjective || checkpoint)) {
+        projectMap[code] = { businessObjective, checkpoint };
+      }
+    });
+    week.strategyLayer = {
+      activeTrack: 'all',
+      tracks: base.tracks || STRATEGIC_TRACKS,
+      quarterGoals: base.quarterGoals || {},
+      executiveMilestoneTimeline,
+      projectMap
+    };
+    week.lastModifiedBy = currentUser.email;
+    closeModal('strategyOverlay');
+    await setDoc(doc(db, "weeks", week.weekLabel.replace(/\s+/g, '-')), cleanFirestoreData(week));
+    await new Promise(r => setTimeout(r, 500));
+    render();
+    showSaveToast("Strategy layer saved");
+  } catch (err) {
+    console.error("Strategy layer save failed", err);
+    showSaveToast("Strategy layer save failed");
+  } finally {
+    hideLoader();
+  }
 };
 
 function findCurrentProject(code) {
