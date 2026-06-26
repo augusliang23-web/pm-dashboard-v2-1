@@ -632,7 +632,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 .quarter-goal-head, .quarter-goal-row { grid-template-columns:2fr .85fr .7fr .7fr .7fr 34px; }
 .quarter-goal-add { width:100%; margin-top:4px; }
 .qg-delete { border:none; background:none; cursor:pointer; font-size:15px; line-height:1; }
-.project-map-row { grid-template-columns:1.1fr .9fr 1.4fr .9fr; }
+.project-map-row { grid-template-columns:1.1fr 1.4fr .9fr; }
 .exec-timeline-editor { display:grid; gap:10px; }
 .exec-timeline-title-row { display:grid; grid-template-columns:1fr; gap:8px; }
 .exec-timeline-head, .exec-timeline-row, .exec-timeline-phase-row { display:grid; grid-template-columns:150px repeat(4,minmax(0,1fr)); gap:8px; align-items:start; }
@@ -1430,10 +1430,6 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
   <div class="modal-hdr"><h3>Strategic Layer Management</h3><button class="modal-x" onclick="closeModal('strategyOverlay')">×</button></div>
   <div class="strategy-modal-grid">
     <section class="strategy-section">
-      <div class="strategy-section-title">Strategic Tracks / Project Mapping Support</div>
-      <div id="strategyTrackEditor"></div>
-    </section>
-    <section class="strategy-section">
       <div class="strategy-section-title">Executive Milestone Timeline</div>
       <div id="quarterGoalEditor"></div>
     </section>
@@ -2009,10 +2005,7 @@ function getQuarterlyMilestones(p) {
 }
 
 const STRATEGIC_TRACKS = [
-  { id:'all', label:'All Strategic Tracks', description:'All executive strategic tracks' },
-  { id:'track-a', label:'Track A: Core Revenue & Market Expansion', description:'Customer delivery and new product launch' },
-  { id:'track-b', label:'Track B: Technology Innovation & System Integration', description:'Architecture optimization and component standardization' },
-  { id:'track-c', label:'Track C: Software-defined & Digital Transformation', description:'Energy management systems and software platform iteration' }
+  { id:'all', label:'All Projects', description:'All projects' }
 ];
 
 const UNIVERSAL_CHECKPOINTS = ['1. Specification Definition', '2. Concept Validation', '3. System Integration', '4. Customer Delivery'];
@@ -2089,9 +2082,6 @@ function trackClassName(trackId) {
 
 const LEGACY_STRATEGY_TEXT = {
   '\u5168\u90e8\u6230\u7565\u4e3b\u984c': 'All Strategic Tracks',
-  'Track A: \u6838\u5fc3\u71df\u6536\u8207\u5e02\u5834\u64f4\u5c55': 'Track A: Core Revenue & Market Expansion',
-  'Track B: \u6280\u8853\u5275\u65b0\u8207\u7cfb\u7d71\u6574\u5408': 'Track B: Technology Innovation & System Integration',
-  'Track C: \u8edf\u9ad4\u5b9a\u7fa9\u8207\u6578\u4f4d\u8f49\u578b': 'Track C: Software-defined & Digital Transformation',
   '\u6838\u5fc3\u71df\u6536\u8207\u5e02\u5834\u64f4\u5c55': 'Core Revenue & Market Expansion',
   '\u6280\u8853\u5275\u65b0\u8207\u7cfb\u7d71\u6574\u5408': 'Technology Innovation & System Integration',
   '\u8edf\u9ad4\u5b9a\u7fa9\u8207\u6578\u4f4d\u8f49\u578b': 'Software-defined & Digital Transformation',
@@ -2268,15 +2258,14 @@ function getProjectStrategy(project, layer = getStrategyLayer()) {
   const rawObjective = mapped.businessObjective || '';
   const rawCheckpoint = mapped.checkpoint || '';
   return {
-    trackId: mapped.trackId || 'all',
+    trackId: 'all',
     businessObjective: rawObjective ? normalizeEnglishText(rawObjective, 'Business objective pending English update') : '',
     checkpoint: rawCheckpoint ? normalizeEnglishText(rawCheckpoint, '') : ''
   };
 }
 
 function filterProjectsByTrack(projs, activeTrack, layer = getStrategyLayer()) {
-  if (!activeTrack || activeTrack === 'all') return projs;
-  return projs.filter(p => getProjectStrategy(p, layer).trackId === activeTrack);
+  return projs;
 }
 
 function healthSelectOptions(selected) {
@@ -2762,7 +2751,7 @@ function renderExecutiveQuarterMilestones(projs, layer = getStrategyLayer(), act
 
 function renderProjectQuarterItems(items) {
   if (!items.length) return '<div class="pqm-empty">No PM milestone in this quarter.</div>';
-  return `<div class="pqm-items">${items.map(i => `<div class="pqm-item ${escHtml(i.status || '')} ${trackClassName(i.strategy.trackId)}">
+  return `<div class="pqm-items">${items.map(i => `<div class="pqm-item ${escHtml(i.status || '')}">
     <div class="pqm-goal">${escHtml(i.goal || '-')}</div>
     ${i.strategy.businessObjective ? `<div class="strategic-objective">[${escHtml(i.strategy.businessObjective)}]</div>` : ''}
     <div class="pqm-meta">${escHtml(i.window || '-')} | ${escHtml(getStatusLabel(i.status || 'planned'))}${i.strategy.checkpoint ? ` | ${escHtml(i.strategy.checkpoint)}` : ''}</div>
@@ -2787,7 +2776,7 @@ function renderProjectQuarterMatrix(projs, layer = getStrategyLayer(), activeTra
       ${quarters.map(q => `<div class="pqm-cell pqm-head">${escHtml(q)}</div>`).join('')}
       ${projects.map(p => {
         const strategy = getProjectStrategy(p, layer);
-        return `<div class="pqm-cell pqm-project ${trackClassName(strategy.trackId)}">
+        return `<div class="pqm-cell pqm-project">
           <div class="pqm-project-name">${escHtml(p.name)}</div>
           <div class="pqm-project-meta"><span class="proj-code">${escHtml(p.code)}</span><span class="reason-pill">${escHtml(p.owner || '-')}</span></div>
         </div>
@@ -3412,29 +3401,19 @@ window.openStrategyLayerModal = () => {
   const projs = (week.projects || []).filter(p => !p.visibility || p.visibility === 'active');
   const quarters = getStrategyYears(projs, layer, { includeNextYear: true }).flatMap(getQuarterLabelsForYear);
 
-  document.getElementById('strategyTrackEditor').innerHTML = layer.tracks.filter(t => t.id !== 'all').map(track => `
-    <div class="strategy-track-row" data-track="${escHtml(track.id)}">
-      <input class="fi st-label" value="${escHtml(track.label)}">
-      <input class="fi st-desc" value="${escHtml(track.description || '')}" placeholder="Executive description">
-    </div>
-  `).join('');
-
   document.getElementById('quarterGoalEditor').innerHTML = renderExecutiveMilestoneEditor(layer.executiveMilestoneTimeline);
 
-  const trackOptions = layer.tracks.filter(t => t.id !== 'all').map(t => `<option value="${escHtml(t.id)}">${escHtml(t.label)}</option>`).join('');
   const checkpointOptions = UNIVERSAL_CHECKPOINTS.map(c => `<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('');
   document.getElementById('projectStrategyEditor').innerHTML = projs.map(p => {
     const s = getProjectStrategy(p, layer);
     return `<div class="project-map-row" data-code="${escHtml(p.code)}">
       <input class="fi pm-project" value="${escHtml(p.name)}" readonly style="background:var(--s3); color:var(--muted);">
-      <select class="fs pm-track"><option value="">Unmapped</option>${trackOptions}</select>
       <input class="fi pm-objective" value="${escHtml(s.businessObjective || '')}" placeholder="Business objective / customer name">
       <select class="fs pm-checkpoint"><option value="">Checkpoint not set</option>${checkpointOptions}</select>
     </div>`;
   }).join('');
   document.querySelectorAll('.project-map-row').forEach(row => {
     const s = getProjectStrategy(projs.find(p => p.code === row.dataset.code), layer);
-    row.querySelector('.pm-track').value = s.trackId === 'all' ? '' : s.trackId;
     row.querySelector('.pm-checkpoint').value = s.checkpoint || '';
   });
 
@@ -3463,23 +3442,18 @@ window.saveStrategyLayer = async () => {
   const week = allWeeks[currentIdx];
   if (!week || !currentUser) return;
   const base = getStrategyLayer(week);
-  const tracks = base.tracks.map(track => {
-    const row = document.querySelector(`.strategy-track-row[data-track="${track.id}"]`);
-    return row ? {...track, label: row.querySelector('.st-label').value.trim() || track.label, description: row.querySelector('.st-desc').value.trim()} : track;
-  });
   const executiveMilestoneTimeline = collectExecutiveMilestoneTimeline();
   const projectMap = {};
   document.querySelectorAll('.project-map-row').forEach(row => {
-    const trackId = row.querySelector('.pm-track').value;
     const businessObjective = row.querySelector('.pm-objective').value.trim();
     const checkpoint = row.querySelector('.pm-checkpoint').value;
-    if (trackId || businessObjective || checkpoint) {
-      projectMap[row.dataset.code] = { trackId: trackId || 'all', businessObjective, checkpoint };
+    if (businessObjective || checkpoint) {
+      projectMap[row.dataset.code] = { businessObjective, checkpoint };
     }
   });
   week.strategyLayer = {
-    activeTrack: activeStrategicTrack || 'all',
-    tracks,
+    activeTrack: 'all',
+    tracks: base.tracks || STRATEGIC_TRACKS,
     quarterGoals: base.quarterGoals || {},
     executiveMilestoneTimeline,
     projectMap
