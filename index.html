@@ -1386,6 +1386,8 @@ let isIdle = false;
 let latestPresenceDocs = []; 
 let presenceUITimer = null;  
 const IDLE_TIMEOUT = 10 * 60 * 1000; 
+const PRESENCE_HEARTBEAT_MS = 5 * 60 * 1000;
+const ACTIVE_PRESENCE_WINDOW_MS = 12 * 60 * 1000;
 let weeksUnsub = null;
 
 let activityThrottle = null;
@@ -1397,7 +1399,7 @@ const handleUserActivity = () => {
   if (isIdle) {
     isIdle = false;
     if(heartbeatInterval) clearInterval(heartbeatInterval);
-    heartbeatInterval = setInterval(pingPresence, 60000);
+    heartbeatInterval = setInterval(pingPresence, PRESENCE_HEARTBEAT_MS);
     setDoc(doc(db, "presence", getEmailKey(currentUser)), {
       name: getUserDisplayName(currentUser.email),
       role: currentRole,
@@ -1510,7 +1512,7 @@ function updatePresenceUI() {
       if (data.status === 'idle' && now - data.lastActive < 4 * 60 * 60 * 1000) { 
         onlineUsers.push({name: data.name, idle: true});
       } 
-      else if (data.status === 'active' && now - data.lastActive < 180000) {
+      else if (data.status === 'active' && now - data.lastActive < ACTIVE_PRESENCE_WINDOW_MS) {
         onlineUsers.push({name: data.name, idle: false});
       }
     }
@@ -1520,7 +1522,7 @@ function updatePresenceUI() {
 
 function startPresenceSystem() {
   pingPresence();
-  heartbeatInterval = setInterval(pingPresence, 60000);
+  heartbeatInterval = setInterval(pingPresence, PRESENCE_HEARTBEAT_MS);
 
   ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart'].forEach(evt => {
     window.addEventListener(evt, handleUserActivity, { passive: true });
