@@ -1353,7 +1353,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
   </div>
   <div class="usage-summary-grid" id="presenceUsageSummary"></div>
   <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px;">
-    <div style="font-size:11px; color:var(--muted); line-height:1.45;">12-hour aggregates from <b>presenceUsage12h</b>. Quota distance uses 10,000 free writes per 12-hour bucket.</div>
+    <div style="font-size:11px; color:var(--muted); line-height:1.45;">12-hour aggregates from user presence records. Quota distance uses 10,000 free writes per 12-hour bucket.</div>
     <button class="btn btn-ghost" onclick="loadPresenceUsageStats()">Refresh</button>
   </div>
   <div id="presenceUsageTable"></div>
@@ -1386,7 +1386,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, doc, onSnapshot, setDoc, query, orderBy, where, getDoc, getDocs, increment, serverTimestamp, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, doc, onSnapshot, setDoc, updateDoc, query, orderBy, where, getDoc, getDocs, increment, serverTimestamp, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, updatePassword, onAuthStateChanged, signOut, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const app = initializeApp(FIREBASE_CONFIG);
@@ -1418,7 +1418,6 @@ const IDLE_TIMEOUT = 10 * 60 * 1000;
 const PRESENCE_HEARTBEAT_MS = 5 * 60 * 1000;
 const ACTIVE_PRESENCE_WINDOW_MS = 12 * 60 * 1000;
 const PRESENCE_USAGE_FLUSH_MS = 12 * 60 * 60 * 1000;
-const PRESENCE_USAGE_COLLECTION = "presenceUsage12h";
 const PRESENCE_USAGE_LOOKBACK_BUCKETS = 112;
 const FIRESTORE_FREE_WRITES_PER_DAY = 20000;
 const FIRESTORE_FREE_WRITES_PER_12H = FIRESTORE_FREE_WRITES_PER_DAY / 2;
@@ -1584,20 +1583,19 @@ async function flushDuePresenceUsage(force = false) {
   });
 
   for (const [bucketId, item] of entries) {
-    await setDoc(doc(db, PRESENCE_USAGE_COLLECTION, bucketId), {
-      bucketId,
-      bucketLabel: item.bucketLabel,
-      bucketStart: item.bucketStart,
-      bucketEnd: item.bucketEnd,
-      activeWrites: increment(item.activeWrites || 0),
-      idleWrites: increment(item.idleWrites || 0),
-      logoutWrites: increment(item.logoutWrites || 0),
-      totalPresenceWrites: increment(item.totalPresenceWrites || 0),
-      counterFlushWrites: increment(1),
-      freeWriteQuotaPerDay: FIRESTORE_FREE_WRITES_PER_DAY,
-      freeWriteQuotaPer12h: FIRESTORE_FREE_WRITES_PER_12H,
-      updatedAt: serverTimestamp()
-    }, { merge: true });
+    const bucketPath = `usageBuckets.${bucketId}`;
+    await updateDoc(doc(db, "presence", getEmailKey(currentUser)), {
+      [`${bucketPath}.bucketId`]: bucketId,
+      [`${bucketPath}.bucketLabel`]: item.bucketLabel,
+      [`${bucketPath}.bucketStart`]: item.bucketStart,
+      [`${bucketPath}.bucketEnd`]: item.bucketEnd,
+      [`${bucketPath}.activeWrites`]: increment(item.activeWrites || 0),
+      [`${bucketPath}.idleWrites`]: increment(item.idleWrites || 0),
+      [`${bucketPath}.logoutWrites`]: increment(item.logoutWrites || 0),
+      [`${bucketPath}.totalPresenceWrites`]: increment(item.totalPresenceWrites || 0),
+      [`${bucketPath}.counterFlushWrites`]: increment(1),
+      [`${bucketPath}.updatedAt`]: serverTimestamp()
+    });
     delete buffer.buckets[bucketId];
   }
 
@@ -1674,13 +1672,45 @@ function renderPresenceUsageStats(rows) {
 
 window.loadPresenceUsageStats = async () => {
   if (currentRole !== 'admin') return;
-  document.getElementById('presenceUsageTable').innerHTML = '<div class="usage-empty">Loading presence usage...</div>';
-  const snap = await getDocs(query(
-    collection(db, PRESENCE_USAGE_COLLECTION),
-    orderBy("bucketStart", "desc"),
-    limit(PRESENCE_USAGE_LOOKBACK_BUCKETS)
-  ));
-  renderPresenceUsageStats(snap.docs.map(d => d.data()));
+  const table = document.getElementById('presenceUsageTable');
+  table.innerHTML = '<div class="usage-empty">Loading presence usage...</div>';
+  try {
+    await flushDuePresenceUsage();
+    const snap = await getDocs(collection(db, "presence"));
+    const buckets = {};
+    snap.docs.forEach(presenceDoc => {
+      Object.values(presenceDoc.data().usageBuckets || {}).forEach(row => {
+        if (!row?.bucketId) return;
+        const aggregate = buckets[row.bucketId] || {
+          bucketId: row.bucketId,
+          bucketLabel: row.bucketLabel,
+          bucketStart: row.bucketStart,
+          bucketEnd: row.bucketEnd,
+          activeWrites: 0,
+          idleWrites: 0,
+          logoutWrites: 0,
+          totalPresenceWrites: 0,
+          counterFlushWrites: 0
+        };
+        aggregate.activeWrites += Number(row.activeWrites || 0);
+        aggregate.idleWrites += Number(row.idleWrites || 0);
+        aggregate.logoutWrites += Number(row.logoutWrites || 0);
+        aggregate.totalPresenceWrites += Number(row.totalPresenceWrites || 0);
+        aggregate.counterFlushWrites += Number(row.counterFlushWrites || 0);
+        buckets[row.bucketId] = aggregate;
+      });
+    });
+    const rows = Object.values(buckets)
+      .sort((a, b) => Number(b.bucketStart || 0) - Number(a.bucketStart || 0))
+      .slice(0, PRESENCE_USAGE_LOOKBACK_BUCKETS);
+    renderPresenceUsageStats(rows);
+  } catch (error) {
+    console.error("Presence usage load failed:", error);
+    const message = error?.code === 'permission-denied'
+      ? 'Firebase denied access to presence usage data.'
+      : 'Presence usage could not be loaded. Please refresh and try again.';
+    table.innerHTML = `<div class="usage-empty">${escHtml(message)}</div>`;
+  }
 };
 
 window.openPresenceUsage = async () => {
