@@ -1662,6 +1662,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
       <span class="usage-chart-key"><span class="usage-chart-swatch warning"></span>80% warning line · 8,000 writes</span>
       <span class="usage-chart-key"><span class="usage-chart-swatch" style="height:8px; background:#78B395;"></span>Online session</span>
       <span class="usage-chart-key"><span class="usage-chart-swatch" style="height:8px; background:#AAB7C4;"></span>Timed out</span>
+      <span class="usage-chart-key"><span class="usage-chart-swatch" style="height:8px; background:#D8B76A; opacity:.65;"></span>Estimated activity</span>
     </div>
     <div class="usage-chart-nav">
       <button class="btn btn-ghost" title="View older usage" onclick="scrollPresenceChart(-1)" aria-label="View older usage">←</button>
@@ -1670,7 +1671,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
   </div>
   <div class="usage-chart" id="presenceDailyChart"></div>
   <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px;">
-    <div style="font-size:11px; color:var(--muted); line-height:1.45;">The upper chart shows 12-hour writes. User lanes show login time and online duration; abnormal closes end at the last heartbeat plus 12 minutes.</div>
+    <div style="font-size:11px; color:var(--muted); line-height:1.45;">The upper chart shows 12-hour writes. Green and gray blocks are recorded sessions. Gold blocks are historical activity estimates from 12-hour write buckets and do not represent exact login time or duration.</div>
     <button class="btn btn-ghost" onclick="loadPresenceUsageStats()">Refresh</button>
   </div>
   <div class="usage-section-title">Session history</div>
@@ -2101,7 +2102,38 @@ function normalizePresenceSession(data, now = Date.now()) {
   };
 }
 
-function renderPresenceUsageChart(rows, sessions = [], rangeDays = 56) {
+/* presence-estimate:start */
+function buildEstimatedPresenceActivities(presenceDocs, cutoff) {
+  const activities = [];
+  presenceDocs.forEach(presenceDoc => {
+    const data = presenceDoc.data || {};
+    const userKey = presenceDoc.id || data.userKey || data.name || 'unknown';
+    Object.values(data.usageBuckets || {}).forEach(row => {
+      const bucketStart = Number(row?.bucketStart || 0);
+      const bucketEnd = Number(row?.bucketEnd || bucketStart);
+      const activityWrites = Number(row?.activeWrites || 0) +
+        Number(row?.idleWrites || 0) +
+        Number(row?.logoutWrites || 0);
+      if (!row?.bucketId || bucketEnd <= cutoff || !activityWrites) return;
+      activities.push({
+        userKey,
+        displayName: data.name || userKey,
+        role: data.role || 'pm',
+        bucketId: row.bucketId,
+        bucketStart,
+        bucketEnd,
+        activeWrites: Number(row.activeWrites || 0),
+        idleWrites: Number(row.idleWrites || 0),
+        logoutWrites: Number(row.logoutWrites || 0),
+        activityWrites
+      });
+    });
+  });
+  return activities.sort((a, b) => a.bucketStart - b.bucketStart || a.userKey.localeCompare(b.userKey));
+}
+/* presence-estimate:end */
+
+function renderPresenceUsageChart(rows, sessions = [], rangeDays = 56, estimatedActivities = []) {
   const chart = document.getElementById('presenceDailyChart');
   const now = Date.now();
   const rangeStart = now - rangeDays * 24 * 60 * 60 * 1000;
@@ -2118,8 +2150,11 @@ function renderPresenceUsageChart(rows, sessions = [], rangeDays = 56) {
     .map(session => normalizePresenceSession(session, now))
     .filter(session => session.startedAt && session.endedAt >= rangeStart)
     .sort((a, b) => a.startedAt - b.startedAt);
+  const visibleEstimates = estimatedActivities
+    .filter(activity => activity.bucketEnd >= rangeStart && activity.bucketStart <= now)
+    .sort((a, b) => a.bucketStart - b.bucketStart);
 
-  if (!points.length && !visibleSessions.length) {
+  if (!points.length && !visibleSessions.length && !visibleEstimates.length) {
     chart.innerHTML = '<div class="usage-chart-empty">Writes and user sessions will appear after activity is recorded.</div>';
     return;
   }
@@ -2129,6 +2164,11 @@ function renderPresenceUsageChart(rows, sessions = [], rangeDays = 56) {
     const laneKey = `${session.displayName || session.userKey || 'Unknown'}|${session.role || 'pm'}`;
     if (!laneMap.has(laneKey)) laneMap.set(laneKey, []);
     laneMap.get(laneKey).push(session);
+  });
+  visibleEstimates.forEach(activity => {
+    const laneKey = `${activity.displayName || activity.userKey || 'Unknown'}|${activity.role || 'pm'}`;
+    if (!laneMap.has(laneKey)) laneMap.set(laneKey, []);
+    laneMap.get(laneKey).push({ ...activity, estimated: true });
   });
   const lanes = Array.from(laneMap.entries()).sort(([a], [b]) => a.localeCompare(b));
   const width = Math.max(920, rangeDays * 42 + 110);
@@ -2174,10 +2214,15 @@ function renderPresenceUsageChart(rows, sessions = [], rangeDays = 56) {
     const [name, role] = laneKey.split('|');
     const y = timelineTop + laneIndex * laneHeight;
     const blocks = laneSessions.map(session => {
-      const start = Math.max(rangeStart, session.startedAt);
-      const end = Math.min(now, session.endedAt);
+      const start = Math.max(rangeStart, session.estimated ? session.bucketStart : session.startedAt);
+      const end = Math.min(now, session.estimated ? session.bucketEnd : session.endedAt);
       const x = xFor(start);
       const blockWidth = Math.max(3, xFor(end) - x);
+      if (session.estimated) {
+        return `<rect x="${x}" y="${y + 5}" width="${blockWidth}" height="13" rx="3" fill="#D8B76A" fill-opacity=".65" stroke="#B99749" stroke-dasharray="3 2">
+          <title>${escHtml(name)} (${escHtml(role.toUpperCase())}) · Estimated activity in this 12-hour bucket · ${fmtUsageNumber(session.activityWrites)} activity writes (active ${fmtUsageNumber(session.activeWrites)}, idle ${fmtUsageNumber(session.idleWrites)}, logout ${fmtUsageNumber(session.logoutWrites)}) · Exact login time and duration were not recorded</title>
+        </rect>`;
+      }
       const color = session.timedOut ? '#AAB7C4' : '#78B395';
       const startLabel = new Date(session.startedAt).toLocaleString();
       const endLabel = new Date(session.endedAt).toLocaleString();
@@ -2189,7 +2234,7 @@ function renderPresenceUsageChart(rows, sessions = [], rangeDays = 56) {
       <line x1="${margin.left}" y1="${y + 20}" x2="${width - margin.right}" y2="${y + 20}" stroke="var(--border)" stroke-width="1"/>
       ${blocks}`;
   }).join('');
-  const noLanes = lanes.length ? '' : `<text x="${margin.left}" y="${timelineTop + 15}" fill="var(--muted)" font-size="10">No user sessions recorded in this range.</text>`;
+  const noLanes = lanes.length ? '' : `<text x="${margin.left}" y="${timelineTop + 15}" fill="var(--muted)" font-size="10">No recorded sessions or estimated user activity in this range.</text>`;
 
   chart.innerHTML = `<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="Firestore writes and user login timeline">
     ${grid}
@@ -2239,7 +2284,7 @@ function renderPresenceSessionStats(sessions = []) {
   </table></div>`;
 }
 
-function renderPresenceUsageStats(rows, sessions = [], rangeDays = 56) {
+function renderPresenceUsageStats(rows, sessions = [], rangeDays = 56, estimatedActivities = []) {
   const totals = rows.reduce((acc, row) => {
     acc.active += row.activeWrites || 0;
     acc.idle += row.idleWrites || 0;
@@ -2259,8 +2304,18 @@ function renderPresenceUsageStats(rows, sessions = [], rangeDays = 56) {
     <div class="usage-card"><div class="usage-card-label">Idle / logout</div><div class="usage-card-value">${fmtUsageNumber(totals.idle + totals.logout)}</div><div class="usage-card-note">Idle ${fmtUsageNumber(totals.idle)} · Logout ${fmtUsageNumber(totals.logout)}</div></div>
     <div class="usage-card"><div class="usage-card-label">Free quota used</div><div class="usage-card-value">${usedPct.toFixed(2)}%</div><div class="usage-card-note">${rows.length ? `${fmtUsageNumber(remaining)} writes remaining in loaded buckets` : 'No completed buckets yet'}</div></div>
   `;
-  if (Array.isArray(sessions)) renderPresenceSessionStats(sessions);
-  renderPresenceUsageChart(rows, Array.isArray(sessions) ? sessions : [], rangeDays);
+  if (Array.isArray(sessions)) {
+    renderPresenceSessionStats(sessions);
+  } else {
+    const estimatedUsers = new Set(estimatedActivities.map(item => item.userKey).filter(Boolean));
+    const estimatedWrites = estimatedActivities.reduce((sum, item) => sum + item.activityWrites, 0);
+    document.getElementById('presenceSessionSummary').innerHTML = `
+      <div class="usage-card"><div class="usage-card-label">Estimated users</div><div class="usage-card-value">${estimatedUsers.size}</div><div class="usage-card-note">Users with historical activity writes</div></div>
+      <div class="usage-card"><div class="usage-card-label">Activity buckets</div><div class="usage-card-value">${estimatedActivities.length}</div><div class="usage-card-note">12-hour estimates, not sessions</div></div>
+      <div class="usage-card"><div class="usage-card-label">Activity writes</div><div class="usage-card-value">${fmtUsageNumber(estimatedWrites)}</div><div class="usage-card-note">No duration inferred</div></div>
+      <div class="usage-card"><div class="usage-card-label">Recorded sessions</div><div class="usage-card-value">—</div><div class="usage-card-note">Firestore access required</div></div>`;
+  }
+  renderPresenceUsageChart(rows, Array.isArray(sessions) ? sessions : [], rangeDays, estimatedActivities);
 
   if (!rows.length) {
     document.getElementById('presenceUsageTable').innerHTML = '<div class="usage-empty">No completed 12-hour presence usage buckets yet.</div>';
@@ -2303,6 +2358,10 @@ window.loadPresenceUsageStats = async () => {
     await flushDuePresenceUsage();
     const snap = await getDocs(collection(db, "presence"));
     const buckets = {};
+    const presenceDocs = snap.docs.map(presenceDoc => ({
+      id: presenceDoc.id,
+      data: presenceDoc.data()
+    }));
     snap.docs.forEach(presenceDoc => {
       Object.values(presenceDoc.data().usageBuckets || {}).forEach(row => {
         if (!row?.bucketId) return;
@@ -2328,6 +2387,7 @@ window.loadPresenceUsageStats = async () => {
     const rows = Object.values(buckets)
       .sort((a, b) => Number(b.bucketStart || 0) - Number(a.bucketStart || 0))
       .slice(0, PRESENCE_USAGE_LOOKBACK_BUCKETS);
+    const estimatedActivities = buildEstimatedPresenceActivities(presenceDocs, cutoff);
     let sessions = [];
     try {
       const sessionSnap = await getDocs(query(
@@ -2344,7 +2404,7 @@ window.loadPresenceUsageStats = async () => {
           : 'Session history could not be loaded. Existing write usage remains available.'}</div>`;
       sessions = null;
     }
-    renderPresenceUsageStats(rows, sessions, rangeDays);
+    renderPresenceUsageStats(rows, sessions, rangeDays, estimatedActivities);
   } catch (error) {
     console.error("Presence usage load failed:", error);
     const message = error?.code === 'permission-denied'
