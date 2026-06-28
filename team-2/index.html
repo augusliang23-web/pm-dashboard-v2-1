@@ -267,8 +267,8 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 .usage-card-note { font-size:10px; color:var(--muted); margin-top:4px; line-height:1.35; }
 .usage-section-title { font-size:11px; font-weight:800; color:var(--text); margin:2px 0 10px; }
 .usage-history-note { font-size:10px; color:var(--muted); line-height:1.5; margin:-8px 0 18px; }
-.usage-chart { position:relative; height:250px; margin:0 0 18px; padding:12px; background:var(--s2); border:1px solid var(--border); border-radius:8px; overflow-x:auto; overflow-y:hidden; }
-.usage-chart svg { display:block; height:210px; max-width:none; }
+.usage-chart { position:relative; min-height:250px; margin:0 0 18px; padding:12px; background:var(--s2); border:1px solid var(--border); border-radius:8px; overflow:auto; }
+.usage-chart svg { display:block; max-width:none; }
 .usage-chart-empty { height:100%; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:11px; }
 .usage-chart-toolbar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin:-8px 0 12px; }
 .usage-chart-legend { display:flex; align-items:center; gap:14px; font-size:10px; color:var(--muted); }
@@ -282,6 +282,13 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 .usage-table td { padding:9px 8px; border-bottom:1px solid var(--border); color:var(--text-light); }
 .usage-table td.num { font-family:'IBM Plex Mono', monospace; color:var(--text); text-align:right; }
 .usage-empty { padding:18px; text-align:center; color:var(--muted); background:var(--s2); border:1px dashed var(--border2); border-radius:8px; }
+.session-history-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:2px 0 10px; }
+.session-range-select { min-width:92px; border:1px solid var(--border2); border-radius:6px; background:#fff; color:var(--text); padding:6px 9px; font-size:11px; font-weight:700; }
+.session-table-wrap { max-height:280px; overflow:auto; margin-bottom:18px; border:1px solid var(--border); border-radius:8px; }
+.session-table-wrap .usage-table th { position:sticky; top:0; z-index:1; }
+.session-role { display:inline-flex; padding:2px 6px; border-radius:4px; background:var(--s3); color:var(--text-light); font-size:9px; font-weight:800; text-transform:uppercase; }
+.session-state { font-size:10px; font-weight:800; color:var(--green); }
+.session-state.timed-out { color:var(--muted); }
 
 /* Milestone Drag CSS */
 .ms-row { padding: 4px; border-radius: 4px; transition: 0.2s; background: var(--s1); }
@@ -1640,11 +1647,21 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
   <div class="usage-history-note" id="firestoreHistoricalNote"></div>
   <div class="usage-section-title">Presence writes recorded after counter activation</div>
   <div class="usage-summary-grid" id="presenceUsageSummary"></div>
-  <div class="usage-section-title">12-hour presence writes · Up to 56 days</div>
+  <div class="session-history-head">
+    <div class="usage-section-title" style="margin:0;">Firestore writes and user access timeline</div>
+    <select class="session-range-select" id="presenceRangeDays" onchange="loadPresenceUsageStats()">
+      <option value="7">Last 7 days</option>
+      <option value="30">Last 30 days</option>
+      <option value="56" selected>Last 56 days</option>
+    </select>
+  </div>
+  <div class="usage-summary-grid" id="presenceSessionSummary"></div>
   <div class="usage-chart-toolbar">
     <div class="usage-chart-legend">
       <span class="usage-chart-key"><span class="usage-chart-swatch"></span>12-hour writes</span>
       <span class="usage-chart-key"><span class="usage-chart-swatch warning"></span>80% warning line · 8,000 writes</span>
+      <span class="usage-chart-key"><span class="usage-chart-swatch" style="height:8px; background:#78B395;"></span>Online session</span>
+      <span class="usage-chart-key"><span class="usage-chart-swatch" style="height:8px; background:#AAB7C4;"></span>Timed out</span>
     </div>
     <div class="usage-chart-nav">
       <button class="btn btn-ghost" title="View older usage" onclick="scrollPresenceChart(-1)" aria-label="View older usage">←</button>
@@ -1653,9 +1670,12 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
   </div>
   <div class="usage-chart" id="presenceDailyChart"></div>
   <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px;">
-    <div style="font-size:11px; color:var(--muted); line-height:1.45;">12-hour aggregates from user presence records. Quota distance uses 10,000 free writes per 12-hour bucket.</div>
+    <div style="font-size:11px; color:var(--muted); line-height:1.45;">The upper chart shows 12-hour writes. User lanes show login time and online duration; abnormal closes end at the last heartbeat plus 12 minutes.</div>
     <button class="btn btn-ghost" onclick="loadPresenceUsageStats()">Refresh</button>
   </div>
+  <div class="usage-section-title">Session history</div>
+  <div id="presenceSessionTable"></div>
+  <div class="usage-section-title">12-hour write details</div>
   <div id="presenceUsageTable"></div>
 </div>
 </div>
@@ -1729,6 +1749,9 @@ const PRESENCE_HEARTBEAT_MS = 5 * 60 * 1000;
 const ACTIVE_PRESENCE_WINDOW_MS = 12 * 60 * 1000;
 const PRESENCE_USAGE_FLUSH_MS = 12 * 60 * 60 * 1000;
 const PRESENCE_USAGE_LOOKBACK_BUCKETS = 112;
+const PRESENCE_SESSION_COLLECTION = 'presenceSessions';
+const PRESENCE_ROLLUP_COLLECTION = 'presenceDailyRollups';
+const PRESENCE_SESSION_RETENTION_DAYS = 90;
 const FIRESTORE_FREE_WRITES_PER_DAY = 20000;
 const FIRESTORE_FREE_WRITES_PER_12H = FIRESTORE_FREE_WRITES_PER_DAY / 2;
 const FIRESTORE_SIX_WEEK_BASELINE = {
@@ -1740,6 +1763,13 @@ const FIRESTORE_SIX_WEEK_BASELINE = {
 };
 let weeksUnsub = null;
 let presenceUsageFlushTimer = null;
+let presenceSessionId = null;
+let presenceSessionStartedAt = 0;
+let presenceSessionLastEventAt = 0;
+let presenceSessionState = 'active';
+let presenceSessionClosed = false;
+let presenceSessionWriteChain = Promise.resolve();
+let presenceSessionHeartbeatInterval = null;
 
 let activityThrottle = null;
 const handleUserActivity = () => {
@@ -1757,6 +1787,7 @@ const handleUserActivity = () => {
       status: 'active',
       lastActive: Date.now()
     }, { merge: true }).then(() => queuePresenceUsage('active')).catch(()=>{});
+    trackPresenceSession('active');
   }
   
   clearTimeout(idleTimer);
@@ -1767,6 +1798,7 @@ const handleUserActivity = () => {
       status: 'idle',
       lastActive: Date.now()
     }, { merge: true }).then(() => queuePresenceUsage('idle')).catch(()=>{});
+    trackPresenceSession('idle');
   }, IDLE_TIMEOUT);
 };
 
@@ -1942,6 +1974,84 @@ function stopPresenceUsageFlushTimer() {
   presenceUsageFlushTimer = null;
 }
 
+function makePresenceSessionId() {
+  const userKey = getEmailKey(currentUser).replace(/[^a-z0-9]+/g, '-');
+  const random = Math.random().toString(36).slice(2, 8);
+  return `${userKey}-${Date.now()}-${random}`;
+}
+
+function startPresenceSession() {
+  if (!currentUser || presenceSessionId) return;
+  const now = Date.now();
+  presenceSessionId = makePresenceSessionId();
+  presenceSessionStartedAt = now;
+  presenceSessionLastEventAt = now;
+  presenceSessionState = 'active';
+  presenceSessionClosed = false;
+  const expiresAt = new Date(now + PRESENCE_SESSION_RETENTION_DAYS * 24 * 60 * 60 * 1000);
+  presenceSessionWriteChain = setDoc(doc(db, PRESENCE_SESSION_COLLECTION, presenceSessionId), {
+    sessionId: presenceSessionId,
+    userKey: getEmailKey(currentUser),
+    displayName: getUserDisplayName(currentUser.email),
+    role: currentRole,
+    environment: 'v2.0T',
+    startedAt: now,
+    lastSeenAt: now,
+    endedAt: null,
+    activeMs: 0,
+    idleMs: 0,
+    state: 'active',
+    endReason: null,
+    aggregatedAt: null,
+    expiresAt,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  }).catch(error => {
+    console.warn('Presence session start skipped:', error);
+  });
+}
+
+function trackPresenceSession(nextState = 'active', options = {}) {
+  if (!currentUser || !presenceSessionId || presenceSessionClosed) return presenceSessionWriteChain;
+  const now = Date.now();
+  const close = options.close === true;
+  const rawElapsed = Math.max(0, now - presenceSessionLastEventAt);
+  const elapsed = presenceSessionState === 'idle'
+    ? rawElapsed
+    : Math.min(rawElapsed, ACTIVE_PRESENCE_WINDOW_MS);
+  const durationField = presenceSessionState === 'idle' ? 'idleMs' : 'activeMs';
+  const patch = {
+    [durationField]: increment(elapsed),
+    lastSeenAt: now,
+    state: close ? 'closed' : nextState,
+    updatedAt: serverTimestamp()
+  };
+  if (close) {
+    patch.endedAt = now;
+    patch.endReason = options.reason || 'logout';
+    presenceSessionClosed = true;
+  }
+  presenceSessionLastEventAt = now;
+  presenceSessionState = nextState;
+  presenceSessionWriteChain = presenceSessionWriteChain
+    .then(() => updateDoc(doc(db, PRESENCE_SESSION_COLLECTION, presenceSessionId), patch))
+    .catch(error => console.warn('Presence session update skipped:', error));
+  return presenceSessionWriteChain;
+}
+
+function closePresenceSession(reason = 'logout') {
+  return trackPresenceSession(presenceSessionState, { close: true, reason });
+}
+
+function resetPresenceSessionState() {
+  presenceSessionId = null;
+  presenceSessionStartedAt = 0;
+  presenceSessionLastEventAt = 0;
+  presenceSessionState = 'active';
+  presenceSessionClosed = false;
+  presenceSessionWriteChain = Promise.resolve();
+}
+
 function fmtUsageNumber(value) {
   return Math.round(Number(value || 0)).toLocaleString();
 }
@@ -1967,8 +2077,34 @@ window.scrollPresenceChart = direction => {
   chart.scrollBy({ left: direction * chart.clientWidth * 0.8, behavior: 'smooth' });
 };
 
-function renderPresenceUsageChart(rows) {
+function fmtSessionDuration(ms) {
+  const totalMinutes = Math.max(0, Math.round(Number(ms || 0) / 60000));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return hours ? `${hours}h ${minutes}m` : `${minutes}m`;
+}
+
+function normalizePresenceSession(data, now = Date.now()) {
+  const startedAt = Number(data.startedAt || 0);
+  const lastSeenAt = Number(data.lastSeenAt || startedAt);
+  const explicitEnd = Number(data.endedAt || 0);
+  const inferredEnd = Math.min(now, lastSeenAt + ACTIVE_PRESENCE_WINDOW_MS);
+  const endedAt = explicitEnd || inferredEnd;
+  const timedOut = !explicitEnd && now - lastSeenAt >= ACTIVE_PRESENCE_WINDOW_MS;
+  return {
+    ...data,
+    startedAt,
+    lastSeenAt,
+    endedAt: Math.max(startedAt, endedAt),
+    timedOut,
+    onlineMs: Math.max(0, Math.max(startedAt, endedAt) - startedAt)
+  };
+}
+
+function renderPresenceUsageChart(rows, sessions = [], rangeDays = 56) {
   const chart = document.getElementById('presenceDailyChart');
+  const now = Date.now();
+  const rangeStart = now - rangeDays * 24 * 60 * 60 * 1000;
   const points = rows
     .map(row => ({
       label: row.bucketLabel || row.bucketId || '-',
@@ -1976,23 +2112,38 @@ function renderPresenceUsageChart(rows) {
       writes: Number(row.totalPresenceWrites || 0) + Number(row.counterFlushWrites || 0)
     }))
     .sort((a, b) => a.bucketStart - b.bucketStart)
-    .slice(-PRESENCE_USAGE_LOOKBACK_BUCKETS);
+    .filter(point => point.bucketStart >= rangeStart)
+    .slice(-(rangeDays * 2));
+  const visibleSessions = sessions
+    .map(session => normalizePresenceSession(session, now))
+    .filter(session => session.startedAt && session.endedAt >= rangeStart)
+    .sort((a, b) => a.startedAt - b.startedAt);
 
-  if (!points.length) {
-    chart.innerHTML = '<div class="usage-chart-empty">The 12-hour trend will appear after the first completed bucket.</div>';
+  if (!points.length && !visibleSessions.length) {
+    chart.innerHTML = '<div class="usage-chart-empty">Writes and user sessions will appear after activity is recorded.</div>';
     return;
   }
 
-  const width = Math.max(920, points.length * 30 + 70);
-  const height = 210;
-  const margin = { top: 12, right: 16, bottom: 32, left: 54 };
+  const laneMap = new Map();
+  visibleSessions.forEach(session => {
+    const laneKey = `${session.displayName || session.userKey || 'Unknown'}|${session.role || 'pm'}`;
+    if (!laneMap.has(laneKey)) laneMap.set(laneKey, []);
+    laneMap.get(laneKey).push(session);
+  });
+  const lanes = Array.from(laneMap.entries()).sort(([a], [b]) => a.localeCompare(b));
+  const width = Math.max(920, rangeDays * 42 + 110);
+  const upperHeight = 168;
+  const laneHeight = 28;
+  const timelineTop = upperHeight + 38;
+  const height = timelineTop + Math.max(1, lanes.length) * laneHeight + 38;
+  const margin = { top: 12, right: 16, bottom: 28, left: 118 };
   const plotWidth = width - margin.left - margin.right;
-  const plotHeight = height - margin.top - margin.bottom;
+  const plotHeight = upperHeight - margin.top;
   const maxWrites = FIRESTORE_FREE_WRITES_PER_12H;
   const warningWrites = maxWrites * 0.8;
-  const yFor = value => margin.top + plotHeight - (Math.min(value, maxWrites) / maxWrites) * plotHeight;
-  const slotWidth = plotWidth / points.length;
-  const barWidth = Math.max(3, Math.min(18, slotWidth * 0.62));
+  const yFor = value => upperHeight - (Math.min(value, maxWrites) / maxWrites) * plotHeight;
+  const xFor = value => margin.left + ((Math.min(now, Math.max(rangeStart, value)) - rangeStart) / (now - rangeStart)) * plotWidth;
+  const barWidth = Math.max(3, Math.min(18, plotWidth / Math.max(1, rangeDays * 2) * 0.62));
 
   const grid = [0, 2500, 5000, 7500, 10000].map(value => {
     const y = yFor(value);
@@ -2000,33 +2151,95 @@ function renderPresenceUsageChart(rows) {
       <text x="${margin.left - 8}" y="${y + 3}" text-anchor="end" fill="var(--muted)" font-size="9">${value === 0 ? '0' : `${value / 1000}k`}</text>`;
   }).join('');
 
-  const bars = points.map((item, index) => {
-    const x = margin.left + slotWidth * index + (slotWidth - barWidth) / 2;
+  const bars = points.map(item => {
+    const x = xFor(item.bucketStart + PRESENCE_USAGE_FLUSH_MS / 2) - barWidth / 2;
     const y = yFor(item.writes);
-    const barHeight = Math.max(item.writes ? 1 : 0, margin.top + plotHeight - y);
+    const barHeight = Math.max(item.writes ? 1 : 0, upperHeight - y);
     const color = item.writes >= warningWrites ? '#d14343' : 'var(--accent)';
-    const half = item.label.slice(-2);
-    const dateLabel = half === 'H1' ? item.label.slice(5, 10) : '';
-    const label = `<text x="${x + barWidth / 2}" y="${height - 18}" text-anchor="middle" fill="var(--muted)" font-size="8">${half}</text>
-      ${dateLabel ? `<text x="${x + barWidth / 2}" y="${height - 7}" text-anchor="middle" fill="var(--muted)" font-size="8">${dateLabel}</text>` : ''}`;
-    return `<rect x="${x}" y="${margin.top + plotHeight - barHeight}" width="${barWidth}" height="${barHeight}" rx="2" fill="${color}">
+    return `<rect x="${x}" y="${upperHeight - barHeight}" width="${barWidth}" height="${barHeight}" rx="2" fill="${color}">
         <title>${item.label}: ${fmtUsageNumber(item.writes)} writes (${((item.writes / maxWrites) * 100).toFixed(2)}%)</title>
-      </rect>${label}`;
+      </rect>`;
   }).join('');
 
   const warningY = yFor(warningWrites);
-  chart.innerHTML = `<svg viewBox="0 0 ${width} ${height}" width="${width}" role="img" aria-label="12-hour presence writes with 80 percent free quota warning line">
+  const dayMs = 24 * 60 * 60 * 1000;
+  const dateGrid = Array.from({ length: rangeDays + 1 }, (_, index) => {
+    const timestamp = rangeStart + index * dayMs;
+    const x = xFor(timestamp);
+    const showLabel = rangeDays <= 7 || index % (rangeDays <= 30 ? 3 : 7) === 0 || index === rangeDays;
+    return `<line x1="${x}" y1="${upperHeight + 12}" x2="${x}" y2="${height - margin.bottom}" stroke="#E7EDF2" stroke-width="1"/>
+      ${showLabel ? `<text x="${x + 3}" y="${upperHeight + 27}" fill="var(--muted)" font-size="8">${new Date(timestamp).toLocaleDateString([], { month:'2-digit', day:'2-digit' })}</text>` : ''}`;
+  }).join('');
+  const laneSvg = lanes.map(([laneKey, laneSessions], laneIndex) => {
+    const [name, role] = laneKey.split('|');
+    const y = timelineTop + laneIndex * laneHeight;
+    const blocks = laneSessions.map(session => {
+      const start = Math.max(rangeStart, session.startedAt);
+      const end = Math.min(now, session.endedAt);
+      const x = xFor(start);
+      const blockWidth = Math.max(3, xFor(end) - x);
+      const color = session.timedOut ? '#AAB7C4' : '#78B395';
+      const startLabel = new Date(session.startedAt).toLocaleString();
+      const endLabel = new Date(session.endedAt).toLocaleString();
+      return `<rect x="${x}" y="${y + 5}" width="${blockWidth}" height="13" rx="3" fill="${color}">
+        <title>${escHtml(name)} (${escHtml(role.toUpperCase())}) · ${escHtml(startLabel)} → ${escHtml(endLabel)} · Online ${fmtSessionDuration(session.onlineMs)} · Active ${fmtSessionDuration(session.activeMs)} · Idle ${fmtSessionDuration(session.idleMs)}${session.timedOut ? ' · Timed out' : ''}</title>
+      </rect>`;
+    }).join('');
+    return `<text x="${margin.left - 8}" y="${y + 15}" text-anchor="end" fill="var(--text-light)" font-size="9" font-weight="700">${escHtml(name)} · ${escHtml(role.toUpperCase())}</text>
+      <line x1="${margin.left}" y1="${y + 20}" x2="${width - margin.right}" y2="${y + 20}" stroke="var(--border)" stroke-width="1"/>
+      ${blocks}`;
+  }).join('');
+  const noLanes = lanes.length ? '' : `<text x="${margin.left}" y="${timelineTop + 15}" fill="var(--muted)" font-size="10">No user sessions recorded in this range.</text>`;
+
+  chart.innerHTML = `<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="Firestore writes and user login timeline">
     ${grid}
     <line x1="${margin.left}" y1="${warningY}" x2="${width - margin.right}" y2="${warningY}" stroke="#d14343" stroke-width="2" stroke-dasharray="6 5"/>
     <text x="${width - margin.right}" y="${warningY - 5}" text-anchor="end" fill="#d14343" font-size="9" font-weight="700">80% · 8k</text>
     ${bars}
+    <text x="${margin.left}" y="${upperHeight + 8}" fill="var(--text)" font-size="10" font-weight="800">USER ACCESS TIMELINE</text>
+    ${dateGrid}
+    ${laneSvg}
+    ${noLanes}
   </svg>`;
   requestAnimationFrame(() => {
     chart.scrollLeft = chart.scrollWidth;
   });
 }
 
-function renderPresenceUsageStats(rows) {
+function renderPresenceSessionStats(sessions = []) {
+  const normalized = sessions.map(session => normalizePresenceSession(session));
+  const users = new Set(normalized.map(session => session.userKey || session.displayName).filter(Boolean));
+  const onlineMs = normalized.reduce((sum, session) => sum + session.onlineMs, 0);
+  const activeMs = normalized.reduce((sum, session) => sum + Number(session.activeMs || 0), 0);
+  const timedOut = normalized.filter(session => session.timedOut).length;
+  document.getElementById('presenceSessionSummary').innerHTML = `
+    <div class="usage-card"><div class="usage-card-label">Unique users</div><div class="usage-card-value">${users.size}</div><div class="usage-card-note">PM, VIP and Admin accounts</div></div>
+    <div class="usage-card"><div class="usage-card-label">Sessions</div><div class="usage-card-value">${normalized.length}</div><div class="usage-card-note">${timedOut} inferred timeout${timedOut === 1 ? '' : 's'}</div></div>
+    <div class="usage-card"><div class="usage-card-label">Online time</div><div class="usage-card-value">${fmtSessionDuration(onlineMs)}</div><div class="usage-card-note">Login to logout or inferred end</div></div>
+    <div class="usage-card"><div class="usage-card-label">Active time</div><div class="usage-card-value">${fmtSessionDuration(activeMs)}</div><div class="usage-card-note">Accumulated heartbeat activity</div></div>
+  `;
+  const table = document.getElementById('presenceSessionTable');
+  if (!normalized.length) {
+    table.innerHTML = '<div class="usage-empty">No session history has been recorded in this range yet.</div>';
+    return;
+  }
+  table.innerHTML = `<div class="session-table-wrap"><table class="usage-table">
+    <thead><tr><th>User</th><th>Role</th><th>Login</th><th>Logout / inferred end</th><th>Online</th><th>Active</th><th>Idle</th><th>Status</th></tr></thead>
+    <tbody>${normalized.sort((a, b) => b.startedAt - a.startedAt).map(session => `
+      <tr>
+        <td>${escHtml(session.displayName || session.userKey || '-')}</td>
+        <td><span class="session-role">${escHtml(session.role || 'pm')}</span></td>
+        <td>${escHtml(new Date(session.startedAt).toLocaleString())}</td>
+        <td>${escHtml(new Date(session.endedAt).toLocaleString())}</td>
+        <td class="num">${fmtSessionDuration(session.onlineMs)}</td>
+        <td class="num">${fmtSessionDuration(session.activeMs)}</td>
+        <td class="num">${fmtSessionDuration(session.idleMs)}</td>
+        <td><span class="session-state ${session.timedOut ? 'timed-out' : ''}">${session.timedOut ? 'Timed out' : (session.state || 'Closed')}</span></td>
+      </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+function renderPresenceUsageStats(rows, sessions = [], rangeDays = 56) {
   const totals = rows.reduce((acc, row) => {
     acc.active += row.activeWrites || 0;
     acc.idle += row.idleWrites || 0;
@@ -2046,7 +2259,8 @@ function renderPresenceUsageStats(rows) {
     <div class="usage-card"><div class="usage-card-label">Idle / logout</div><div class="usage-card-value">${fmtUsageNumber(totals.idle + totals.logout)}</div><div class="usage-card-note">Idle ${fmtUsageNumber(totals.idle)} · Logout ${fmtUsageNumber(totals.logout)}</div></div>
     <div class="usage-card"><div class="usage-card-label">Free quota used</div><div class="usage-card-value">${usedPct.toFixed(2)}%</div><div class="usage-card-note">${rows.length ? `${fmtUsageNumber(remaining)} writes remaining in loaded buckets` : 'No completed buckets yet'}</div></div>
   `;
-  renderPresenceUsageChart(rows);
+  if (Array.isArray(sessions)) renderPresenceSessionStats(sessions);
+  renderPresenceUsageChart(rows, Array.isArray(sessions) ? sessions : [], rangeDays);
 
   if (!rows.length) {
     document.getElementById('presenceUsageTable').innerHTML = '<div class="usage-empty">No completed 12-hour presence usage buckets yet.</div>';
@@ -2083,6 +2297,8 @@ window.loadPresenceUsageStats = async () => {
   if (currentRole !== 'admin') return;
   const table = document.getElementById('presenceUsageTable');
   table.innerHTML = '<div class="usage-empty">Loading presence usage...</div>';
+  const rangeDays = Number(document.getElementById('presenceRangeDays')?.value || 56);
+  const cutoff = Date.now() - rangeDays * 24 * 60 * 60 * 1000;
   try {
     await flushDuePresenceUsage();
     const snap = await getDocs(collection(db, "presence"));
@@ -2112,7 +2328,23 @@ window.loadPresenceUsageStats = async () => {
     const rows = Object.values(buckets)
       .sort((a, b) => Number(b.bucketStart || 0) - Number(a.bucketStart || 0))
       .slice(0, PRESENCE_USAGE_LOOKBACK_BUCKETS);
-    renderPresenceUsageStats(rows);
+    let sessions = [];
+    try {
+      const sessionSnap = await getDocs(query(
+        collection(db, PRESENCE_SESSION_COLLECTION),
+        where('startedAt', '>=', cutoff)
+      ));
+      sessions = sessionSnap.docs.map(sessionDoc => ({ id: sessionDoc.id, ...sessionDoc.data() }));
+    } catch (sessionError) {
+      console.warn('Presence session history unavailable:', sessionError);
+      document.getElementById('presenceSessionSummary').innerHTML = '';
+      document.getElementById('presenceSessionTable').innerHTML =
+        `<div class="usage-empty">${sessionError?.code === 'permission-denied'
+          ? 'Session history requires Firestore access for the presenceSessions collection.'
+          : 'Session history could not be loaded. Existing write usage remains available.'}</div>`;
+      sessions = null;
+    }
+    renderPresenceUsageStats(rows, sessions, rangeDays);
   } catch (error) {
     console.error("Presence usage load failed:", error);
     const message = error?.code === 'permission-denied'
@@ -2138,7 +2370,10 @@ const pingPresence = () => {
     status: 'active',
     lastActive: Date.now()
   }, { merge: true })
-    .then(() => queuePresenceUsage('active'))
+    .then(() => {
+      queuePresenceUsage('active');
+      trackPresenceSession('active');
+    })
     .catch(e => console.warn("Presence ping failed:", e));
 };
 
@@ -2162,8 +2397,15 @@ function updatePresenceUI() {
 }
 
 function startPresenceSystem() {
+  startPresenceSession();
   pingPresence();
   heartbeatInterval = setInterval(pingPresence, PRESENCE_HEARTBEAT_MS);
+  presenceSessionHeartbeatInterval = setInterval(
+    () => {
+      if (isIdle) trackPresenceSession('idle');
+    },
+    PRESENCE_HEARTBEAT_MS
+  );
   startPresenceUsageFlushTimer();
 
   ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart'].forEach(evt => {
@@ -2183,6 +2425,7 @@ function startPresenceSystem() {
 
 function stopPresenceSystem() {
   if (heartbeatInterval) clearInterval(heartbeatInterval);
+  if (presenceSessionHeartbeatInterval) clearInterval(presenceSessionHeartbeatInterval);
   if (presenceUITimer) clearInterval(presenceUITimer);
   if (idleTimer) clearTimeout(idleTimer);
   if (presenceUnsub) presenceUnsub();
@@ -2196,6 +2439,8 @@ function stopPresenceSystem() {
       .then(() => queuePresenceUsage('logout'))
       .catch(()=>{});
   }
+  closePresenceSession('logout');
+  presenceSessionHeartbeatInterval = null;
   stopPresenceUsageFlushTimer();
 }
 
@@ -2231,6 +2476,7 @@ window.addEventListener('beforeunload', () => {
   if (currentUser) {
     setDoc(doc(db, "presence", getEmailKey(currentUser)), { lastActive: 0 }, { merge: true })
       .then(() => queuePresenceUsage('logout'));
+    closePresenceSession('page-close');
   }
 });
 
@@ -2353,6 +2599,7 @@ onAuthStateChanged(auth, async user => {
       weeksUnsub();
       weeksUnsub = null;
     }
+    resetPresenceSessionState();
     currentUser = null;
     currentRole = 'pm';
     stopPresenceUsageFlushTimer();
