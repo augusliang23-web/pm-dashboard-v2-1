@@ -682,7 +682,31 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 .proto-section-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
 .proto-section-title { font-size:13px; font-weight:800; color:var(--text); }
 .proto-section-note { font-size:11px; color:var(--muted); line-height:1.45; }
+.resource-budget-editor { margin-top:20px; border-top:1px solid var(--border); border-bottom:1px solid var(--border); background:#fff; }
+.resource-budget-editor-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px 0 12px; }
+.resource-draft-pill { flex:0 0 auto; min-width:74px; padding:5px 8px; border:1px solid var(--border2); border-radius:6px; color:var(--text-light); background:var(--s2); font-size:10px; font-weight:800; text-align:center; }
+.resource-trust-banner { padding:11px 13px; border-left:3px solid var(--yellow); background:#FFF9E9; color:var(--text-light); font-size:11px; line-height:1.5; }
+.resource-editor-panel { border-top:1px solid var(--border); background:#fff; }
+.resource-editor-panel summary { display:grid; grid-template-columns:28px minmax(0,1fr) 108px; align-items:center; gap:10px; padding:14px 2px; cursor:pointer; list-style:none; }
+.resource-editor-panel summary::-webkit-details-marker { display:none; }
+.resource-panel-index { width:24px; height:24px; border-radius:50%; display:grid; place-items:center; background:var(--s3); color:var(--text-light); font:800 10px 'IBM Plex Mono', monospace; }
+.resource-panel-heading { min-width:0; display:flex; flex-direction:column; gap:2px; }
+.resource-panel-heading strong { font-size:12px; color:var(--text); }
+.resource-panel-heading small { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:10px; color:var(--muted); }
+.resource-state-badge { min-width:108px; padding:5px 7px; border:1px solid var(--border); border-radius:6px; text-align:center; font-size:9px; font-weight:800; text-transform:uppercase; }
+.resource-state-badge.confirmed { color:var(--green); border-color:#B9DDCD; background:#F0F8F4; }
+.resource-state-badge.unconfirmed, .resource-state-badge.draft { color:#9A7429; border-color:#E7D49B; background:#FFF9E9; }
+.resource-state-badge.unavailable { color:var(--muted); background:var(--s2); }
+.resource-panel-body { padding:4px 0 18px 38px; }
+.resource-list-head { min-height:40px; display:flex; align-items:center; justify-content:space-between; gap:12px; margin:12px 0 8px; }
+.resource-check { display:flex; align-items:center; gap:7px; margin:10px 0; color:var(--text-light); font-size:11px; }
+.resource-check input { accent-color:var(--accent); }
+.resource-validation { display:none; margin-top:10px; padding:10px 12px; border-left:3px solid var(--yellow); background:#FFF9E9; color:var(--text-light); font-size:11px; line-height:1.5; }
+.resource-validation.show { display:block; }
+.resource-validation.error { border-color:var(--red); background:#FFF2F2; color:#8A4848; }
+.resource-panel-actions { display:flex; justify-content:flex-end; margin-top:12px; }
 .team-row, .budget-plan-row, .budget-actual-row { display:grid; gap:8px; align-items:center; margin-bottom:8px; }
+.team-row > *, .budget-plan-row > *, .budget-actual-row > * { min-width:0; }
 .team-row { grid-template-columns:1.2fr 1fr .55fr 32px; }
 .budget-plan-row { grid-template-columns:.8fr 1fr .8fr .8fr 32px; }
 .budget-actual-row { grid-template-columns:.8fr 1fr .8fr .8fr 1.1fr 32px; }
@@ -757,6 +781,12 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
   .budget-tabs { align-items:stretch; flex-direction:column; }
   .resource-row, .budget-row { grid-template-columns:1fr; }
   .rb-number { text-align:left; }
+  .resource-editor-panel summary { grid-template-columns:28px minmax(0,1fr); }
+  .resource-state-badge { grid-column:2; justify-self:start; }
+  .resource-panel-body { padding-left:0; }
+  .resource-list-head, .resource-budget-editor-head { align-items:flex-start; flex-direction:column; }
+  .resource-panel-body .proto-section-head { align-items:flex-start; flex-direction:column; }
+  .resource-panel-actions .btn { width:100%; }
 }
 .copilot-prompt-box { font-family:'IBM Plex Mono', monospace; font-size:11px; line-height:1.55; min-height:220px; background:#FBFDFF; }
 .ai-assist-box { background:var(--s2); border:1px solid var(--border); border-radius:8px; padding:18px; margin-bottom:18px; }
@@ -1513,72 +1543,92 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
         <button class="btn btn-ghost" onclick="addQuarterlyMilestoneRow()" style="width:100%; margin-top:10px;">+ Add Quarterly Milestone</button>
       </div>
 
-      <section class="proto-editor-section">
-        <div class="proto-section-head">
+      <section class="resource-budget-editor">
+        <div class="resource-budget-editor-head">
           <div>
-            <div class="proto-section-title">Team & Effort</div>
-            <div class="proto-section-note">Role can be selected from saved roles or typed as a new role.</div>
+            <div class="proto-section-title">Resource & Budget</div>
+            <div class="proto-section-note">Update what is known now. Missing information never blocks project saving.</div>
           </div>
-          <button class="btn btn-ghost" onclick="addTeamMemberRow()">+ Add Member</button>
+          <span class="resource-draft-pill">Draft-safe</span>
         </div>
-        <div id="teamMemberContainer"></div>
-      </section>
+        <div class="resource-trust-banner">
+          <strong>Draft data is saved but excluded from Overview KPIs.</strong>
+          Confirm each section independently when its information is reliable.
+        </div>
 
-      <section class="proto-editor-section budget-control-panel">
-        <div class="budget-control-top">
-          <div class="budget-control-settings">
-            <div class="proto-section-title">Budget Control</div>
-            <div class="proto-section-note">Set the budget rule once, then manage monthly plan and actual spend below.</div>
-            <div class="budget-mode-control">
-              <label class="budget-mode-option"><input type="radio" name="budgetMode" value="manual" onchange="updateBudgetLinkSummary()"> Manual budget ceiling</label>
-              <label class="budget-mode-option"><input type="radio" name="budgetMode" value="auto" onchange="updateBudgetLinkSummary()"> Auto from monthly plan</label>
+        <details class="resource-editor-panel" id="teamEditorPanel" open>
+          <summary>
+            <span class="resource-panel-index">1</span>
+            <span class="resource-panel-heading"><strong>Team allocation</strong><small id="teamSectionSummary">No confirmed allocation</small></span>
+            <span class="resource-state-badge unconfirmed" id="teamStateBadge">Not confirmed</span>
+          </summary>
+          <div class="resource-panel-body">
+            <div class="proto-section-head">
+              <div class="proto-section-note">Role can be selected from saved roles or typed as a new role.</div>
+              <button class="btn btn-ghost" onclick="addTeamMemberRow()">+ Add Member</button>
             </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-              <div class="fg"><label class="fl">Budget Currency</label><select class="fs" id="pe_budget_currency"></select></div>
-              <div class="fg"><label class="fl">Total Estimated Budget</label><input class="fi" type="number" id="pe_budget_total" min="0" step="1000"></div>
+            <div id="teamMemberContainer"></div>
+            <label class="resource-check"><input type="checkbox" id="pe_team_not_required" onchange="markResourceSectionDirty('team')"> No allocation information required for this project</label>
+            <div class="resource-validation" id="teamValidation"></div>
+            <div class="resource-panel-actions"><button class="btn btn-primary" type="button" onclick="confirmResourceSection('team')">Confirm team allocation</button></div>
+          </div>
+        </details>
+
+        <details class="resource-editor-panel" id="budgetPlanEditorPanel">
+          <summary>
+            <span class="resource-panel-index">2</span>
+            <span class="resource-panel-heading"><strong>Budget planning</strong><small id="budgetPlanSectionSummary">No confirmed plan</small></span>
+            <span class="resource-state-badge unconfirmed" id="budgetPlanStateBadge">Not confirmed</span>
+          </summary>
+          <div class="resource-panel-body">
+            <div class="budget-control-top">
+              <div class="budget-control-settings">
+                <div class="proto-section-title">Budget rule</div>
+                <div class="budget-mode-control">
+                  <label class="budget-mode-option"><input type="radio" name="budgetMode" value="manual" onchange="markResourceSectionDirty('budgetPlan'); updateBudgetLinkSummary()"> Manual budget ceiling</label>
+                  <label class="budget-mode-option"><input type="radio" name="budgetMode" value="auto" onchange="markResourceSectionDirty('budgetPlan'); updateBudgetLinkSummary()"> Auto from monthly plan</label>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                  <div class="fg"><label class="fl">Budget Currency</label><select class="fs" id="pe_budget_currency"></select></div>
+                  <div class="fg"><label class="fl">Total Estimated Budget</label><input class="fi" type="number" id="pe_budget_total" min="0" step="1000"></div>
+                </div>
+                <label class="resource-check" id="overBudgetAckWrap" style="display:none;"><input type="checkbox" id="pe_over_budget_ack" onchange="markResourceSectionDirty('budgetPlan')"> Over budget plan acknowledged</label>
+              </div>
+              <div class="budget-control-summary">
+                <div class="proto-section-title">Budget linkage</div>
+                <div class="budget-link-summary">
+                  <div class="budget-link-tile"><div class="budget-link-label">Monthly Plan Sum</div><div class="budget-link-value" id="pe_plan_sum">-</div></div>
+                  <div class="budget-link-tile"><div class="budget-link-label">Unallocated / Over</div><div class="budget-link-value" id="pe_budget_gap">-</div></div>
+                  <div class="budget-link-tile"><div class="budget-link-label">Coverage</div><div class="budget-link-value" id="pe_budget_coverage">-</div></div>
+                </div>
+                <div class="budget-link-message" id="pe_budget_message">Monthly plan will be compared with total budget.</div>
+              </div>
             </div>
+            <div class="resource-list-head"><strong>Monthly plan</strong><button class="btn btn-ghost" onclick="addBudgetPlanRow()">+ Add Plan</button></div>
+            <div class="budget-table-head plan"><span>Month</span><span>Category</span><span>Currency</span><span>Planned Amount</span><span></span></div>
+            <div id="budgetPlanContainer"></div>
+            <div class="resource-validation" id="budgetPlanValidation"></div>
+            <div class="resource-panel-actions"><button class="btn btn-primary" type="button" onclick="confirmResourceSection('budgetPlan')">Confirm budget plan</button></div>
           </div>
-          <div class="budget-control-summary">
-            <div class="proto-section-title">Budget Linkage</div>
-            <div class="proto-section-note">Shows whether the monthly plan is fully allocated against the total budget.</div>
-            <div class="budget-link-summary">
-              <div class="budget-link-tile">
-                <div class="budget-link-label">Monthly Plan Sum</div>
-                <div class="budget-link-value" id="pe_plan_sum">-</div>
-              </div>
-              <div class="budget-link-tile">
-                <div class="budget-link-label">Unallocated / Over</div>
-                <div class="budget-link-value" id="pe_budget_gap">-</div>
-              </div>
-              <div class="budget-link-tile">
-                <div class="budget-link-label">Coverage</div>
-                <div class="budget-link-value" id="pe_budget_coverage">-</div>
-              </div>
+        </details>
+
+        <details class="resource-editor-panel" id="budgetActualEditorPanel">
+          <summary>
+            <span class="resource-panel-index">3</span>
+            <span class="resource-panel-heading"><strong>Actual spend</strong><small id="budgetActualSectionSummary">No actual spend available</small></span>
+            <span class="resource-state-badge unavailable" id="budgetActualStateBadge">Not available</span>
+          </summary>
+          <div class="resource-panel-body">
+            <div class="resource-list-head">
+              <div class="proto-section-note">Leave this section as Not available until actual spend is received.</div>
+              <button class="btn btn-ghost" onclick="addBudgetActualRow()">+ Add Actual</button>
             </div>
-            <div class="budget-link-message" id="pe_budget_message">Monthly plan will be compared with total budget.</div>
+            <div class="budget-table-head actual"><span>Month</span><span>Category</span><span>Currency</span><span>Actual Amount</span><span>Note</span><span></span></div>
+            <div id="budgetActualContainer"></div>
+            <div class="resource-validation" id="budgetActualValidation"></div>
+            <div class="resource-panel-actions"><button class="btn btn-primary" type="button" onclick="confirmResourceSection('budgetActual')">Confirm actual spend</button></div>
           </div>
-        </div>
-        <div class="budget-tabs">
-          <div class="budget-tab-buttons">
-            <button type="button" class="budget-tab-btn active" id="budgetPlanTabBtn" onclick="setBudgetTab('plan')">Monthly Plan</button>
-            <button type="button" class="budget-tab-btn" id="budgetActualTabBtn" onclick="setBudgetTab('actual')">Actual Spend</button>
-          </div>
-          <button class="btn btn-ghost budget-tab-action" id="budgetPlanAddBtn" onclick="addBudgetPlanRow()">+ Add Plan</button>
-          <button class="btn btn-ghost budget-tab-action" id="budgetActualAddBtn" onclick="addBudgetActualRow()" style="display:none;">+ Add Actual</button>
-        </div>
-        <div class="budget-tab-pane active" id="budgetPlanPane">
-          <div class="budget-table-head plan"><span>Month</span><span>Category</span><span>Currency</span><span>Planned Amount</span><span></span></div>
-          <div id="budgetPlanContainer"></div>
-        </div>
-        <div class="budget-tab-pane" id="budgetActualPane">
-          <div class="budget-table-head actual"><span>Month</span><span>Category</span><span>Currency</span><span>Actual Amount</span><span>Note</span><span></span></div>
-          <div id="budgetActualContainer"></div>
-        </div>
-      </section>
-          </div>
-          <button class="btn btn-ghost" onclick="addBudgetActualRow()">+ Add Actual</button>
-        </div>
-        <div id="budgetActualContainer"></div>
+        </details>
       </section>
       
       <div style="margin-top:24px; padding-top:16px; border-top:1px dashed var(--border);" id="adminProjActions">
@@ -1723,6 +1773,8 @@ let isOverview = false;
 const isVipPerspective = () => currentRole === 'vip' || (currentRole === 'admin' && isAdminVipPreview);
 let editingProjCode = null;
 let isCreatingNew = false;
+let editorResourceStatus = normalizeResourceBudgetStatus({});
+let resourceEditorHydrating = false;
 let PM_LIST = []; 
 let jumpToLatestOnNextRender = false;
 let overviewCurrency = 'USD';
@@ -2927,14 +2979,129 @@ function demoTeamMembers(project, index = 0) {
   ];
 }
 
+/* resource-budget-status:start */
+function normalizeResourceBudgetStatus(project = {}) {
+  const status = project.dataStatus || {};
+  const normalizeState = (value, allowed, fallback) => allowed.includes(value) ? value : fallback;
+  return {
+    team: {
+      state: normalizeState(status.team?.state, ['unconfirmed', 'confirmed'], 'unconfirmed'),
+      confirmedAt: Number(status.team?.confirmedAt || 0) || null,
+      confirmedBy: status.team?.confirmedBy || null,
+      noAllocationRequired: status.team?.noAllocationRequired === true
+    },
+    budgetPlan: {
+      state: normalizeState(status.budgetPlan?.state, ['unconfirmed', 'confirmed'], 'unconfirmed'),
+      confirmedAt: Number(status.budgetPlan?.confirmedAt || 0) || null,
+      confirmedBy: status.budgetPlan?.confirmedBy || null,
+      overBudgetAcknowledged: status.budgetPlan?.overBudgetAcknowledged === true
+    },
+    budgetActual: {
+      state: normalizeState(status.budgetActual?.state, ['not-available', 'draft', 'confirmed'], 'not-available'),
+      confirmedAt: Number(status.budgetActual?.confirmedAt || 0) || null,
+      confirmedBy: status.budgetActual?.confirmedBy || null
+    }
+  };
+}
+
+function validateTeamAllocation(members = [], noAllocationRequired = false) {
+  const errors = [];
+  const names = new Set();
+  if (!members.length && !noAllocationRequired) errors.push('Add at least one member or mark allocation information as not required.');
+  members.forEach((member, index) => {
+    const name = String(member.name || '').trim();
+    const role = String(member.roleName || member.role || '').trim();
+    const effort = Number(member.effortPct ?? member.effort);
+    if (!name || !role || !Number.isFinite(effort) || effort < 0 || effort > 100) {
+      errors.push(`Member ${index + 1} requires name, role and effort from 0 to 100%.`);
+    }
+    const key = name.toLowerCase();
+    if (key && names.has(key)) errors.push(`Duplicate member: ${name}.`);
+    if (key) names.add(key);
+  });
+  return { errors, warnings: [] };
+}
+
+function validateBudgetPlan(budget = {}, overBudgetAcknowledged = false) {
+  const errors = [];
+  const warnings = [];
+  const plans = Array.isArray(budget.monthlyPlans) ? budget.monthlyPlans : [];
+  plans.forEach((item, index) => {
+    if (!item.month || !String(item.categoryName || item.category || '').trim() ||
+        !item.currency || !(Number(item.amount) > 0)) {
+      errors.push(`Plan ${index + 1} requires month, category, currency and an amount greater than zero.`);
+    }
+  });
+  const total = Number(budget.totalEstimated || 0);
+  const planSum = plans.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  if (budget.mode === 'auto' && !plans.length) errors.push('Auto budget requires at least one monthly plan.');
+  if (budget.mode !== 'auto' && !(total > 0)) errors.push('Manual budget ceiling must be greater than zero.');
+  if (budget.mode !== 'auto' && planSum > total && !overBudgetAcknowledged) {
+    errors.push('Monthly plan exceeds the manual budget ceiling. Acknowledge the over-plan before confirming.');
+  }
+  if (budget.mode !== 'auto' && total > planSum) warnings.push('Part of the budget is not allocated to a monthly plan.');
+  return { errors, warnings };
+}
+
+function validateActualSpend(actuals = [], plannedCategories = []) {
+  const errors = [];
+  const warnings = [];
+  const planned = new Set(plannedCategories.map(value => String(value).toLowerCase()));
+  actuals.forEach((item, index) => {
+    const category = String(item.categoryName || item.category || '').trim();
+    if (!item.month || !category || !item.currency || !(Number(item.amount) > 0)) {
+      errors.push(`Actual ${index + 1} requires month, category, currency and an amount greater than zero.`);
+    } else if (planned.size && !planned.has(category.toLowerCase())) {
+      warnings.push(`Actual ${index + 1} is not represented in the monthly plan.`);
+    }
+  });
+  return { errors, warnings };
+}
+
+function getConfirmedResourceProjects(projects = []) {
+  return projects.filter(project => normalizeResourceBudgetStatus(project).team.state === 'confirmed');
+}
+
+function getConfirmedBudgetPlanProjects(projects = []) {
+  return projects.filter(project => normalizeResourceBudgetStatus(project).budgetPlan.state === 'confirmed');
+}
+
+function getConfirmedBudgetActualProjects(projects = []) {
+  return projects.filter(project => normalizeResourceBudgetStatus(project).budgetActual.state === 'confirmed');
+}
+
+function getResourceBudgetCoverage(projects = []) {
+  const statuses = projects.map(normalizeResourceBudgetStatus);
+  return {
+    total: projects.length,
+    teamConfirmed: statuses.filter(status => status.team.state === 'confirmed').length,
+    teamPending: statuses.filter(status => status.team.state !== 'confirmed').length,
+    planConfirmed: statuses.filter(status => status.budgetPlan.state === 'confirmed').length,
+    planPending: statuses.filter(status => status.budgetPlan.state !== 'confirmed').length,
+    actualConfirmed: statuses.filter(status => status.budgetActual.state === 'confirmed').length,
+    actualPending: statuses.filter(status => status.budgetActual.state === 'draft').length,
+    actualUnavailable: statuses.filter(status => status.budgetActual.state === 'not-available').length
+  };
+}
+/* resource-budget-status:end */
+
 function enrichProjectPrototype(project, index = 0) {
+  const isPrototypeSeed = /^DEMO-/i.test(project.code || '');
   const budget = project.budget && (project.budget.totalEstimated || project.budget.monthlyPlans?.length || project.budget.actuals?.length)
     ? project.budget
-    : demoProjectFinance(project, index);
+    : isPrototypeSeed
+      ? demoProjectFinance(project, index)
+      : { mode: 'manual', currency: 'USD', totalEstimated: 0, monthlyPlans: [], actuals: [] };
   const teamMembers = Array.isArray(project.teamMembers) && project.teamMembers.length
     ? project.teamMembers
-    : demoTeamMembers(project, index);
-  return { ...project, budget, teamMembers };
+    : isPrototypeSeed ? demoTeamMembers(project, index) : [];
+  const hasStoredData = Boolean(project.dataStatus);
+  const dataStatus = hasStoredData ? normalizeResourceBudgetStatus(project) : isPrototypeSeed ? {
+    team: { state: 'confirmed', confirmedAt: Date.now(), confirmedBy: 'Prototype seed', noAllocationRequired: false },
+    budgetPlan: { state: 'confirmed', confirmedAt: Date.now(), confirmedBy: 'Prototype seed', overBudgetAcknowledged: false },
+    budgetActual: { state: 'confirmed', confirmedAt: Date.now(), confirmedBy: 'Prototype seed' }
+  } : normalizeResourceBudgetStatus({});
+  return { ...project, budget, teamMembers, dataStatus };
 }
 
 function enrichProjectsPrototype(projects = []) {
@@ -3165,12 +3332,30 @@ function buildResourceSummary(projects = []) {
   return [...map.values()].map(item => ({ ...item, roles: [...item.roles] })).sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
 }
 
-function buildBudgetSummary(projects = [], displayCurrency = overviewCurrency) {
-  const projectRows = projects.map(p => ({ project: p, ...projectBudgetTotals(p, displayCurrency) })).sort((a, b) => b.usedPct - a.usedPct);
+function buildBudgetSummary(planProjects = [], actualProjects = planProjects, displayCurrency = overviewCurrency) {
+  const planKeys = new Set(planProjects.map(p => p.code || p.name));
+  const actualKeys = new Set(actualProjects.map(p => p.code || p.name));
+  const allProjects = [...new Map([...planProjects, ...actualProjects].map(p => [p.code || p.name, p])).values()];
+  const projectRows = allProjects.map(p => {
+    const row = projectBudgetTotals(p, displayCurrency);
+    const key = p.code || p.name;
+    const total = planKeys.has(key) ? row.total : 0;
+    const planned = planKeys.has(key) ? row.planned : 0;
+    const actual = actualKeys.has(key) ? row.actual : 0;
+    return {
+      project: p,
+      total,
+      planned,
+      actual,
+      variance: actual - planned,
+      planGap: total - planned,
+      usedPct: total ? Math.round((actual / total) * 100) : 0
+    };
+  }).sort((a, b) => b.usedPct - a.usedPct);
   const total = projectRows.reduce((sum, row) => sum + row.total, 0);
   const planned = projectRows.reduce((sum, row) => sum + row.planned, 0);
   const actual = projectRows.reduce((sum, row) => sum + row.actual, 0);
-  return { total, planned, actual, variance: actual - planned, planGap: total - planned, plannedCoverage: total ? Math.round((planned / total) * 100) : 0, usedPct: total ? Math.round((actual / total) * 100) : 0, projectRows, categories: budgetCategoryTotals(projects, displayCurrency) };
+  return { total, planned, actual, variance: actual - planned, planGap: total - planned, plannedCoverage: total ? Math.round((planned / total) * 100) : 0, usedPct: total ? Math.round((actual / total) * 100) : 0, projectRows, categories: budgetCategoryTotals(actualProjects, displayCurrency) };
 }
 
 function allocationClass(pct) {
@@ -3180,8 +3365,12 @@ function allocationClass(pct) {
 }
 
 function renderResourceBudgetOverview(projects) {
-  const resources = buildResourceSummary(projects);
-  const budget = buildBudgetSummary(projects, overviewCurrency);
+  const coverage = getResourceBudgetCoverage(projects);
+  const resourceProjects = getConfirmedResourceProjects(projects);
+  const planProjects = getConfirmedBudgetPlanProjects(projects);
+  const actualProjects = getConfirmedBudgetActualProjects(projects);
+  const resources = buildResourceSummary(resourceProjects);
+  const budget = buildBudgetSummary(planProjects, actualProjects, overviewCurrency);
   const overloaded = resources.filter(r => r.total > 100).length;
   const under = resources.filter(r => r.total < 50).length;
   const avg = resources.length ? Math.round(resources.reduce((sum, r) => sum + r.total, 0) / resources.length) : 0;
@@ -3194,7 +3383,7 @@ function renderResourceBudgetOverview(projects) {
           <div class="exec-eyebrow">Resource Overview</div>
           <div class="exec-panel-title">Team effort allocation</div>
         </div>
-        <div class="exec-panel-note">${resources.length} members · ${overloaded} overloaded</div>
+        <div class="exec-panel-note">${coverage.teamConfirmed} confirmed · ${coverage.teamPending} pending</div>
       </div>
       <div class="rb-kpi-grid">
         <div class="rb-kpi"><div class="rb-kpi-label">Overloaded</div><div class="rb-kpi-value red">${overloaded}</div></div>
@@ -3221,7 +3410,8 @@ function renderResourceBudgetOverview(projects) {
           <div class="exec-eyebrow">Budget Overview</div>
           <div class="exec-panel-title">Budget vs actual</div>
         </div>
-        <div class="resource-budget-toolbar">
+      <div class="resource-budget-toolbar">
+          <span class="exec-panel-note">${coverage.planConfirmed} plans confirmed · ${coverage.actualConfirmed} actuals confirmed · ${coverage.planPending} pending</span>
           <span class="exec-panel-note">Display</span>
           <select class="currency-select" onchange="setOverviewCurrency(this.value)">${currencyOptions(overviewCurrency)}</select>
         </div>
@@ -4971,6 +5161,108 @@ function getSelectedBudgetMode() {
   return document.querySelector('input[name="budgetMode"]:checked')?.value || 'manual';
 }
 
+function getEditorBudget() {
+  const currency = document.getElementById('pe_budget_currency')?.value || 'USD';
+  return {
+    mode: getSelectedBudgetMode(),
+    currency,
+    totalEstimated: Number(document.getElementById('pe_budget_total')?.value || 0),
+    monthlyPlans: collectBudgetRows('.budget-plan-row').map(item => ({ ...item, currency: item.currency || currency })),
+    actuals: collectBudgetRows('.budget-actual-row').map(item => ({ ...item, currency: item.currency || currency }))
+  };
+}
+
+function sectionStateLabel(section, state) {
+  if (state === 'confirmed') return 'Confirmed';
+  if (state === 'draft') return 'Draft';
+  if (state === 'not-available') return 'Not available';
+  return 'Not confirmed';
+}
+
+function setResourceValidation(section, result = { errors: [], warnings: [] }) {
+  const target = document.getElementById(`${section}Validation`);
+  if (!target) return;
+  const items = [...(result.errors || []), ...(result.warnings || [])];
+  target.className = `resource-validation${items.length ? ' show' : ''}${result.errors?.length ? ' error' : ''}`;
+  target.innerHTML = items.map(item => `<div>• ${escHtml(item)}</div>`).join('');
+}
+
+window.renderResourceSectionState = () => {
+  const config = {
+    team: { badge: 'teamStateBadge', summary: 'teamSectionSummary' },
+    budgetPlan: { badge: 'budgetPlanStateBadge', summary: 'budgetPlanSectionSummary' },
+    budgetActual: { badge: 'budgetActualStateBadge', summary: 'budgetActualSectionSummary' }
+  };
+  Object.entries(config).forEach(([section, ids]) => {
+    const state = editorResourceStatus[section].state;
+    const badge = document.getElementById(ids.badge);
+    if (badge) {
+      badge.textContent = sectionStateLabel(section, state);
+      badge.className = `resource-state-badge ${state}`;
+    }
+  });
+  const members = collectTeamMembers();
+  const budget = getEditorBudget();
+  const teamSummary = document.getElementById('teamSectionSummary');
+  const planSummary = document.getElementById('budgetPlanSectionSummary');
+  const actualSummary = document.getElementById('budgetActualSectionSummary');
+  if (teamSummary) teamSummary.textContent = members.length ? `${members.length} member${members.length === 1 ? '' : 's'} entered` : 'No allocation entered';
+  if (planSummary) planSummary.textContent = budget.monthlyPlans.length ? `${budget.monthlyPlans.length} monthly plan item${budget.monthlyPlans.length === 1 ? '' : 's'}` : 'No monthly plan entered';
+  if (actualSummary) actualSummary.textContent = budget.actuals.length ? `${budget.actuals.length} actual spend item${budget.actuals.length === 1 ? '' : 's'}` : 'No actual spend available';
+};
+
+window.markResourceSectionDirty = section => {
+  if (resourceEditorHydrating || !editorResourceStatus[section]) return;
+  editorResourceStatus[section] = {
+    ...editorResourceStatus[section],
+    state: section === 'budgetActual'
+      ? (collectBudgetRows('.budget-actual-row').length ? 'draft' : 'not-available')
+      : 'unconfirmed',
+    confirmedAt: null,
+    confirmedBy: null
+  };
+  setResourceValidation(section);
+  renderResourceSectionState();
+};
+
+window.confirmResourceSection = section => {
+  const budget = getEditorBudget();
+  let result;
+  if (section === 'team') {
+    result = validateTeamAllocation(collectTeamMembers(), document.getElementById('pe_team_not_required')?.checked);
+  } else if (section === 'budgetPlan') {
+    const acknowledged = document.getElementById('pe_over_budget_ack')?.checked === true;
+    result = validateBudgetPlan(budget, acknowledged);
+    editorResourceStatus.budgetPlan.overBudgetAcknowledged = acknowledged;
+  } else {
+    if (!budget.actuals.length) {
+      editorResourceStatus.budgetActual = { state: 'not-available', confirmedAt: null, confirmedBy: null };
+      setResourceValidation(section, { errors: [], warnings: ['No actual spend is available. This is a valid state and remains excluded from spend KPIs.'] });
+      renderResourceSectionState();
+      return;
+    }
+    result = validateActualSpend(budget.actuals, budget.monthlyPlans.map(item => item.categoryName));
+  }
+  setResourceValidation(section, result);
+  if (result.errors.length) {
+    document.getElementById(`${section}EditorPanel`)?.setAttribute('open', '');
+    return;
+  }
+  editorResourceStatus[section] = {
+    ...editorResourceStatus[section],
+    state: 'confirmed',
+    confirmedAt: Date.now(),
+    confirmedBy: currentUser?.email || 'Unknown'
+  };
+  if (section === 'team') editorResourceStatus.team.noAllocationRequired = document.getElementById('pe_team_not_required')?.checked === true;
+  renderResourceSectionState();
+  showSaveToast(`${sectionStateLabel(section, 'confirmed')} for Overview`);
+};
+
+function collectResourceBudgetStatus() {
+  return JSON.parse(JSON.stringify(editorResourceStatus));
+}
+
 window.setBudgetTab = (tab = 'plan') => {
   const isActual = tab === 'actual';
   document.getElementById('budgetPlanPane')?.classList.toggle('active', !isActual);
@@ -5016,6 +5308,8 @@ window.updateBudgetLinkSummary = () => {
   document.getElementById('pe_budget_gap').className = `budget-link-value ${gapClass}`;
   document.getElementById('pe_budget_coverage').textContent = `${coverage}%`;
   document.getElementById('pe_budget_coverage').className = `budget-link-value ${coverageClass}`;
+  const ackWrap = document.getElementById('overBudgetAckWrap');
+  if (ackWrap) ackWrap.style.display = mode === 'manual' && gap < 0 ? 'flex' : 'none';
   const message = mode === 'auto'
     ? 'Auto mode: total estimated budget follows the monthly planned spend sum.'
     : gap < 0
@@ -5024,6 +5318,7 @@ window.updateBudgetLinkSummary = () => {
         ? 'Manual mode: remaining budget is not allocated to monthly plan yet.'
         : 'Manual mode: monthly plan fully matches the total budget.';
   document.getElementById('pe_budget_message').textContent = message;
+  renderResourceSectionState();
 };
 
 window.addTeamMemberRow = (member = {}) => {
@@ -5035,9 +5330,11 @@ window.addTeamMemberRow = (member = {}) => {
     <input class="fi team-name" value="${escHtml(member.name || '')}" placeholder="Name">
     <input class="fi team-role" list="teamRoleOptions" value="${escHtml(member.roleName || member.role || '')}" placeholder="Role">
     <input class="fi team-effort" type="number" min="0" max="200" value="${Number(member.effortPct || member.effort || 0)}" placeholder="Effort %">
-    <button class="row-delete" onclick="this.parentElement.remove();" title="Delete member">&#128465;&#65039;</button>
+    <button class="row-delete" onclick="this.parentElement.remove(); markResourceSectionDirty('team');" title="Delete member">&#128465;&#65039;</button>
   `;
+  row.addEventListener('input', () => markResourceSectionDirty('team'));
   container.appendChild(row);
+  markResourceSectionDirty('team');
 };
 
 window.addBudgetPlanRow = (item = {}) => {
@@ -5050,9 +5347,12 @@ window.addBudgetPlanRow = (item = {}) => {
     <input class="fi budget-category" list="budgetCategoryOptions" value="${escHtml(item.categoryName || item.category || 'NRE')}" placeholder="Category">
     <select class="fs budget-currency" onchange="updateBudgetLinkSummary()">${currencyOptions(item.currency || document.getElementById('pe_budget_currency')?.value || 'USD')}</select>
     <input class="fi budget-amount" type="number" min="0" step="100" value="${Number(item.amount || 0)}" placeholder="Amount" oninput="updateBudgetLinkSummary()">
-    <button class="row-delete" onclick="this.parentElement.remove(); updateBudgetLinkSummary();" title="Delete plan">&#128465;&#65039;</button>
+    <button class="row-delete" onclick="this.parentElement.remove(); markResourceSectionDirty('budgetPlan'); updateBudgetLinkSummary();" title="Delete plan">&#128465;&#65039;</button>
   `;
+  row.addEventListener('input', () => markResourceSectionDirty('budgetPlan'));
+  row.addEventListener('change', () => markResourceSectionDirty('budgetPlan'));
   container.appendChild(row);
+  markResourceSectionDirty('budgetPlan');
   updateBudgetLinkSummary();
 };
 
@@ -5067,9 +5367,12 @@ window.addBudgetActualRow = (item = {}) => {
     <select class="fs budget-currency">${currencyOptions(item.currency || document.getElementById('pe_budget_currency')?.value || 'USD')}</select>
     <input class="fi budget-amount" type="number" min="0" step="100" value="${Number(item.amount || 0)}" placeholder="Amount">
     <input class="fi budget-note" value="${escHtml(item.note || '')}" placeholder="Note">
-    <button class="row-delete" onclick="this.parentElement.remove(); updateBudgetLinkSummary();" title="Delete actual">&#128465;&#65039;</button>
+    <button class="row-delete" onclick="this.parentElement.remove(); markResourceSectionDirty('budgetActual'); updateBudgetLinkSummary();" title="Delete actual">&#128465;&#65039;</button>
   `;
+  row.addEventListener('input', () => markResourceSectionDirty('budgetActual'));
+  row.addEventListener('change', () => markResourceSectionDirty('budgetActual'));
   container.appendChild(row);
+  markResourceSectionDirty('budgetActual');
   updateBudgetLinkSummary();
 };
 
@@ -5077,7 +5380,9 @@ window.openProjEdit = (code, isNew = false) => {
   isCreatingNew = isNew;
   editingProjCode = code;
   const week = allWeeks[currentIdx];
-  let p = isNew ? {name:'', code:'', owner:'', deputy:'', customer:'', location:'', visibility:'active', milestones:[], quarterlyMilestones:[], status:'green', progress:0, attention:'watch', highlight:'', weeklyActions:'', risk:'', next:'', riskActions:[], teamMembers:[], budget:{ mode:'manual', currency:'USD', totalEstimated:0, monthlyPlans:[], actuals:[] }} : enrichProjectPrototype(week.projects.find(x => x.code === code), week.projects.findIndex(x => x.code === code));
+  let p = isNew ? {name:'', code:'', owner:'', deputy:'', customer:'', location:'', visibility:'active', milestones:[], quarterlyMilestones:[], status:'green', progress:0, attention:'watch', highlight:'', weeklyActions:'', risk:'', next:'', riskActions:[], teamMembers:[], budget:{ mode:'manual', currency:'USD', totalEstimated:0, monthlyPlans:[], actuals:[] }, dataStatus: normalizeResourceBudgetStatus({})} : enrichProjectPrototype(week.projects.find(x => x.code === code), week.projects.findIndex(x => x.code === code));
+  resourceEditorHydrating = true;
+  editorResourceStatus = normalizeResourceBudgetStatus(p);
   
   document.getElementById('peTitle').textContent = isNew ? "New Project" : "Edit Project";
   
@@ -5118,20 +5423,26 @@ window.openProjEdit = (code, isNew = false) => {
   const budgetCurrencySelect = document.getElementById('pe_budget_currency');
   const budgetTotalInput = document.getElementById('pe_budget_total');
   budgetCurrencySelect.innerHTML = currencyOptions(p.budget?.currency || 'USD');
-  budgetCurrencySelect.onchange = updateBudgetLinkSummary;
+  budgetCurrencySelect.onchange = () => { markResourceSectionDirty('budgetPlan'); updateBudgetLinkSummary(); };
   budgetTotalInput.value = p.budget?.totalEstimated || 0;
-  budgetTotalInput.oninput = updateBudgetLinkSummary;
+  budgetTotalInput.oninput = () => { markResourceSectionDirty('budgetPlan'); updateBudgetLinkSummary(); };
+  document.getElementById('pe_team_not_required').checked = editorResourceStatus.team.noAllocationRequired === true;
+  document.getElementById('pe_over_budget_ack').checked = editorResourceStatus.budgetPlan.overBudgetAcknowledged === true;
   const teamCont = document.getElementById('teamMemberContainer');
   const planCont = document.getElementById('budgetPlanContainer');
   const actualCont = document.getElementById('budgetActualContainer');
   teamCont.innerHTML = '';
   planCont.innerHTML = '';
   actualCont.innerHTML = '';
-  (p.teamMembers?.length ? p.teamMembers : [{}]).forEach(member => addTeamMemberRow(member));
-  (p.budget?.monthlyPlans?.length ? p.budget.monthlyPlans : [{}]).forEach(item => addBudgetPlanRow(item));
-  (p.budget?.actuals?.length ? p.budget.actuals : [{}]).forEach(item => addBudgetActualRow(item));
-  setBudgetTab('plan');
+  (p.teamMembers || []).forEach(member => addTeamMemberRow(member));
+  (p.budget?.monthlyPlans || []).forEach(item => addBudgetPlanRow(item));
+  (p.budget?.actuals || []).forEach(item => addBudgetActualRow(item));
+  resourceEditorHydrating = false;
   updateBudgetLinkSummary();
+  renderResourceSectionState();
+  setResourceValidation('team');
+  setResourceValidation('budgetPlan');
+  setResourceValidation('budgetActual');
   
   const actionDiv = document.getElementById('adminProjActions');
   if (currentRole === 'admin') {
@@ -5191,7 +5502,8 @@ window.saveProjEdit = async () => {
       totalEstimated: Number(document.getElementById('pe_budget_total').value || 0),
       monthlyPlans: collectBudgetRows('.budget-plan-row').map(item => ({ ...item, currency: item.currency || budgetCurrency })),
       actuals: collectBudgetRows('.budget-actual-row').map(item => ({ ...item, currency: item.currency || budgetCurrency }))
-    }
+    },
+    dataStatus: collectResourceBudgetStatus()
   };
 
   if(isCreatingNew) {
@@ -5206,7 +5518,14 @@ window.saveProjEdit = async () => {
   
   await new Promise(r => setTimeout(r, 600)); 
   hideLoader();
-  showSaveToast("Project saved successfully");
+  const pendingSections = [
+    pData.dataStatus.team.state !== 'confirmed' && 'team',
+    pData.dataStatus.budgetPlan.state !== 'confirmed' && 'budget plan',
+    pData.dataStatus.budgetActual.state === 'draft' && 'actual spend'
+  ].filter(Boolean);
+  showSaveToast(pendingSections.length
+    ? `Project saved · ${pendingSections.join(', ')} excluded from Overview`
+    : "Project saved successfully");
 };
 
 window.deleteProject = async () => {
