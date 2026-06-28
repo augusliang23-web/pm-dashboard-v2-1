@@ -1448,7 +1448,15 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 
 <div class="overlay" id="projEditOverlay">
 <div class="modal" style="width:850px">
-  <div class="modal-hdr"><h3 id="peTitle">Edit Project</h3><button class="modal-x" onclick="closeModal('projEditOverlay')">×</button></div>
+  <div class="modal-hdr">
+    <h3 id="peTitle">Edit Project</h3>
+    <div style="display:flex; align-items:center; gap:6px;">
+      <button class="btn-icon" onclick="saveProjEdit()" title="Save Project" aria-label="Save Project">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      </button>
+      <button class="modal-x" onclick="closeModal('projEditOverlay')" title="Close without saving" aria-label="Close without saving">×</button>
+    </div>
+  </div>
   
   <div style="display:flex; gap:16px;">
     <div class="fg"><label class="fl">RAG Status</label><select class="fs" id="pe_status"><option value="green">🟢 On Track</option><option value="yellow">🟡 At Risk</option><option value="red">🔴 Critical</option></select></div>
@@ -1580,10 +1588,6 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
     </div>
   </details>
 
-  <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:32px;">
-    <button class="btn btn-ghost" onclick="closeModal('projEditOverlay')">Cancel</button>
-    <button class="btn btn-primary" onclick="saveProjEdit()">Save Project</button>
-  </div>
 </div>
 </div>
 
