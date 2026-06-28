@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Project Dashboard · LITEON Edition</title>
+<title>Project Dashboard v2.0T · LITEON Edition</title>
 
 <script>
 // ═══════════════════════════════════════════════════════════════════
@@ -581,6 +581,53 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 .strategic-meta-hover { margin-top:5px; font-family:'IBM Plex Mono', monospace; font-size:9px; color:var(--muted2); opacity:.45; transition:.16s ease; }
 .quarter-item:hover .strategic-meta-hover { opacity:1; }
 .checkpoint-tag { display:inline-flex; margin-top:6px; padding:3px 7px; border-radius:999px; background:var(--s2); border:1px solid var(--border); font-family:'IBM Plex Mono', monospace; font-size:9px; color:var(--muted); }
+.roadmap-layout { display:grid; gap:16px; }
+.roadmap-block { border:1px solid var(--border); border-radius:10px; overflow:hidden; background:#fff; }
+.roadmap-block-head { display:flex; align-items:flex-start; justify-content:space-between; gap:14px; padding:14px 16px; background:#F7FAFC; border-bottom:1px solid var(--border); }
+.roadmap-block-title { font-size:16px; font-weight:850; color:var(--text); line-height:1.2; }
+.roadmap-block-note { margin-top:3px; font-size:11px; color:var(--muted); line-height:1.35; }
+.exec-quarter-board { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:0; background:#EEF4F8; }
+.exec-quarter-col { min-width:0; padding:12px; border-right:1px solid var(--border); }
+.exec-quarter-col:last-child { border-right:0; }
+.exec-quarter-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:9px; }
+.exec-quarter-title { font-size:15px; font-weight:850; color:var(--text); }
+.dcdc-timeline { border:1px solid var(--border); border-radius:10px; overflow:hidden; background:#fff; }
+.dcdc-title { padding:16px 18px; font-size:23px; font-weight:900; color:#124A80; background:#F7FBFE; border-bottom:1px solid var(--border); }
+.dcdc-grid { display:grid; grid-template-columns:150px repeat(4,minmax(0,1fr)); }
+.dcdc-cell { min-width:0; padding:14px 14px; border-right:1px solid #C8DDEB; border-bottom:1px solid #DCE6EF; background:#fff; }
+.dcdc-cell:nth-child(5n) { border-right:0; }
+.dcdc-quarter { padding:11px 14px; background:#005BAA; color:#fff; text-align:center; font-size:15px; font-weight:900; border-right:1px solid rgba(255,255,255,.25); border-bottom:0; }
+.dcdc-corner { background:#fff; border-bottom:0; }
+.dcdc-row-label { font-size:14px; font-weight:900; line-height:1.25; color:var(--text); background:#F8FBFD; }
+.dcdc-list { margin:0; padding-left:18px; color:var(--text); }
+.dcdc-list li { margin:0 0 7px; font-size:13px; line-height:1.36; font-weight:700; }
+.dcdc-phase-row { display:grid; grid-template-columns:150px repeat(4,minmax(0,1fr)); align-items:stretch; background:#F1F7FB; }
+.dcdc-phase-spacer { border-right:1px solid #C8DDEB; }
+.dcdc-phase { padding:12px 10px; text-align:center; color:#005BAA; font-size:15px; line-height:1.15; font-weight:900; border-right:1px solid #C8DDEB; }
+.dcdc-phase:last-child { border-right:0; }
+.project-quarter-matrix { display:grid; grid-template-columns:minmax(190px,.72fr) repeat(4,minmax(170px,1fr)); border-top:1px solid var(--border); border-left:1px solid var(--border); }
+.pqm-cell { min-width:0; border-right:1px solid var(--border); border-bottom:1px solid var(--border); padding:10px 12px; background:#fff; }
+.pqm-head { background:#EDF5FB; font-size:12px; font-weight:850; color:var(--text); text-transform:uppercase; letter-spacing:.04em; }
+.pqm-project { background:#FBFDFF; border-left:4px solid var(--blue); }
+.pqm-project.track-all,
+.pqm-project.track-track-a,
+.pqm-project.track-track-b,
+.pqm-project.track-track-c { border-left-color:var(--track-color); }
+.pqm-project-name { font-size:13px; font-weight:850; color:var(--text); line-height:1.25; }
+.pqm-project-meta { margin-top:5px; display:flex; gap:5px; flex-wrap:wrap; }
+.pqm-items { display:grid; gap:7px; }
+.pqm-item { border:1px solid #C9DDEA; border-radius:8px; padding:8px 9px; background:#F1F7FC; }
+.pqm-item.done { border-color:#C8E5D5; background:#F3FBF6; }
+.pqm-item.at-risk { border-color:#E9D59B; background:#FFFAF0; }
+.pqm-goal { font-size:12px; font-weight:750; line-height:1.38; color:var(--text); }
+.pqm-meta { margin-top:6px; font-family:'IBM Plex Mono', monospace; font-size:9px; color:var(--muted); line-height:1.35; }
+.pqm-empty { color:var(--muted2); font-size:11px; line-height:1.4; }
+.pqm-head-tools { display:flex; align-items:center; justify-content:flex-end; gap:12px; flex-wrap:wrap; }
+.pqm-legend { display:flex; align-items:center; justify-content:flex-end; gap:10px; flex-wrap:wrap; }
+.pqm-legend-item { display:inline-flex; align-items:center; gap:5px; color:var(--muted); font-size:10px; font-weight:700; white-space:nowrap; }
+.pqm-legend-swatch { width:13px; height:13px; border:1px solid #C9DDEA; border-radius:3px; background:#F1F7FC; }
+.pqm-legend-swatch.done { border-color:#C8E5D5; background:#F3FBF6; }
+.pqm-legend-swatch.at-risk { border-color:#E9D59B; background:#FFFAF0; }
 .strategy-lens-inline { margin:0 0 14px; padding:13px 14px; border:1px solid var(--border); border-radius:9px; background:#FBFDFF; }
 .strategy-lens-inline .strategy-toolbar { margin-bottom:10px; }
 .strategy-lens-inline .strategy-title { font-size:17px; }
@@ -609,7 +656,97 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 .quarter-goal-head, .quarter-goal-row { grid-template-columns:2fr .85fr .7fr .7fr .7fr 34px; }
 .quarter-goal-add { width:100%; margin-top:4px; }
 .qg-delete { border:none; background:none; cursor:pointer; font-size:15px; line-height:1; }
-.project-map-row { grid-template-columns:1.1fr .9fr 1.4fr .9fr; }
+.project-map-row { grid-template-columns:1.1fr 1.4fr .9fr; }
+.exec-timeline-editor { display:grid; gap:10px; }
+.exec-timeline-title-row { display:grid; grid-template-columns:1fr; gap:8px; }
+.exec-timeline-head, .exec-timeline-row, .exec-timeline-phase-row { display:grid; grid-template-columns:150px repeat(4,minmax(0,1fr)); gap:8px; align-items:start; }
+.exec-timeline-head { font-family:'IBM Plex Mono', monospace; font-size:9px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+.exec-timeline-row, .exec-timeline-phase-row { padding:8px; border:1px solid var(--border); border-radius:8px; background:#fff; }
+.exec-timeline-row-label { font-weight:800; }
+.exec-timeline-cell { min-height:86px; resize:vertical; }
+
+/* Resource & Budget Prototype */
+.proto-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+.proto-editor-section { margin-top:20px; padding:16px; border:1px solid var(--border); border-radius:10px; background:var(--s2); }
+.proto-section-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
+.proto-section-title { font-size:13px; font-weight:800; color:var(--text); }
+.proto-section-note { font-size:11px; color:var(--muted); line-height:1.45; }
+.team-row, .budget-plan-row, .budget-actual-row { display:grid; gap:8px; align-items:center; margin-bottom:8px; }
+.team-row { grid-template-columns:1.2fr 1fr .55fr 32px; }
+.budget-plan-row { grid-template-columns:.8fr 1fr .8fr .8fr 32px; }
+.budget-actual-row { grid-template-columns:.8fr 1fr .8fr .8fr 1.1fr 32px; }
+.row-delete { width:30px; height:30px; border:1px solid var(--border); border-radius:6px; background:#fff; color:var(--muted); cursor:pointer; }
+.row-delete:hover { color:var(--red); border-color:var(--red); }
+.resource-budget-toolbar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.currency-select { font-family:'IBM Plex Mono', monospace; font-size:12px; font-weight:800; border:1px solid var(--border2); border-radius:6px; padding:6px 8px; color:var(--text); background:#fff; }
+.rb-overview-grid { display:grid; grid-template-columns:minmax(420px,1fr) minmax(420px,1fr); gap:20px; margin-bottom:20px; }
+.rb-kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:14px; }
+.rb-kpi { background:#fff; border:1px solid var(--border); border-radius:8px; padding:11px 12px; }
+.rb-kpi-label { font-size:9px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
+.rb-kpi-value { font-size:18px; font-weight:850; color:var(--text); margin-top:4px; line-height:1.1; }
+.rb-kpi-value.red { color:#B35858; }
+.rb-kpi-value.yellow { color:#B09854; }
+.resource-list, .budget-list { display:grid; gap:9px; }
+.resource-row, .budget-row { display:grid; gap:10px; align-items:center; background:#fff; border:1px solid var(--border); border-radius:8px; padding:10px 12px; }
+.resource-row { grid-template-columns:1fr 90px; }
+.budget-row { grid-template-columns:1fr 120px; }
+.rb-name { font-size:12px; font-weight:800; color:var(--text); }
+.rb-meta { font-size:10px; color:var(--muted); margin-top:4px; line-height:1.45; }
+.allocation-bar, .budget-bar { height:8px; border-radius:999px; background:var(--s3); overflow:hidden; margin-top:7px; }
+.allocation-fill, .budget-fill { height:100%; border-radius:999px; background:var(--green); width:min(var(--pct), 100%); }
+.allocation-fill.warn, .budget-fill.warn { background:var(--yellow); }
+.allocation-fill.danger, .budget-fill.danger { background:var(--red); }
+.rb-number { font-family:'IBM Plex Mono', monospace; font-size:16px; font-weight:800; text-align:right; color:var(--text); }
+.rb-number.warn { color:#B09854; }
+.rb-number.danger { color:#B35858; }
+.category-chip-stack { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+.category-chip { display:inline-flex; align-items:center; gap:6px; padding:5px 8px; border:1px solid var(--border); border-radius:999px; background:#fff; font-size:10px; color:var(--text-light); }
+.fx-note { font-size:10px; color:var(--muted); font-family:'IBM Plex Mono', monospace; margin-top:10px; }
+.card-extra-signals { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; }
+.card-signal { background:var(--s2); border:1px solid var(--border); border-radius:8px; padding:8px 10px; }
+.card-signal-label { font-size:9px; color:var(--muted); font-weight:800; text-transform:uppercase; letter-spacing:.05em; }
+.card-signal-value { font-size:12px; color:var(--text); font-weight:800; margin-top:3px; }
+.budget-mode-control { display:flex; gap:8px; flex-wrap:wrap; margin:10px 0 12px; }
+.budget-mode-option { display:flex; align-items:center; gap:6px; padding:8px 10px; border:1px solid var(--border); border-radius:8px; background:#fff; font-size:11px; font-weight:800; color:var(--text-light); cursor:pointer; }
+.budget-mode-option input { accent-color:var(--accent); }
+.budget-mode-option:has(input:checked) { border-color:var(--accent); color:var(--accent-hov); background:var(--adim); }
+.budget-link-summary { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:12px; }
+.budget-link-tile { border:1px solid var(--border); border-radius:8px; background:#fff; padding:9px 10px; }
+.budget-link-label { font-size:9px; color:var(--muted); font-weight:800; text-transform:uppercase; letter-spacing:.05em; }
+.budget-link-value { font-size:13px; color:var(--text); font-weight:850; margin-top:4px; }
+.budget-link-value.good { color:var(--accent-hov); }
+.budget-link-value.warn { color:#B09854; }
+.budget-link-value.danger { color:#B35858; }
+.budget-link-message { margin-top:10px; font-size:11px; line-height:1.45; color:var(--text-light); }
+.budget-control-panel { margin-top:20px; padding:0; overflow:hidden; }
+.budget-control-top { display:grid; grid-template-columns:minmax(280px,.75fr) minmax(360px,1.25fr); gap:16px; padding:16px; border-bottom:1px solid var(--border); }
+.budget-control-settings { border:1px solid var(--border); background:#fff; border-radius:8px; padding:14px; }
+.budget-control-summary { border:1px solid var(--border); background:#fff; border-radius:8px; padding:14px; }
+.budget-tabs { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 16px; border-bottom:1px solid var(--border); background:#fff; }
+.budget-tab-buttons { display:flex; gap:6px; background:var(--s2); border:1px solid var(--border); border-radius:8px; padding:4px; }
+.budget-tab-btn { border:0; background:transparent; color:var(--text-light); border-radius:6px; padding:7px 11px; font-size:12px; font-weight:800; cursor:pointer; }
+.budget-tab-btn.active { background:var(--text); color:#fff; }
+.budget-tab-action { flex-shrink:0; }
+.budget-tab-pane { display:none; padding:16px; }
+.budget-tab-pane.active { display:block; }
+.budget-table-head { display:grid; gap:8px; margin-bottom:7px; padding:0 4px; font-family:'IBM Plex Mono', monospace; font-size:9px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+.budget-table-head.plan { grid-template-columns:.8fr 1fr .8fr .8fr 32px; }
+.budget-table-head.actual { grid-template-columns:.8fr 1fr .8fr .8fr 1.1fr 32px; }
+.budget-empty-note { font-size:12px; color:var(--muted); padding:14px; border:1px dashed var(--border); border-radius:8px; background:#fff; }
+.detail-rb-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:22px; }
+.detail-rb-box { border:1px solid var(--border); border-radius:10px; background:var(--s2); padding:14px; }
+.detail-rb-list { display:grid; gap:7px; margin-top:10px; font-size:12px; color:var(--text-light); }
+@media(max-width: 1100px) {
+  .rb-overview-grid, .proto-grid-2, .detail-rb-grid, .budget-control-top { grid-template-columns:1fr; }
+  .rb-kpi-grid { grid-template-columns:1fr 1fr; }
+}
+@media(max-width: 760px) {
+  .team-row, .budget-plan-row, .budget-actual-row { grid-template-columns:1fr; }
+  .budget-table-head { display:none; }
+  .budget-tabs { align-items:stretch; flex-direction:column; }
+  .resource-row, .budget-row { grid-template-columns:1fr; }
+  .rb-number { text-align:left; }
+}
 .copilot-prompt-box { font-family:'IBM Plex Mono', monospace; font-size:11px; line-height:1.55; min-height:220px; background:#FBFDFF; }
 .ai-assist-box { background:var(--s2); border:1px solid var(--border); border-radius:8px; padding:18px; margin-bottom:18px; }
 .ai-assist-head { display:flex; justify-content:space-between; align-items:flex-start; gap:14px; margin-bottom:12px; }
@@ -626,6 +763,8 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
   .exec-overview, .exec-summary-grid { grid-template-columns:1fr; }
   .exec-project-top { grid-template-columns:1fr 1fr; }
   .exec-project-signals { grid-column:1 / -1; }
+  .exec-quarter-board { grid-template-columns:1fr 1fr; }
+  .project-quarter-matrix { overflow-x:auto; grid-template-columns:minmax(170px,.8fr) repeat(4,minmax(180px,1fr)); }
 }
 @media (max-width: 860px) {
   .proj-grid { grid-template-columns: 1fr; }
@@ -633,6 +772,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
   .card-summary { flex-direction: column; padding-right: 0; }
   .card-summary-right { width: 100%; flex-direction: row; justify-content: space-between; align-items: center; text-align: left; }
   .card-meta-grid { grid-template-columns: 1fr; }
+  .exec-quarter-board { grid-template-columns:1fr; }
 }
 @media (max-width: 640px) {
   .main { padding: 20px 16px 28px; }
@@ -995,6 +1135,33 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
   .weekly-trend-svg { height:72px !important; }
   .weekly-trend-labels { font-size:6.8px !important; }
 
+  .roadmap-layout { gap:4mm !important; }
+  .roadmap-block { border-radius:8px !important; overflow:visible !important; }
+  .roadmap-block-head { padding:8px 10px !important; break-after:avoid-page !important; page-break-after:avoid !important; }
+  .roadmap-block-title { font-size:13px !important; }
+  .roadmap-block-note { font-size:8.2px !important; }
+  .exec-quarter-board { grid-template-columns:repeat(4,minmax(0,1fr)) !important; }
+  .exec-quarter-col { padding:7px !important; break-inside:avoid-page !important; page-break-inside:avoid !important; }
+  .exec-quarter-title { font-size:11px !important; }
+  .dcdc-title { padding:8px 10px !important; font-size:15px !important; }
+  .dcdc-grid { grid-template-columns:28mm repeat(4,minmax(0,1fr)) !important; }
+  .dcdc-cell { padding:6px 7px !important; }
+  .dcdc-quarter { padding:6px 7px !important; font-size:10.5px !important; }
+  .dcdc-row-label { font-size:9px !important; }
+  .dcdc-list { padding-left:12px !important; }
+  .dcdc-list li { margin-bottom:3px !important; font-size:7.8px !important; line-height:1.2 !important; }
+  .dcdc-phase-row { grid-template-columns:28mm repeat(4,minmax(0,1fr)) !important; }
+  .dcdc-phase { padding:6px !important; font-size:9px !important; line-height:1.15 !important; }
+  .project-quarter-matrix { grid-template-columns:minmax(34mm,.7fr) repeat(4,minmax(0,1fr)) !important; }
+  .pqm-cell { padding:5px 6px !important; break-inside:avoid-page !important; page-break-inside:avoid !important; }
+  .pqm-head { font-size:8px !important; }
+  .pqm-project-name { font-size:8.8px !important; line-height:1.2 !important; }
+  .pqm-project-meta { gap:3px !important; margin-top:3px !important; }
+  .pqm-items { gap:4px !important; }
+  .pqm-item { padding:5px 6px !important; border-radius:6px !important; }
+  .pqm-goal { font-size:8.4px !important; line-height:1.25 !important; }
+  .pqm-meta, .pqm-empty { font-size:6.8px !important; line-height:1.2 !important; }
+
   /* Keep the executive risk table as a complete report section. */
   .risk-action-panel {
     break-before: page !important;
@@ -1060,6 +1227,18 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
   .project-portfolio-panel .project-portfolio-grid .exec-project-card + .exec-project-card {
     margin-top: 0 !important;
   }
+  .quarterly-roadmap-panel {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+  .executive-milestone-block {
+    break-inside: avoid-page !important;
+    page-break-inside: avoid !important;
+  }
+  .project-milestone-block {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
 }
 </style>
 </head>
@@ -1074,6 +1253,8 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
   <div class="toast-check">✓</div>
   <span id="saveToastMsg">Saved successfully</span>
 </div>
+<datalist id="teamRoleOptions"></datalist>
+<datalist id="budgetCategoryOptions"></datalist>
 
 <div id="loginOverlay">
   <div class="login-card">
@@ -1094,7 +1275,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
       <div class="hdr-logo">
         <div id="syncDot" class="sync-dot" title="Connecting..."></div>
         Project Dashboard
-        <span class="hdr-version">v1.2</span>
+        <span class="hdr-version">v2.0T</span>
       </div>
       <span class="hdr-sub">LITEON INTERNAL SECURE ACCESS</span>
     </div>
@@ -1211,7 +1392,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
       <div style="border-top: 1px dashed var(--border); padding-top: 24px;">
         <div class="info-lbl" style="color:var(--accent-hov)">Highlight</div>
         <div class="stext" id="pd_highlight"></div>
-        <div class="info-lbl" style="color:var(--blue-text); margin-top:20px;">Weekly Key Actions</div>
+        <div class="info-lbl" style="color:var(--blue-text); margin-top:20px;">Weekly Key Actions (for next week)</div>
         <div class="stext" id="pd_weekly_actions"></div>
         <div class="info-lbl" style="color:var(--red); margin-top:20px;">Risk / Blocker</div>
         <div class="stext" id="pd_risk"></div>
@@ -1231,6 +1412,16 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
       <div class="ms-container" id="pd_milestones"></div>
       <div class="info-lbl" style="margin:24px 0 12px;">Quarterly Milestones</div>
       <div class="detail-qms-list" id="pd_quarterly_milestones"></div>
+      <div class="detail-rb-grid">
+        <div class="detail-rb-box">
+          <div class="info-lbl">Team & Effort</div>
+          <div class="detail-rb-list" id="pd_team_effort"></div>
+        </div>
+        <div class="detail-rb-box">
+          <div class="info-lbl">Budget Snapshot</div>
+          <div class="detail-rb-list" id="pd_budget_snapshot"></div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -1258,7 +1449,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
     <div class="fg"><label class="fl">Attention Matrix</label><select class="fs" id="pe_attention"></select></div>
   </div>
   <div class="fg"><label class="fl">Highlight (Press Enter for new bullet point)</label><textarea class="ft" id="pe_highlight" rows="3"></textarea></div>
-  <div class="fg"><label class="fl">Weekly Key Actions (execution focus for this week)</label><textarea class="ft" id="pe_weekly_actions" rows="3" placeholder="Actions the team needs to execute this week. Press Enter for new bullet point."></textarea></div>
+  <div class="fg"><label class="fl">Weekly Key Actions (execution focus for next week)</label><textarea class="ft" id="pe_weekly_actions" rows="3" placeholder="Actions the team needs to execute next week. Press Enter for new bullet point."></textarea></div>
   <div class="fg">
     <label class="fl">Risk Action Pairs (maps directly to Overview Risk Action Table)</label>
     <div class="risk-pair-editor">
@@ -1299,6 +1490,74 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
         <div id="qmsListContainer" style="margin-top:10px;"></div>
         <button class="btn btn-ghost" onclick="addQuarterlyMilestoneRow()" style="width:100%; margin-top:10px;">+ Add Quarterly Milestone</button>
       </div>
+
+      <section class="proto-editor-section">
+        <div class="proto-section-head">
+          <div>
+            <div class="proto-section-title">Team & Effort</div>
+            <div class="proto-section-note">Role can be selected from saved roles or typed as a new role.</div>
+          </div>
+          <button class="btn btn-ghost" onclick="addTeamMemberRow()">+ Add Member</button>
+        </div>
+        <div id="teamMemberContainer"></div>
+      </section>
+
+      <section class="proto-editor-section budget-control-panel">
+        <div class="budget-control-top">
+          <div class="budget-control-settings">
+            <div class="proto-section-title">Budget Control</div>
+            <div class="proto-section-note">Set the budget rule once, then manage monthly plan and actual spend below.</div>
+            <div class="budget-mode-control">
+              <label class="budget-mode-option"><input type="radio" name="budgetMode" value="manual" onchange="updateBudgetLinkSummary()"> Manual budget ceiling</label>
+              <label class="budget-mode-option"><input type="radio" name="budgetMode" value="auto" onchange="updateBudgetLinkSummary()"> Auto from monthly plan</label>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+              <div class="fg"><label class="fl">Budget Currency</label><select class="fs" id="pe_budget_currency"></select></div>
+              <div class="fg"><label class="fl">Total Estimated Budget</label><input class="fi" type="number" id="pe_budget_total" min="0" step="1000"></div>
+            </div>
+          </div>
+          <div class="budget-control-summary">
+            <div class="proto-section-title">Budget Linkage</div>
+            <div class="proto-section-note">Shows whether the monthly plan is fully allocated against the total budget.</div>
+            <div class="budget-link-summary">
+              <div class="budget-link-tile">
+                <div class="budget-link-label">Monthly Plan Sum</div>
+                <div class="budget-link-value" id="pe_plan_sum">-</div>
+              </div>
+              <div class="budget-link-tile">
+                <div class="budget-link-label">Unallocated / Over</div>
+                <div class="budget-link-value" id="pe_budget_gap">-</div>
+              </div>
+              <div class="budget-link-tile">
+                <div class="budget-link-label">Coverage</div>
+                <div class="budget-link-value" id="pe_budget_coverage">-</div>
+              </div>
+            </div>
+            <div class="budget-link-message" id="pe_budget_message">Monthly plan will be compared with total budget.</div>
+          </div>
+        </div>
+        <div class="budget-tabs">
+          <div class="budget-tab-buttons">
+            <button type="button" class="budget-tab-btn active" id="budgetPlanTabBtn" onclick="setBudgetTab('plan')">Monthly Plan</button>
+            <button type="button" class="budget-tab-btn" id="budgetActualTabBtn" onclick="setBudgetTab('actual')">Actual Spend</button>
+          </div>
+          <button class="btn btn-ghost budget-tab-action" id="budgetPlanAddBtn" onclick="addBudgetPlanRow()">+ Add Plan</button>
+          <button class="btn btn-ghost budget-tab-action" id="budgetActualAddBtn" onclick="addBudgetActualRow()" style="display:none;">+ Add Actual</button>
+        </div>
+        <div class="budget-tab-pane active" id="budgetPlanPane">
+          <div class="budget-table-head plan"><span>Month</span><span>Category</span><span>Currency</span><span>Planned Amount</span><span></span></div>
+          <div id="budgetPlanContainer"></div>
+        </div>
+        <div class="budget-tab-pane" id="budgetActualPane">
+          <div class="budget-table-head actual"><span>Month</span><span>Category</span><span>Currency</span><span>Actual Amount</span><span>Note</span><span></span></div>
+          <div id="budgetActualContainer"></div>
+        </div>
+      </section>
+          </div>
+          <button class="btn btn-ghost" onclick="addBudgetActualRow()">+ Add Actual</button>
+        </div>
+        <div id="budgetActualContainer"></div>
+      </section>
       
       <div style="margin-top:24px; padding-top:16px; border-top:1px dashed var(--border);" id="adminProjActions">
         <label class="fl" style="color:var(--red);">Admin Actions</label>
@@ -1395,11 +1654,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
   <div class="modal-hdr"><h3>Strategic Layer Management</h3><button class="modal-x" onclick="closeModal('strategyOverlay')">×</button></div>
   <div class="strategy-modal-grid">
     <section class="strategy-section">
-      <div class="strategy-section-title">Strategic Tracks</div>
-      <div id="strategyTrackEditor"></div>
-    </section>
-    <section class="strategy-section">
-      <div class="strategy-section-title">Quarterly Executive Goals</div>
+      <div class="strategy-section-title">Executive Milestone Timeline</div>
       <div id="quarterGoalEditor"></div>
     </section>
     <section class="strategy-section">
@@ -1436,6 +1691,18 @@ let editingProjCode = null;
 let isCreatingNew = false;
 let PM_LIST = []; 
 let jumpToLatestOnNextRender = false;
+let overviewCurrency = 'USD';
+let fxRates = {
+  base: 'USD',
+  date: '2026-06-25',
+  rates: { USD: 1, TWD: 31.795, SGD: 1.2976 },
+  source: 'Prototype fallback',
+  updatedAt: null
+};
+
+const SUPPORTED_CURRENCIES = ['USD', 'TWD', 'SGD'];
+const DEFAULT_TEAM_ROLES = ['PM', 'Technical Lead', 'Firmware Engineer', 'Hardware Engineer', 'Mechanical Engineer', 'QA / Validation', 'Sourcing', 'Manufacturing Engineer'];
+const DEFAULT_BUDGET_CATEGORIES = ['NRE', 'Sample fee', 'Travel fee', 'Tooling', 'Certification', 'Lab test', 'Component', 'Other'];
 
 // ── IDLE DETECTION ──
 let heartbeatInterval = null;
@@ -1508,6 +1775,17 @@ const showSaveToast = (msg = "Saved successfully") => {
   toast.classList.add('show');
   _toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
 };
+
+function cleanFirestoreData(value) {
+  if (Array.isArray(value)) return value.map(cleanFirestoreData).filter(v => v !== undefined);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value)
+      .filter(([key, v]) => key && v !== undefined)
+      .map(([key, v]) => [key, cleanFirestoreData(v)])
+      .filter(([, v]) => v !== undefined));
+  }
+  return value === undefined ? undefined : value;
+}
 
 function getEmailKey(userOrEmail) {
   const email = typeof userOrEmail === 'string' ? userOrEmail : userOrEmail?.email;
@@ -2144,6 +2422,8 @@ function setupUI() {
   const sel = document.getElementById('topPmSelect');
   sel.innerHTML = `<option value="all">👥 All PMs</option>` + 
     PM_LIST.map(pm => `<option value="${pm}">${pm}</option>`).join('');
+  updateMasterDataLists();
+  refreshFxRates();
 }
 
 // ── DATA ──
@@ -2185,6 +2465,7 @@ function initData() {
 
   weeksUnsub = onSnapshot(weeksQuery, snap => {
     let fetchedWeeks = snap.docs.map(d => d.data());
+    if (!fetchedWeeks.length) fetchedWeeks = buildPrototypeWeeks();
     allWeeks = sortWeeksByLabel(fetchedWeeks);
     
     if (currentIdx < 0 || jumpToLatestOnNextRender) {
@@ -2259,6 +2540,393 @@ function textLines(v) {
   return Array.isArray(v) ? v.map(String).filter(Boolean) : String(v || '').split('\n').map(s => s.trim()).filter(Boolean);
 }
 
+function updateMasterDataLists(projects = []) {
+  const roles = new Set(DEFAULT_TEAM_ROLES);
+  const categories = new Set(DEFAULT_BUDGET_CATEGORIES);
+  projects.forEach(p => {
+    (p.teamMembers || []).forEach(m => { if (m.roleName || m.role) roles.add(m.roleName || m.role); });
+    (p.budget?.monthlyPlans || []).forEach(x => { if (x.categoryName || x.category) categories.add(x.categoryName || x.category); });
+    (p.budget?.actuals || []).forEach(x => { if (x.categoryName || x.category) categories.add(x.categoryName || x.category); });
+  });
+  const roleList = document.getElementById('teamRoleOptions');
+  const categoryList = document.getElementById('budgetCategoryOptions');
+  if (roleList) roleList.innerHTML = [...roles].sort().map(v => `<option value="${escHtml(v)}"></option>`).join('');
+  if (categoryList) categoryList.innerHTML = [...categories].sort().map(v => `<option value="${escHtml(v)}"></option>`).join('');
+}
+
+function currencyOptions(selected = 'USD') {
+  return SUPPORTED_CURRENCIES.map(c => `<option value="${c}" ${c === selected ? 'selected' : ''}>${c}</option>`).join('');
+}
+
+function monthValue(offset = 0) {
+  const d = new Date();
+  d.setMonth(d.getMonth() + offset);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function stableHash(value) {
+  return String(value || '').split('').reduce((sum, ch) => (sum * 31 + ch.charCodeAt(0)) % 100000, 7);
+}
+
+function demoProjectFinance(project, index = 0) {
+  const seed = stableHash(project.code || project.name || index);
+  const currencies = ['USD', 'TWD', 'SGD'];
+  const currency = currencies[seed % currencies.length];
+  const total = currency === 'USD' ? 90000 + (seed % 5) * 28000 : currency === 'TWD' ? 2600000 + (seed % 5) * 820000 : 120000 + (seed % 5) * 32000;
+  const cats = ['NRE', 'Sample fee', 'Travel fee', 'Certification'];
+  const plannedA = Math.round(total * (0.16 + (seed % 4) * 0.025));
+  const plannedB = Math.round(total * (0.13 + (seed % 3) * 0.02));
+  const actualA = Math.round(plannedA * (0.82 + (seed % 6) * 0.08));
+  const actualB = Math.round(plannedB * (0.55 + (seed % 5) * 0.07));
+  return {
+    mode: 'manual',
+    currency,
+    totalEstimated: total,
+    monthlyPlans: [
+      { month: monthValue(-1), categoryName: cats[seed % cats.length], currency, amount: plannedA },
+      { month: monthValue(0), categoryName: cats[(seed + 1) % cats.length], currency, amount: plannedB },
+      { month: monthValue(1), categoryName: cats[(seed + 2) % cats.length], currency, amount: Math.round(total * 0.12) }
+    ],
+    actuals: [
+      { month: monthValue(-1), categoryName: cats[seed % cats.length], currency, amount: actualA, note: 'Prototype actual spend' },
+      { month: monthValue(0), categoryName: cats[(seed + 1) % cats.length], currency, amount: actualB, note: 'Prototype in-month record' }
+    ]
+  };
+}
+
+function demoTeamMembers(project, index = 0) {
+  const seed = stableHash(project.code || project.name || index);
+  const people = ['Augus', 'Bonnie', 'Josiah', 'Huichong', 'Mia Chen', 'Ryan Tan', 'Grace Lin', 'Ethan Wu'];
+  const roles = ['PM', 'Technical Lead', 'Firmware Engineer', 'Hardware Engineer', 'QA / Validation', 'Sourcing'];
+  return [
+    { name: project.owner || people[seed % people.length], roleName: 'PM', effortPct: 35 + (seed % 4) * 5 },
+    { name: people[(seed + 2) % people.length], roleName: roles[(seed + 1) % roles.length], effortPct: 45 + (seed % 5) * 10 },
+    { name: people[(seed + 4) % people.length], roleName: roles[(seed + 3) % roles.length], effortPct: 20 + (seed % 4) * 10 }
+  ];
+}
+
+function enrichProjectPrototype(project, index = 0) {
+  const budget = project.budget && (project.budget.totalEstimated || project.budget.monthlyPlans?.length || project.budget.actuals?.length)
+    ? project.budget
+    : demoProjectFinance(project, index);
+  const teamMembers = Array.isArray(project.teamMembers) && project.teamMembers.length
+    ? project.teamMembers
+    : demoTeamMembers(project, index);
+  return { ...project, budget, teamMembers };
+}
+
+function enrichProjectsPrototype(projects = []) {
+  const enriched = projects.map(enrichProjectPrototype);
+  updateMasterDataLists(enriched);
+  return enriched;
+}
+
+function buildPrototypeWeeks() {
+  const projects = [
+    {
+      name: 'EV Charger Platform UAT',
+      code: 'DEMO-EVC',
+      owner: 'Augus',
+      deputy: 'Bonnie',
+      customer: 'Tier-1 Energy',
+      location: 'Taipei / Singapore',
+      status: 'yellow',
+      progress: 62,
+      attention: 'monitor',
+      highlight: 'System integration test entered second pass\nThermal validation needs supplier confirmation',
+      weeklyActions: 'Close firmware regression list\nConfirm sample shipment timing',
+      riskActions: [{ primary:true, risk:'SG certification sample may slip by one week', action:'Management alignment with supplier on expedited build' }],
+      risk: 'SG certification sample may slip by one week',
+      next: 'Management alignment with supplier on expedited build',
+      milestones: [
+        { name:'EVT sample ready', date:'2026-07-10', status:'in-progress' },
+        { name:'Certification package', date:'2026-08-14', status:'at-risk' },
+        { name:'Customer pilot', date:'2026-09-18', status:'to-do' }
+      ],
+      quarterlyMilestones: [
+        { quarter:'2026 Q3', goal:'Complete pilot validation', window:'Sep', status:'planned' }
+      ],
+      teamMembers: [
+        { name:'Augus', roleName:'PM', effortPct:40 },
+        { name:'Mia Chen', roleName:'Firmware Engineer', effortPct:75 },
+        { name:'Ryan Tan', roleName:'QA / Validation', effortPct:50 }
+      ],
+      budget: {
+        mode:'manual',
+        currency:'USD',
+        totalEstimated:180000,
+        monthlyPlans:[
+          { month:'2026-06', categoryName:'NRE', currency:'USD', amount:28000 },
+          { month:'2026-07', categoryName:'Sample fee', currency:'USD', amount:36000 },
+          { month:'2026-08', categoryName:'Certification', currency:'USD', amount:22000 }
+        ],
+        actuals:[
+          { month:'2026-06', categoryName:'NRE', currency:'USD', amount:31000, note:'Firmware contractor' },
+          { month:'2026-07', categoryName:'Sample fee', currency:'SGD', amount:18500, note:'Pilot samples' }
+        ]
+      }
+    },
+    {
+      name: 'Smart Factory Gateway',
+      code: 'DEMO-SFG',
+      owner: 'Bonnie',
+      deputy: 'Josiah',
+      customer: 'Internal Digital Factory',
+      location: 'Kaohsiung',
+      status: 'green',
+      progress: 74,
+      attention: 'strategy',
+      highlight: 'MES API contract confirmed\nGateway hardware rev B passed smoke test',
+      weeklyActions: 'Prepare rev B pilot installation\nFinalize cloud event schema',
+      riskActions: [],
+      milestones: [
+        { name:'API contract freeze', date:'2026-06-28', status:'done' },
+        { name:'Pilot line install', date:'2026-07-26', status:'in-progress' },
+        { name:'Data quality review', date:'2026-08-30', status:'to-do' }
+      ],
+      quarterlyMilestones: [
+        { quarter:'2026 Q3', goal:'Pilot one production line', window:'Aug', status:'planned' }
+      ],
+      teamMembers: [
+        { name:'Bonnie', roleName:'PM', effortPct:35 },
+        { name:'Huichong', roleName:'Technical Lead', effortPct:60 },
+        { name:'Grace Lin', roleName:'Manufacturing Engineer', effortPct:65 }
+      ],
+      budget: {
+        mode:'manual',
+        currency:'TWD',
+        totalEstimated:5200000,
+        monthlyPlans:[
+          { month:'2026-06', categoryName:'Tooling', currency:'TWD', amount:650000 },
+          { month:'2026-07', categoryName:'Component', currency:'TWD', amount:980000 },
+          { month:'2026-08', categoryName:'Travel fee', currency:'TWD', amount:180000 }
+        ],
+        actuals:[
+          { month:'2026-06', categoryName:'Tooling', currency:'TWD', amount:610000, note:'Fixture update' },
+          { month:'2026-07', categoryName:'Component', currency:'TWD', amount:720000, note:'Gateway build' }
+        ]
+      }
+    },
+    {
+      name: 'AI Power Module Sample Build',
+      code: 'DEMO-AIP',
+      owner: 'Josiah',
+      deputy: 'Augus',
+      customer: 'Cloud Compute BU',
+      location: 'Singapore',
+      status: 'red',
+      progress: 38,
+      attention: 'action',
+      highlight: 'Sample build waiting on high-current connector\nLayout review found two thermal escape concerns',
+      weeklyActions: 'Lock connector allocation\nRun alternate thermal simulation',
+      riskActions: [{ primary:true, risk:'Connector shortage blocks sample build', action:'Approve alternate connector sourcing this week' }],
+      risk: 'Connector shortage blocks sample build',
+      next: 'Approve alternate connector sourcing this week',
+      milestones: [
+        { name:'Layout review', date:'2026-07-05', status:'at-risk' },
+        { name:'Sample build', date:'2026-08-02', status:'to-do' },
+        { name:'Customer bench test', date:'2026-09-06', status:'to-do' }
+      ],
+      quarterlyMilestones: [
+        { quarter:'2026 Q3', goal:'Ship A-sample to customer lab', window:'Sep', status:'at-risk' }
+      ],
+      teamMembers: [
+        { name:'Josiah', roleName:'PM', effortPct:50 },
+        { name:'Mia Chen', roleName:'Hardware Engineer', effortPct:70 },
+        { name:'Ethan Wu', roleName:'Sourcing', effortPct:45 },
+        { name:'Ryan Tan', roleName:'QA / Validation', effortPct:65 }
+      ],
+      budget: {
+        mode:'manual',
+        currency:'SGD',
+        totalEstimated:245000,
+        monthlyPlans:[
+          { month:'2026-06', categoryName:'NRE', currency:'SGD', amount:42000 },
+          { month:'2026-07', categoryName:'Sample fee', currency:'SGD', amount:58000 },
+          { month:'2026-08', categoryName:'Travel fee', currency:'USD', amount:12000 }
+        ],
+        actuals:[
+          { month:'2026-06', categoryName:'NRE', currency:'SGD', amount:47000, note:'Layout and simulation' },
+          { month:'2026-07', categoryName:'Sample fee', currency:'SGD', amount:39000, note:'Connector reservation' }
+        ]
+      }
+    }
+  ];
+  return [{
+    weekLabel: 'W26 2026 Prototype',
+    weekDate: 'Jun 22 - Jun 28',
+    isReleased: true,
+    summary: '## Weekly Movement\n- Prototype resource and budget data is loaded for UAT review.\n- AI Power Module needs executive sourcing decision.\n\n## Management Ask\n- Review overloaded validation resources and approve alternate connector sourcing.',
+    projects,
+    lastModifiedBy: 'System'
+  }];
+}
+
+async function refreshFxRates() {
+  try {
+    const res = await fetch('https://api.frankfurter.dev/v2/rates?base=USD&quotes=TWD,SGD', { cache: 'no-store' });
+    if (!res.ok) throw new Error(`FX HTTP ${res.status}`);
+    const data = await res.json();
+    const rates = { USD: 1 };
+    if (Array.isArray(data)) {
+      data.forEach(row => { if (row.quote && row.rate) rates[row.quote] = Number(row.rate); });
+      fxRates = { base: 'USD', date: data[0]?.date || new Date().toISOString().slice(0, 10), rates: { ...fxRates.rates, ...rates }, source: 'Frankfurter', updatedAt: new Date().toISOString() };
+    } else if (data?.rates) {
+      fxRates = { base: 'USD', date: data.date || new Date().toISOString().slice(0, 10), rates: { USD: 1, ...data.rates }, source: 'Frankfurter', updatedAt: new Date().toISOString() };
+    }
+    render();
+  } catch (e) {
+    console.warn('FX refresh failed; using fallback rates.', e);
+  }
+}
+
+function convertCurrency(amount, from = 'USD', to = overviewCurrency) {
+  const n = Number(amount || 0);
+  const fromRate = Number(fxRates.rates[from] || 1);
+  const toRate = Number(fxRates.rates[to] || 1);
+  return fromRate ? (n / fromRate) * toRate : n;
+}
+
+function fmtMoney(amount, currency = overviewCurrency, compact = true) {
+  const abs = Math.abs(Number(amount || 0));
+  const maximumFractionDigits = abs >= 1000 ? 0 : 2;
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+    notation: compact && abs >= 1000000 ? 'compact' : 'standard',
+    maximumFractionDigits
+  }).format(Number(amount || 0));
+}
+
+function projectBudgetTotals(project, displayCurrency = overviewCurrency) {
+  const budget = project.budget || {};
+  const baseCurrency = budget.currency || 'USD';
+  const total = convertCurrency(budget.totalEstimated || 0, baseCurrency, displayCurrency);
+  const planned = (budget.monthlyPlans || []).reduce((sum, item) => sum + convertCurrency(item.amount, item.currency || baseCurrency, displayCurrency), 0);
+  const actual = (budget.actuals || []).reduce((sum, item) => sum + convertCurrency(item.amount, item.currency || baseCurrency, displayCurrency), 0);
+  return {
+    total,
+    planned,
+    actual,
+    variance: actual - planned,
+    planGap: total - planned,
+    usedPct: total ? Math.round((actual / total) * 100) : 0
+  };
+}
+
+function budgetCategoryTotals(projects, displayCurrency = overviewCurrency) {
+  const totals = {};
+  projects.forEach(p => {
+    const baseCurrency = p.budget?.currency || 'USD';
+    (p.budget?.actuals || []).forEach(item => {
+      const key = item.categoryName || item.category || 'Other';
+      totals[key] = (totals[key] || 0) + convertCurrency(item.amount, item.currency || baseCurrency, displayCurrency);
+    });
+  });
+  return Object.entries(totals).sort((a, b) => b[1] - a[1]);
+}
+
+function buildResourceSummary(projects = []) {
+  const map = new Map();
+  projects.forEach(project => {
+    (project.teamMembers || []).forEach(member => {
+      const name = String(member.name || '').trim();
+      if (!name) return;
+      const item = map.get(name) || { name, roles: new Set(), total: 0, projects: [] };
+      const effort = Number(member.effortPct || member.effort || 0);
+      item.total += effort;
+      if (member.roleName || member.role) item.roles.add(member.roleName || member.role);
+      item.projects.push({ name: project.name, code: project.code, effort });
+      map.set(name, item);
+    });
+  });
+  return [...map.values()].map(item => ({ ...item, roles: [...item.roles] })).sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
+}
+
+function buildBudgetSummary(projects = [], displayCurrency = overviewCurrency) {
+  const projectRows = projects.map(p => ({ project: p, ...projectBudgetTotals(p, displayCurrency) })).sort((a, b) => b.usedPct - a.usedPct);
+  const total = projectRows.reduce((sum, row) => sum + row.total, 0);
+  const planned = projectRows.reduce((sum, row) => sum + row.planned, 0);
+  const actual = projectRows.reduce((sum, row) => sum + row.actual, 0);
+  return { total, planned, actual, variance: actual - planned, planGap: total - planned, plannedCoverage: total ? Math.round((planned / total) * 100) : 0, usedPct: total ? Math.round((actual / total) * 100) : 0, projectRows, categories: budgetCategoryTotals(projects, displayCurrency) };
+}
+
+function allocationClass(pct) {
+  if (pct > 100) return 'danger';
+  if (pct >= 70) return 'warn';
+  return '';
+}
+
+function renderResourceBudgetOverview(projects) {
+  const resources = buildResourceSummary(projects);
+  const budget = buildBudgetSummary(projects, overviewCurrency);
+  const overloaded = resources.filter(r => r.total > 100).length;
+  const under = resources.filter(r => r.total < 50).length;
+  const avg = resources.length ? Math.round(resources.reduce((sum, r) => sum + r.total, 0) / resources.length) : 0;
+  const varianceClass = budget.variance > 0 ? 'red' : '';
+  const planGapClass = budget.planGap < 0 ? 'red' : budget.planGap > 0 ? 'yellow' : '';
+  return `<div class="rb-overview-grid">
+    <section class="exec-panel">
+      <div class="exec-panel-head">
+        <div>
+          <div class="exec-eyebrow">Resource Overview</div>
+          <div class="exec-panel-title">Team effort allocation</div>
+        </div>
+        <div class="exec-panel-note">${resources.length} members · ${overloaded} overloaded</div>
+      </div>
+      <div class="rb-kpi-grid">
+        <div class="rb-kpi"><div class="rb-kpi-label">Overloaded</div><div class="rb-kpi-value red">${overloaded}</div></div>
+        <div class="rb-kpi"><div class="rb-kpi-label">Under 50%</div><div class="rb-kpi-value yellow">${under}</div></div>
+        <div class="rb-kpi"><div class="rb-kpi-label">Avg Load</div><div class="rb-kpi-value">${avg}%</div></div>
+        <div class="rb-kpi"><div class="rb-kpi-label">Assignments</div><div class="rb-kpi-value">${resources.reduce((sum, r) => sum + r.projects.length, 0)}</div></div>
+      </div>
+      <div class="resource-list">${resources.slice(0, 8).map(r => {
+        const cls = allocationClass(r.total);
+        return `<div class="resource-row">
+          <div>
+            <div class="rb-name">${escHtml(r.name)} <span class="rb-meta">${escHtml(r.roles.join(', ') || '-')}</span></div>
+            <div class="rb-meta">${r.projects.map(p => `${escHtml(p.name)} ${p.effort}%`).join(' · ')}</div>
+            <div class="allocation-bar"><div class="allocation-fill ${cls}" style="--pct:${Math.min(r.total, 140)}%;"></div></div>
+          </div>
+          <div class="rb-number ${cls}">${r.total}%</div>
+        </div>`;
+      }).join('')}</div>
+    </section>
+
+    <section class="exec-panel">
+      <div class="exec-panel-head">
+        <div>
+          <div class="exec-eyebrow">Budget Overview</div>
+          <div class="exec-panel-title">Budget vs actual</div>
+        </div>
+        <div class="resource-budget-toolbar">
+          <span class="exec-panel-note">Display</span>
+          <select class="currency-select" onchange="setOverviewCurrency(this.value)">${currencyOptions(overviewCurrency)}</select>
+        </div>
+      </div>
+      <div class="rb-kpi-grid">
+        <div class="rb-kpi"><div class="rb-kpi-label">Total Budget</div><div class="rb-kpi-value">${fmtMoney(budget.total)}</div></div>
+        <div class="rb-kpi"><div class="rb-kpi-label">Actual Spend</div><div class="rb-kpi-value">${fmtMoney(budget.actual)}</div></div>
+        <div class="rb-kpi"><div class="rb-kpi-label">Variance</div><div class="rb-kpi-value ${varianceClass}">${fmtMoney(budget.variance)}</div></div>
+        <div class="rb-kpi"><div class="rb-kpi-label">Plan Gap</div><div class="rb-kpi-value ${planGapClass}">${budget.planGap < 0 ? 'Over ' : ''}${fmtMoney(Math.abs(budget.planGap))}</div></div>
+      </div>
+      <div class="budget-list">${budget.projectRows.slice(0, 6).map(row => {
+        const cls = row.usedPct > 85 ? 'danger' : row.usedPct > 65 ? 'warn' : '';
+        return `<div class="budget-row">
+          <div>
+            <div class="rb-name">${escHtml(row.project.name)}</div>
+            <div class="rb-meta">${fmtMoney(row.actual)} actual · ${fmtMoney(row.total)} budget · planned ${fmtMoney(row.planned)} · gap ${row.planGap < 0 ? 'over ' : ''}${fmtMoney(Math.abs(row.planGap))}</div>
+            <div class="budget-bar"><div class="budget-fill ${cls}" style="--pct:${Math.min(row.usedPct, 100)}%;"></div></div>
+          </div>
+          <div class="rb-number ${cls}">${row.usedPct}%</div>
+        </div>`;
+      }).join('')}</div>
+      <div class="category-chip-stack">${budget.categories.slice(0, 6).map(([cat, amount]) => `<span class="category-chip">${escHtml(cat)} <b>${fmtMoney(amount)}</b></span>`).join('')}</div>
+      <div class="fx-note">FX ${escHtml(fxRates.date)} · ${escHtml(fxRates.source)} · USD/TWD ${fxRates.rates.TWD} · USD/SGD ${fxRates.rates.SGD}</div>
+    </section>
+  </div>`;
+}
+
 function getProjectAttention(p) {
   if (p.attention && ATTENTION_MAP[p.attention]) return p.attention;
   if (p.status === 'red') return 'action';
@@ -2273,10 +2941,7 @@ function getQuarterlyMilestones(p) {
 }
 
 const STRATEGIC_TRACKS = [
-  { id:'all', label:'All Strategic Tracks', description:'All executive strategic tracks' },
-  { id:'track-a', label:'Track A: Core Revenue & Market Expansion', description:'Customer delivery and new product launch' },
-  { id:'track-b', label:'Track B: Technology Innovation & System Integration', description:'Architecture optimization and component standardization' },
-  { id:'track-c', label:'Track C: Software-defined & Digital Transformation', description:'Energy management systems and software platform iteration' }
+  { id:'all', label:'All Projects', description:'All projects' }
 ];
 
 const UNIVERSAL_CHECKPOINTS = ['1. Specification Definition', '2. Concept Validation', '3. System Integration', '4. Customer Delivery'];
@@ -2287,6 +2952,65 @@ const HEALTH_OPTIONS = [
   ['red', 'Blocked']
 ];
 
+const DCDC_EXECUTIVE_MILESTONE_TIMELINE = {
+  title: 'Selected 2026 DCDC Milestone Timeline',
+  quarters: ['Q1', 'Q2', 'Q3', 'Q4'],
+  rows: [
+    {
+      label: 'Solution & ecosystem',
+      cells: [
+        ['33 kW container shipped to Plano'],
+        ['33kW container integration Complete in Plano', '10 kW Micro Edge design', 'Beta version of PMS software', 'POC with Zettabyte Phase1 complete (2 sites)'],
+        ['33kW container shipped to Aston Labs', 'Beta version of energy optimization software', 'POC with Zettabyte Phase1 complete (5 sites)', '325kW Test Phase1 start (ToP + AI server)'],
+        ['33kW container fully operating with PMS and energy optimization (PV + Fuel cell + battery)', '325kW Test Phase2 complete (Fuel cell and SST)']
+      ]
+    },
+    {
+      label: 'Customers & GTM',
+      cells: [
+        ['Joint announcement with STT GDC on DCDC infra'],
+        ['Telco CO transformation to data center whitepaper'],
+        ['Micro Edge LOI with one lighthouse customer', 'Telco partnership LOI'],
+        ['Ultra Edge Prototype deployment']
+      ]
+    },
+    {
+      label: 'Investors & Others',
+      cells: [
+        ['EDB program secured'],
+        ['Investor engagements', 'NewCo creation'],
+        ['Investment term sheet and cap table discussion', 'Charger assembly to partner (e.g. TECO)'],
+        ['External investment', 'Sale or closing of UPS business']
+      ]
+    }
+  ],
+  phases: [
+    'Foundation & Initial Deployment',
+    'Solution Refinement & Market Readiness',
+    'Scale & Customer Engagement',
+    'Commercialization & Investment'
+  ]
+};
+
+function normalizeExecutiveMilestoneTimeline(raw = {}) {
+  const source = raw && raw.rows ? raw : DCDC_EXECUTIVE_MILESTONE_TIMELINE;
+  const quarters = (source.quarters || ['Q1', 'Q2', 'Q3', 'Q4']).slice(0, 4);
+  const rows = (source.rows || []).map(row => ({
+    label: String(row.label || ''),
+    cells: Array.from({ length: 4 }, (_, index) => {
+      const cell = row.cells?.[index] || [];
+      return Array.isArray(cell) ? cell.map(String).filter(Boolean) : textLines(cell);
+    })
+  })).filter(row => row.label || row.cells.some(cell => cell.length));
+  const phases = Array.from({ length: 4 }, (_, index) => String(source.phases?.[index] || ''));
+  return {
+    title: String(source.title || 'Selected 2026 DCDC Milestone Timeline'),
+    quarters,
+    rows: rows.length ? rows : DCDC_EXECUTIVE_MILESTONE_TIMELINE.rows,
+    phases: phases.some(Boolean) ? phases : DCDC_EXECUTIVE_MILESTONE_TIMELINE.phases
+  };
+}
+
 function trackClassName(trackId) {
   const safeId = String(trackId || 'all').toLowerCase().replace(/[^a-z0-9-]/g, '');
   return `track-${safeId || 'all'}`;
@@ -2294,9 +3018,6 @@ function trackClassName(trackId) {
 
 const LEGACY_STRATEGY_TEXT = {
   '\u5168\u90e8\u6230\u7565\u4e3b\u984c': 'All Strategic Tracks',
-  'Track A: \u6838\u5fc3\u71df\u6536\u8207\u5e02\u5834\u64f4\u5c55': 'Track A: Core Revenue & Market Expansion',
-  'Track B: \u6280\u8853\u5275\u65b0\u8207\u7cfb\u7d71\u6574\u5408': 'Track B: Technology Innovation & System Integration',
-  'Track C: \u8edf\u9ad4\u5b9a\u7fa9\u8207\u6578\u4f4d\u8f49\u578b': 'Track C: Software-defined & Digital Transformation',
   '\u6838\u5fc3\u71df\u6536\u8207\u5e02\u5834\u64f4\u5c55': 'Core Revenue & Market Expansion',
   '\u6280\u8853\u5275\u65b0\u8207\u7cfb\u7d71\u6574\u5408': 'Technology Innovation & System Integration',
   '\u8edf\u9ad4\u5b9a\u7fa9\u8207\u6578\u4f4d\u8f49\u578b': 'Software-defined & Digital Transformation',
@@ -2403,6 +3124,7 @@ function getStrategyLayer(week = allWeeks[currentIdx]) {
     activeTrack: saved.activeTrack || activeStrategicTrack || 'all',
     tracks,
     quarterGoals: saved.quarterGoals || {},
+    executiveMilestoneTimeline: normalizeExecutiveMilestoneTimeline(saved.executiveMilestoneTimeline),
     projectMap: saved.projectMap || {}
   };
 }
@@ -2472,15 +3194,14 @@ function getProjectStrategy(project, layer = getStrategyLayer()) {
   const rawObjective = mapped.businessObjective || '';
   const rawCheckpoint = mapped.checkpoint || '';
   return {
-    trackId: mapped.trackId || 'all',
+    trackId: 'all',
     businessObjective: rawObjective ? normalizeEnglishText(rawObjective, 'Business objective pending English update') : '',
     checkpoint: rawCheckpoint ? normalizeEnglishText(rawCheckpoint, '') : ''
   };
 }
 
 function filterProjectsByTrack(projs, activeTrack, layer = getStrategyLayer()) {
-  if (!activeTrack || activeTrack === 'all') return projs;
-  return projs.filter(p => getProjectStrategy(p, layer).trackId === activeTrack);
+  return projs;
 }
 
 function healthSelectOptions(selected) {
@@ -2935,25 +3656,87 @@ function formatDetailQuarterlyMilestones(project) {
   `).join('');
 }
 
-function renderQuarterlyBoard(projs, layer = getStrategyLayer(), activeTrack = 'all', year = getDefaultRoadmapYear(projs, layer)) {
+function renderExecutiveQuarterMilestones(projs, layer = getStrategyLayer(), activeTrack = 'all', year = getDefaultRoadmapYear(projs, layer)) {
+  const timeline = normalizeExecutiveMilestoneTimeline(layer.executiveMilestoneTimeline);
+  const quarters = timeline.quarters || ['Q1', 'Q2', 'Q3', 'Q4'];
+  return `<section class="roadmap-block executive-milestone-block">
+    <div class="roadmap-block-head">
+      <div>
+        <div class="roadmap-block-title">Executive milestones</div>
+        <div class="roadmap-block-note">Leadership-level DCDC milestone timeline, separated from PM project milestone input.</div>
+      </div>
+      <span class="reason-pill">${year}</span>
+    </div>
+    <div class="dcdc-timeline">
+      <div class="dcdc-title">${escHtml(timeline.title || 'Selected 2026 DCDC Milestone Timeline')}</div>
+      <div class="dcdc-grid">
+        <div class="dcdc-cell dcdc-corner"></div>
+        ${quarters.map(q => `<div class="dcdc-cell dcdc-quarter">${escHtml(q)}</div>`).join('')}
+        ${(timeline.rows || []).map(row => `
+          <div class="dcdc-cell dcdc-row-label">${escHtml(row.label)}</div>
+          ${(row.cells || []).map(items => `<div class="dcdc-cell"><ul class="dcdc-list">${(items || []).map(item => `<li>${escHtml(item)}</li>`).join('')}</ul></div>`).join('')}
+        `).join('')}
+      </div>
+      <div class="dcdc-phase-row">
+        <div class="dcdc-phase-spacer"></div>
+        ${(timeline.phases || []).map(phase => `<div class="dcdc-phase">${escHtml(phase)}</div>`).join('')}
+      </div>
+    </div>
+  </section>`;
+}
+
+function renderProjectQuarterItems(items) {
+  if (!items.length) return '<div class="pqm-empty">No PM milestone in this quarter.</div>';
+  return `<div class="pqm-items">${items.map(i => `<div class="pqm-item ${escHtml(i.status || '')}">
+    <div class="pqm-goal">${escHtml(i.goal || '-')}</div>
+    ${i.strategy.businessObjective ? `<div class="strategic-objective">[${escHtml(i.strategy.businessObjective)}]</div>` : ''}
+    <div class="pqm-meta">${escHtml(i.window || '-')} | ${escHtml(getStatusLabel(i.status || 'planned'))}${i.strategy.checkpoint ? ` | ${escHtml(i.strategy.checkpoint)}` : ''}</div>
+  </div>`).join('')}</div>`;
+}
+
+function renderProjectQuarterMatrix(projs, layer = getStrategyLayer(), activeTrack = 'all', year = getDefaultRoadmapYear(projs, layer)) {
   const visibleProjects = filterProjectsByTrack(projs, activeTrack, layer);
   const quarters = getQuarterLabelsForYear(year);
-  return `<div class="quarter-board">${quarters.map(q => {
-    const items = visibleProjects.flatMap(p => getQuarterlyMilestones(p).filter(m => m.quarter === q).map(m => ({...m, project:p.name, code:p.code, owner:p.owner, strategy:getProjectStrategy(p, layer)})));
-    return `<section class="quarter-col">
-      <div class="quarter-exec-head">
-        <div class="quarter-exec-top"><b>${escHtml(q)}</b><span class="reason-pill">${items.length}</span></div>
-        ${renderQuarterExecutiveGoals(q, layer, activeTrack)}
+  const rows = visibleProjects.filter(p => getQuarterlyMilestones(p).some(m => parseQuarterLabel(m.quarter)?.year === year));
+  const projects = rows.length ? rows : visibleProjects;
+  return `<section class="roadmap-block project-milestone-block">
+    <div class="roadmap-block-head">
+      <div>
+        <div class="roadmap-block-title">PM project milestones</div>
+        <div class="roadmap-block-note">Project names are the vertical axis; quarterly PM milestone input is placed in the matching Q1-Q4 cell.</div>
       </div>
-      <div class="quarter-items">${items.length ? items.map(i => `
-      <div class="quarter-item ${i.status || ''} ${trackClassName(i.strategy.trackId)}">
-        ${i.strategy.businessObjective ? `<span class="strategic-objective">[${escHtml(i.strategy.businessObjective)}]</span>` : ''}
-        <div class="strategic-project-name">${escHtml(i.project)}</div>
-        <div class="quarter-goal ${!i.goal || i.goal === '-' ? 'empty' : ''}">${escHtml(i.goal || '-')}</div>
-        <span class="checkpoint-tag">${escHtml(i.strategy.checkpoint || 'Checkpoint not set')}</span>
-        <div class="strategic-meta-hover">${escHtml(i.code)} | ${escHtml(i.owner || '-')} | ${escHtml(i.window || '-')} | ${escHtml(getStatusLabel(i.status || 'planned'))}</div>
-      </div>`).join('') : '<div class="quarter-item empty"><div class="quarter-goal">No quarterly milestone defined for this strategic filter.</div></div>'}</div></section>`;
-  }).join('')}</div>`;
+      <div class="pqm-head-tools">
+        <div class="pqm-legend" aria-label="Milestone status color legend">
+          <span class="pqm-legend-item"><i class="pqm-legend-swatch"></i>Planned</span>
+          <span class="pqm-legend-item"><i class="pqm-legend-swatch done"></i>Done</span>
+          <span class="pqm-legend-item"><i class="pqm-legend-swatch at-risk"></i>At Risk</span>
+        </div>
+        <span class="reason-pill">${projects.length} projects</span>
+      </div>
+    </div>
+    <div class="project-quarter-matrix">
+      <div class="pqm-cell pqm-head">Project</div>
+      ${quarters.map(q => `<div class="pqm-cell pqm-head">${escHtml(q)}</div>`).join('')}
+      ${projects.map(p => {
+        const strategy = getProjectStrategy(p, layer);
+        return `<div class="pqm-cell pqm-project">
+          <div class="pqm-project-name">${escHtml(p.name)}</div>
+          <div class="pqm-project-meta"><span class="proj-code">${escHtml(p.code)}</span><span class="reason-pill">${escHtml(p.owner || '-')}</span></div>
+        </div>
+        ${quarters.map(q => {
+          const items = getQuarterlyMilestones(p).filter(m => m.quarter === q).map(m => ({...m, strategy}));
+          return `<div class="pqm-cell">${renderProjectQuarterItems(items)}</div>`;
+        }).join('')}`;
+      }).join('')}
+    </div>
+  </section>`;
+}
+
+function renderQuarterlyBoard(projs, layer = getStrategyLayer(), activeTrack = 'all', year = getDefaultRoadmapYear(projs, layer)) {
+  return `<div class="roadmap-layout">
+    ${renderExecutiveQuarterMilestones(projs, layer, activeTrack, year)}
+    ${renderProjectQuarterMatrix(projs, layer, activeTrack, year)}
+  </div>`;
 }
 
 function renderAttentionMatrix(projs, editable) {
@@ -3079,8 +3862,9 @@ function buildCopilotPrompt() {
 
 window.openProjDetail = (code) => {
   const week = allWeeks[currentIdx];
-  const p = week.projects.find(x => x.code === code);
-  if(!p) return;
+  const rawProject = week.projects.find(x => x.code === code);
+  if(!rawProject) return;
+  const p = enrichProjectPrototype(rawProject, week.projects.findIndex(x => x.code === code));
   
   document.getElementById('pd_title').innerHTML = `${p.name} <span class="proj-code" style="margin-left:8px; font-size:13px;">${p.code}</span>`;
   document.getElementById('pd_owner').textContent = p.owner || '-';
@@ -3112,6 +3896,16 @@ window.openProjDetail = (code) => {
     </div>
   `).join('');
   document.getElementById('pd_quarterly_milestones').innerHTML = formatDetailQuarterlyMilestones(p);
+  document.getElementById('pd_team_effort').innerHTML = (p.teamMembers || []).map(m => `
+    <div><b>${escHtml(m.name || '-')}</b> · ${escHtml(m.roleName || m.role || '-')} · ${Number(m.effortPct || m.effort || 0)}%</div>
+  `).join('') || '<div>No team allocation yet.</div>';
+  const budgetTotals = projectBudgetTotals(p, overviewCurrency);
+  document.getElementById('pd_budget_snapshot').innerHTML = `
+    <div><b>Total:</b> ${fmtMoney(budgetTotals.total, overviewCurrency, false)}</div>
+    <div><b>Actual:</b> ${fmtMoney(budgetTotals.actual, overviewCurrency, false)} (${budgetTotals.usedPct}% used)</div>
+    <div><b>Planned:</b> ${fmtMoney(budgetTotals.planned, overviewCurrency, false)}</div>
+    <div><b>Variance:</b> ${fmtMoney(budgetTotals.variance, overviewCurrency, false)}</div>
+  `;
   
   document.getElementById('projDetailOverlay').classList.add('open');
 };
@@ -3162,7 +3956,7 @@ window.render = () => {
     }
   }
 
-  let projs = week.projects || [];
+  let projs = enrichProjectsPrototype(week.projects || []);
   
   const visFilter = document.getElementById('visSelect') ? document.getElementById('visSelect').value : 'active';
   if (currentRole !== 'admin' || visFilter === 'active') {
@@ -3220,6 +4014,8 @@ function renderNormal(projs) {
     const ms = getCardMilestones(p.milestones || []);
     const statusLabel = getStatusLabel(p.status).toUpperCase();
     const highlightText = p.highlight || 'No updates.';
+    const teamTotal = (p.teamMembers || []).reduce((sum, m) => sum + Number(m.effortPct || m.effort || 0), 0);
+    const budgetTotals = projectBudgetTotals(p, overviewCurrency);
 
     return `
     <div class="proj-card" ondblclick="openProjDetail('${p.code}')" title="Double click for details">
@@ -3250,6 +4046,17 @@ function renderNormal(projs) {
           <div><div class="info-lbl">Deputy</div><div class="info-val">${p.deputy || '-'}</div></div>
           <div><div class="info-lbl">Customer</div><div class="info-val">${p.customer || '-'}</div></div>
           <div><div class="info-lbl">Location</div><div class="info-val">${p.location || '-'}</div></div>
+        </div>
+
+        <div class="card-extra-signals">
+          <div class="card-signal">
+            <div class="card-signal-label">Team Effort</div>
+            <div class="card-signal-value">${(p.teamMembers || []).length} members · ${teamTotal}%</div>
+          </div>
+          <div class="card-signal">
+            <div class="card-signal-label">Budget Used</div>
+            <div class="card-signal-value">${budgetTotals.usedPct}% · ${fmtMoney(budgetTotals.actual)}</div>
+          </div>
         </div>
 
         <div class="card-section">
@@ -3297,7 +4104,7 @@ function renderExec(projs, summary) {
   const statusMap = { 'green': 'On Track', 'yellow': 'At Risk', 'red': 'Critical' };
   const editableDecisionView = currentRole !== 'vip' && !isWeekReleased(allWeeks[currentIdx]);
   const strategyLayer = getStrategyLayer(allWeeks[currentIdx]);
-  const activeTrack = activeStrategicTrack || strategyLayer.activeTrack || 'all';
+  const activeTrack = 'all';
   const roadmapYear = getDefaultRoadmapYear(projs, strategyLayer);
 
   const total = projs.length;
@@ -3375,6 +4182,8 @@ function renderExec(projs, summary) {
       </section>
     </div>
 
+    ${renderResourceBudgetOverview(projs)}
+
     ${renderWeeklyTrendPanel()}
 
     <div class="exec-summary-grid">
@@ -3417,8 +4226,8 @@ function renderExec(projs, summary) {
         </div>
         <div class="exec-panel-note">Executive view of what each project is targeting by quarter</div>
         ${renderRoadmapYearSelector(projs, strategyLayer)}
+        ${editableDecisionView ? `<button class="btn btn-primary no-print" onclick="openStrategyLayerModal()">Manage Strategy</button>` : ''}
       </div>
-      ${renderStrategicTrackFilter(projs, strategyLayer, editableDecisionView, true)}
       ${renderQuarterlyBoard(projs, strategyLayer, activeTrack, roadmapYear)}
     </div>
 
@@ -3504,6 +4313,56 @@ window.setRoadmapYear = (year) => {
   render();
 };
 
+function renderExecutiveMilestoneEditor(timeline) {
+  const data = normalizeExecutiveMilestoneTimeline(timeline);
+  return `<div class="exec-timeline-editor">
+    <div class="exec-timeline-title-row">
+      <label class="fl">Timeline Title</label>
+      <input class="fi etm-title" value="${escHtml(data.title)}">
+    </div>
+    <div class="exec-timeline-head"><span>Category</span>${data.quarters.map(q => `<span>${escHtml(q)}</span>`).join('')}</div>
+    <div id="execTimelineRows">
+      ${data.rows.map(row => `
+        <div class="exec-timeline-row">
+          <input class="fi etm-row-label" value="${escHtml(row.label)}" placeholder="Category">
+          ${Array.from({ length: 4 }, (_, index) => `<textarea class="ft exec-timeline-cell etm-cell" rows="4" placeholder="${escHtml(data.quarters[index] || `Q${index + 1}`)}">${escHtml((row.cells[index] || []).join('\n'))}</textarea>`).join('')}
+        </div>
+      `).join('')}
+    </div>
+    <button class="btn btn-ghost" onclick="addExecutiveTimelineRow()" style="width:100%;">+ Add Timeline Category</button>
+    <div class="exec-timeline-head"><span>Phase</span>${data.quarters.map(q => `<span>${escHtml(q)}</span>`).join('')}</div>
+    <div class="exec-timeline-phase-row">
+      <span class="fl" style="padding-top:9px;">Bottom phase labels</span>
+      ${Array.from({ length: 4 }, (_, index) => `<input class="fi etm-phase" value="${escHtml(data.phases[index] || '')}" placeholder="${escHtml(data.quarters[index] || `Q${index + 1}`)} phase">`).join('')}
+    </div>
+  </div>`;
+}
+
+window.addExecutiveTimelineRow = () => {
+  const rows = document.getElementById('execTimelineRows');
+  if (!rows) return;
+  const row = document.createElement('div');
+  row.className = 'exec-timeline-row';
+  row.innerHTML = `<input class="fi etm-row-label" placeholder="Category">
+    ${[1,2,3,4].map(q => `<textarea class="ft exec-timeline-cell etm-cell" rows="4" placeholder="Q${q} milestones"></textarea>`).join('')}`;
+  rows.appendChild(row);
+};
+
+function collectExecutiveMilestoneTimeline() {
+  const title = document.querySelector('.etm-title')?.value.trim() || 'Selected 2026 DCDC Milestone Timeline';
+  const rows = Array.from(document.querySelectorAll('#execTimelineRows .exec-timeline-row')).map(row => ({
+    label: row.querySelector('.etm-row-label')?.value.trim() || '',
+    cells: Array.from(row.querySelectorAll('.etm-cell')).map(cell => textLines(cell.value))
+  })).filter(row => row.label || row.cells.some(cell => cell.length));
+  const phases = Array.from(document.querySelectorAll('.etm-phase')).map(input => input.value.trim());
+  return normalizeExecutiveMilestoneTimeline({
+    title,
+    quarters: ['Q1', 'Q2', 'Q3', 'Q4'],
+    rows,
+    phases
+  });
+}
+
 window.openStrategyLayerModal = () => {
   const week = allWeeks[currentIdx];
   if (!week) return;
@@ -3511,40 +4370,19 @@ window.openStrategyLayerModal = () => {
   const projs = (week.projects || []).filter(p => !p.visibility || p.visibility === 'active');
   const quarters = getStrategyYears(projs, layer, { includeNextYear: true }).flatMap(getQuarterLabelsForYear);
 
-  document.getElementById('strategyTrackEditor').innerHTML = layer.tracks.filter(t => t.id !== 'all').map(track => `
-    <div class="strategy-track-row" data-track="${escHtml(track.id)}">
-      <input class="fi st-label" value="${escHtml(track.label)}">
-      <input class="fi st-desc" value="${escHtml(track.description || '')}" placeholder="Executive description">
-    </div>
-  `).join('');
+  document.getElementById('quarterGoalEditor').innerHTML = renderExecutiveMilestoneEditor(layer.executiveMilestoneTimeline);
 
-  document.getElementById('quarterGoalEditor').innerHTML = quarters.map(q => `
-    <div class="quarter-goal-group" data-quarter="${escHtml(q)}">
-      <div class="quarter-goal-group-title">${escHtml(q)}</div>
-      <div class="strategy-editor-head quarter-goal-head"><span>Executive Goal</span><span>Track</span><span>Schedule</span><span>Resource</span><span>Risk</span><span></span></div>
-      <div class="quarter-goal-rows"></div>
-      <button class="btn btn-ghost quarter-goal-add" onclick="addQuarterExecutiveGoalRow('${escHtml(q)}')">+ Add Executive Goal</button>
-    </div>
-  `).join('');
-  quarters.forEach(q => {
-    const goals = getQuarterGoalList(q, layer, 'all');
-    (goals.length ? goals : [normalizeQuarterGoalEntry({})]).forEach(goal => addQuarterExecutiveGoalRow(q, goal, layer));
-  });
-
-  const trackOptions = layer.tracks.filter(t => t.id !== 'all').map(t => `<option value="${escHtml(t.id)}">${escHtml(t.label)}</option>`).join('');
   const checkpointOptions = UNIVERSAL_CHECKPOINTS.map(c => `<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('');
   document.getElementById('projectStrategyEditor').innerHTML = projs.map(p => {
     const s = getProjectStrategy(p, layer);
     return `<div class="project-map-row" data-code="${escHtml(p.code)}">
       <input class="fi pm-project" value="${escHtml(p.name)}" readonly style="background:var(--s3); color:var(--muted);">
-      <select class="fs pm-track"><option value="">Unmapped</option>${trackOptions}</select>
       <input class="fi pm-objective" value="${escHtml(s.businessObjective || '')}" placeholder="Business objective / customer name">
       <select class="fs pm-checkpoint"><option value="">Checkpoint not set</option>${checkpointOptions}</select>
     </div>`;
   }).join('');
   document.querySelectorAll('.project-map-row').forEach(row => {
     const s = getProjectStrategy(projs.find(p => p.code === row.dataset.code), layer);
-    row.querySelector('.pm-track').value = s.trackId === 'all' ? '' : s.trackId;
     row.querySelector('.pm-checkpoint').value = s.checkpoint || '';
   });
 
@@ -3572,47 +4410,38 @@ window.addQuarterExecutiveGoalRow = (quarter, goal = {}, layer = getStrategyLaye
 window.saveStrategyLayer = async () => {
   const week = allWeeks[currentIdx];
   if (!week || !currentUser) return;
-  const base = getStrategyLayer(week);
-  const tracks = base.tracks.map(track => {
-    const row = document.querySelector(`.strategy-track-row[data-track="${track.id}"]`);
-    return row ? {...track, label: row.querySelector('.st-label').value.trim() || track.label, description: row.querySelector('.st-desc').value.trim()} : track;
-  });
-  const quarterGoals = {};
-  document.querySelectorAll('.quarter-goal-group').forEach(group => {
-    const goals = Array.from(group.querySelectorAll('.quarter-goal-row')).map(row => ({
-      summary: row.querySelector('.qg-summary').value.trim(),
-      trackId: row.querySelector('.qg-track').value || 'all',
-      health: {
-        schedule: row.querySelector('.qg-schedule').value,
-        resource: row.querySelector('.qg-resource').value,
-        risk: row.querySelector('.qg-risk').value
-      }
-    })).filter(goal => goal.summary);
-    if (goals.length) quarterGoals[group.dataset.quarter] = { goals };
-  });
-  const projectMap = {};
-  document.querySelectorAll('.project-map-row').forEach(row => {
-    const trackId = row.querySelector('.pm-track').value;
-    const businessObjective = row.querySelector('.pm-objective').value.trim();
-    const checkpoint = row.querySelector('.pm-checkpoint').value;
-    if (trackId || businessObjective || checkpoint) {
-      projectMap[row.dataset.code] = { trackId: trackId || 'all', businessObjective, checkpoint };
-    }
-  });
-  week.strategyLayer = {
-    activeTrack: activeStrategicTrack || 'all',
-    tracks,
-    quarterGoals,
-    projectMap
-  };
-  week.lastModifiedBy = currentUser.email;
-  closeModal('strategyOverlay');
   showLoader("Saving Strategy Layer...");
-  await setDoc(doc(db, "weeks", week.weekLabel.replace(/\s+/g, '-')), week);
-  await new Promise(r => setTimeout(r, 500));
-  hideLoader();
-  render();
-  showSaveToast("Strategy layer saved");
+  try {
+    const base = getStrategyLayer(week);
+    const executiveMilestoneTimeline = collectExecutiveMilestoneTimeline();
+    const projectMap = {};
+    document.querySelectorAll('.project-map-row').forEach(row => {
+      const code = row.dataset.code || '';
+      const businessObjective = row.querySelector('.pm-objective').value.trim();
+      const checkpoint = row.querySelector('.pm-checkpoint').value;
+      if (code && (businessObjective || checkpoint)) {
+        projectMap[code] = { businessObjective, checkpoint };
+      }
+    });
+    week.strategyLayer = {
+      activeTrack: 'all',
+      tracks: base.tracks || STRATEGIC_TRACKS,
+      quarterGoals: base.quarterGoals || {},
+      executiveMilestoneTimeline,
+      projectMap
+    };
+    week.lastModifiedBy = currentUser.email;
+    closeModal('strategyOverlay');
+    await setDoc(doc(db, "weeks", week.weekLabel.replace(/\s+/g, '-')), cleanFirestoreData(week));
+    await new Promise(r => setTimeout(r, 500));
+    render();
+    showSaveToast("Strategy layer saved");
+  } catch (err) {
+    console.error("Strategy layer save failed", err);
+    showSaveToast("Strategy layer save failed");
+  } finally {
+    hideLoader();
+  }
 };
 
 function findCurrentProject(code) {
@@ -3678,6 +4507,10 @@ window.handleTopPmChange = () => {
 window.toggleOverview = () => {
   if (currentRole === 'vip') return; 
   isOverview = !isOverview;
+  render();
+};
+window.setOverviewCurrency = (currency) => {
+  if (SUPPORTED_CURRENCIES.includes(currency)) overviewCurrency = currency;
   render();
 };
 window.navWeek = (dir) => {
@@ -3752,11 +4585,135 @@ window.addRiskActionPairRow = (risk = '', action = '', primary = false) => {
   ensurePrimaryRiskActionPair();
 };
 
+function collectTeamMembers() {
+  return Array.from(document.querySelectorAll('.team-row')).map(row => ({
+    name: row.querySelector('.team-name')?.value.trim() || '',
+    roleName: row.querySelector('.team-role')?.value.trim() || '',
+    effortPct: Number(row.querySelector('.team-effort')?.value || 0)
+  })).filter(item => item.name || item.roleName || item.effortPct);
+}
+
+function collectBudgetRows(selector) {
+  return Array.from(document.querySelectorAll(selector)).map(row => ({
+    month: row.querySelector('.budget-month')?.value || '',
+    categoryName: row.querySelector('.budget-category')?.value.trim() || 'Other',
+    currency: row.querySelector('.budget-currency')?.value || 'USD',
+    amount: Number(row.querySelector('.budget-amount')?.value || 0),
+    note: row.querySelector('.budget-note')?.value.trim() || ''
+  })).filter(item => item.month || item.amount || item.categoryName !== 'Other');
+}
+
+function getSelectedBudgetMode() {
+  return document.querySelector('input[name="budgetMode"]:checked')?.value || 'manual';
+}
+
+window.setBudgetTab = (tab = 'plan') => {
+  const isActual = tab === 'actual';
+  document.getElementById('budgetPlanPane')?.classList.toggle('active', !isActual);
+  document.getElementById('budgetActualPane')?.classList.toggle('active', isActual);
+  document.getElementById('budgetPlanTabBtn')?.classList.toggle('active', !isActual);
+  document.getElementById('budgetActualTabBtn')?.classList.toggle('active', isActual);
+  const planBtn = document.getElementById('budgetPlanAddBtn');
+  const actualBtn = document.getElementById('budgetActualAddBtn');
+  if (planBtn) planBtn.style.display = isActual ? 'none' : '';
+  if (actualBtn) actualBtn.style.display = isActual ? '' : 'none';
+};
+
+function getEditorPlanSum(targetCurrency = document.getElementById('pe_budget_currency')?.value || 'USD') {
+  return collectBudgetRows('.budget-plan-row').reduce((sum, item) => {
+    const fromCurrency = item.currency || targetCurrency;
+    return sum + convertCurrency(item.amount, fromCurrency, targetCurrency);
+  }, 0);
+}
+
+window.updateBudgetLinkSummary = () => {
+  const totalInput = document.getElementById('pe_budget_total');
+  const currencySelect = document.getElementById('pe_budget_currency');
+  if (!totalInput || !currencySelect) return;
+  const currency = currencySelect.value || 'USD';
+  const mode = getSelectedBudgetMode();
+  const planSum = getEditorPlanSum(currency);
+  if (mode === 'auto') {
+    totalInput.value = Math.round(planSum);
+    totalInput.readOnly = true;
+    totalInput.style.background = 'var(--s3)';
+  } else {
+    totalInput.readOnly = false;
+    totalInput.style.background = '';
+  }
+  const total = Number(totalInput.value || 0);
+  const gap = total - planSum;
+  const coverage = total ? Math.round((planSum / total) * 1000) / 10 : 0;
+  const gapClass = Math.abs(gap) < 1 ? 'good' : gap < 0 ? 'danger' : 'warn';
+  const coverageClass = coverage > 100 ? 'danger' : coverage >= 95 ? 'good' : 'warn';
+  document.getElementById('pe_plan_sum').textContent = fmtMoney(planSum, currency, false);
+  const gapLabel = gap < 0 ? `Over-planned ${fmtMoney(Math.abs(gap), currency, false)}` : fmtMoney(gap, currency, false);
+  document.getElementById('pe_budget_gap').textContent = gapLabel;
+  document.getElementById('pe_budget_gap').className = `budget-link-value ${gapClass}`;
+  document.getElementById('pe_budget_coverage').textContent = `${coverage}%`;
+  document.getElementById('pe_budget_coverage').className = `budget-link-value ${coverageClass}`;
+  const message = mode === 'auto'
+    ? 'Auto mode: total estimated budget follows the monthly planned spend sum.'
+    : gap < 0
+      ? 'Manual mode: monthly plan is higher than the budget ceiling. Reduce plan or increase total budget.'
+      : gap > 0
+        ? 'Manual mode: remaining budget is not allocated to monthly plan yet.'
+        : 'Manual mode: monthly plan fully matches the total budget.';
+  document.getElementById('pe_budget_message').textContent = message;
+};
+
+window.addTeamMemberRow = (member = {}) => {
+  const container = document.getElementById('teamMemberContainer');
+  if (!container) return;
+  const row = document.createElement('div');
+  row.className = 'team-row';
+  row.innerHTML = `
+    <input class="fi team-name" value="${escHtml(member.name || '')}" placeholder="Name">
+    <input class="fi team-role" list="teamRoleOptions" value="${escHtml(member.roleName || member.role || '')}" placeholder="Role">
+    <input class="fi team-effort" type="number" min="0" max="200" value="${Number(member.effortPct || member.effort || 0)}" placeholder="Effort %">
+    <button class="row-delete" onclick="this.parentElement.remove();" title="Delete member">&#128465;&#65039;</button>
+  `;
+  container.appendChild(row);
+};
+
+window.addBudgetPlanRow = (item = {}) => {
+  const container = document.getElementById('budgetPlanContainer');
+  if (!container) return;
+  const row = document.createElement('div');
+  row.className = 'budget-plan-row';
+  row.innerHTML = `
+    <input class="fi budget-month" type="month" value="${escHtml(item.month || monthValue(0))}" onchange="updateBudgetLinkSummary()">
+    <input class="fi budget-category" list="budgetCategoryOptions" value="${escHtml(item.categoryName || item.category || 'NRE')}" placeholder="Category">
+    <select class="fs budget-currency" onchange="updateBudgetLinkSummary()">${currencyOptions(item.currency || document.getElementById('pe_budget_currency')?.value || 'USD')}</select>
+    <input class="fi budget-amount" type="number" min="0" step="100" value="${Number(item.amount || 0)}" placeholder="Amount" oninput="updateBudgetLinkSummary()">
+    <button class="row-delete" onclick="this.parentElement.remove(); updateBudgetLinkSummary();" title="Delete plan">&#128465;&#65039;</button>
+  `;
+  container.appendChild(row);
+  updateBudgetLinkSummary();
+};
+
+window.addBudgetActualRow = (item = {}) => {
+  const container = document.getElementById('budgetActualContainer');
+  if (!container) return;
+  const row = document.createElement('div');
+  row.className = 'budget-actual-row';
+  row.innerHTML = `
+    <input class="fi budget-month" type="month" value="${escHtml(item.month || monthValue(0))}">
+    <input class="fi budget-category" list="budgetCategoryOptions" value="${escHtml(item.categoryName || item.category || 'Sample fee')}" placeholder="Category">
+    <select class="fs budget-currency">${currencyOptions(item.currency || document.getElementById('pe_budget_currency')?.value || 'USD')}</select>
+    <input class="fi budget-amount" type="number" min="0" step="100" value="${Number(item.amount || 0)}" placeholder="Amount">
+    <input class="fi budget-note" value="${escHtml(item.note || '')}" placeholder="Note">
+    <button class="row-delete" onclick="this.parentElement.remove(); updateBudgetLinkSummary();" title="Delete actual">&#128465;&#65039;</button>
+  `;
+  container.appendChild(row);
+  updateBudgetLinkSummary();
+};
+
 window.openProjEdit = (code, isNew = false) => {
   isCreatingNew = isNew;
   editingProjCode = code;
   const week = allWeeks[currentIdx];
-  let p = isNew ? {name:'', code:'', owner:'', deputy:'', customer:'', location:'', visibility:'active', milestones:[], quarterlyMilestones:[], status:'green', progress:0, attention:'watch', highlight:'', weeklyActions:'', risk:'', next:'', riskActions:[]} : week.projects.find(x => x.code === code);
+  let p = isNew ? {name:'', code:'', owner:'', deputy:'', customer:'', location:'', visibility:'active', milestones:[], quarterlyMilestones:[], status:'green', progress:0, attention:'watch', highlight:'', weeklyActions:'', risk:'', next:'', riskActions:[], teamMembers:[], budget:{ mode:'manual', currency:'USD', totalEstimated:0, monthlyPlans:[], actuals:[] }} : enrichProjectPrototype(week.projects.find(x => x.code === code), week.projects.findIndex(x => x.code === code));
   
   document.getElementById('peTitle').textContent = isNew ? "New Project" : "Edit Project";
   
@@ -3791,6 +4748,26 @@ window.openProjEdit = (code, isNew = false) => {
   const qmsCont = document.getElementById('qmsListContainer');
   qmsCont.innerHTML = '';
   getQuarterlyMilestones(p).forEach(m => addQuarterlyMilestoneRow(m.quarter, m.goal, m.window, m.status));
+  document.querySelectorAll('input[name="budgetMode"]').forEach(input => {
+    input.checked = input.value === (p.budget?.mode || 'manual');
+  });
+  const budgetCurrencySelect = document.getElementById('pe_budget_currency');
+  const budgetTotalInput = document.getElementById('pe_budget_total');
+  budgetCurrencySelect.innerHTML = currencyOptions(p.budget?.currency || 'USD');
+  budgetCurrencySelect.onchange = updateBudgetLinkSummary;
+  budgetTotalInput.value = p.budget?.totalEstimated || 0;
+  budgetTotalInput.oninput = updateBudgetLinkSummary;
+  const teamCont = document.getElementById('teamMemberContainer');
+  const planCont = document.getElementById('budgetPlanContainer');
+  const actualCont = document.getElementById('budgetActualContainer');
+  teamCont.innerHTML = '';
+  planCont.innerHTML = '';
+  actualCont.innerHTML = '';
+  (p.teamMembers?.length ? p.teamMembers : [{}]).forEach(member => addTeamMemberRow(member));
+  (p.budget?.monthlyPlans?.length ? p.budget.monthlyPlans : [{}]).forEach(item => addBudgetPlanRow(item));
+  (p.budget?.actuals?.length ? p.budget.actuals : [{}]).forEach(item => addBudgetActualRow(item));
+  setBudgetTab('plan');
+  updateBudgetLinkSummary();
   
   const actionDiv = document.getElementById('adminProjActions');
   if (currentRole === 'admin') {
@@ -3820,6 +4797,9 @@ window.saveProjEdit = async () => {
   const riskActions = collectRiskActionPairs();
   const riskText = riskActions.map(item => item.risk).filter(Boolean).join('\n');
   const nextText = riskActions.map(item => item.action).filter(Boolean).join('\n');
+  const budgetCurrency = document.getElementById('pe_budget_currency').value || 'USD';
+  const budgetMode = getSelectedBudgetMode();
+  if (budgetMode === 'auto') updateBudgetLinkSummary();
   
   const pData = {
     name: document.getElementById('pe_name').value,
@@ -3839,7 +4819,15 @@ window.saveProjEdit = async () => {
     weeklyActions: document.getElementById('pe_weekly_actions').value.trim(),
     riskActions: riskActions,
     risk: riskText,
-    next: nextText
+    next: nextText,
+    teamMembers: collectTeamMembers(),
+    budget: {
+      mode: budgetMode,
+      currency: budgetCurrency,
+      totalEstimated: Number(document.getElementById('pe_budget_total').value || 0),
+      monthlyPlans: collectBudgetRows('.budget-plan-row').map(item => ({ ...item, currency: item.currency || budgetCurrency })),
+      actuals: collectBudgetRows('.budget-actual-row').map(item => ({ ...item, currency: item.currency || budgetCurrency }))
+    }
   };
 
   if(isCreatingNew) {
