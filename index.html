@@ -3005,7 +3005,7 @@ function renderStrategicTrackFilter(projs, layer, editable, inline = false) {
   </${tag}>`;
 }
 
-function getTrendWeeks(limit = 8) {
+function getTrendWeeks(limit = 12) {
   const weeks = Array.isArray(allWeeks) ? allWeeks : [];
   const selectedIdx = Math.min(Math.max(Number(currentIdx) || 0, 0), Math.max(weeks.length - 1, 0));
   const visibleHistory = weeks
@@ -3050,7 +3050,7 @@ function trendXCoordinates(count, width = 360, pad = 12) {
 /* trend-axis:end */
 
 function renderTrendSvg(points, key, className = '') {
-  const width = 360;
+  const width = 720;
   const height = 132;
   const pad = 12;
   const plotBottom = 104;

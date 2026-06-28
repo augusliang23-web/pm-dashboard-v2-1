@@ -14,6 +14,8 @@ assert.deepEqual(
 );
 assert.ok(html.includes('weekly-trend-axis-label'), 'trend labels must render inside the SVG');
 assert.ok(!html.includes('<div class="weekly-trend-labels">'), 'detached trend labels must be removed');
+assert.ok(html.includes('function getTrendWeeks(limit = 12)'), 'trend history should include up to 12 weeks');
+assert.ok(html.includes('const width = 720;'), 'trend SVG should use the wider coordinate system');
 assert.ok(html.includes('Portfolio Summary:'), 'AI prompt must require an explicit portfolio summary');
 assert.ok(html.includes('exec-summary-portfolio-lead'), 'portfolio lead needs dedicated rendering');
 const promptHelper = html.match(/function addPortfolioSummaryInstruction\(prompt\) \{([\s\S]*?)\n\}/);
