@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 
 const dashboardPath = new URL('../team-2/index.html', import.meta.url);
 const dashboard = await readFile(dashboardPath, 'utf8');
+const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
 
 test('locks the Team 2 production dashboard baseline', () => {
   const requiredStrings = [
@@ -145,10 +146,17 @@ test('resource editor exposes fixed disciplines with estimated and optional actu
 test('resource save validates user input and only timestamps changed values', () => {
   assert.ok(dashboard.includes('function collectEditorResources(previousResources = {})'));
   assert.ok(dashboard.includes('input.reportValidity()'));
-  assert.ok(dashboard.includes('normalizeResourceEntry(previousResources[discipline])'));
-  assert.ok(dashboard.includes('estimated === previous.estimated && actual === previous.actual'));
-  assert.ok(dashboard.includes('updatedAt: unchanged ? previous.updatedAt : new Date().toISOString()'));
+  assert.ok(dashboard.includes('mergeResourceEntry('));
   assert.ok(dashboard.includes('resources: editorResources'));
+  assert.ok(dashboard.includes('estimatedInput.valueAsNumber'));
+  assert.ok(dashboard.includes('actualInput.valueAsNumber'));
+  assert.ok(dashboard.includes('validateResourceInput('));
+});
+
+test('resource save preserves unknown disciplines and known-entry metadata', () => {
+  assert.ok(dashboard.includes('const resources = { ...previousResources };'));
+  assert.ok(dashboard.includes('const previousSource = previousResources[discipline]'));
+  assert.ok(dashboard.includes('mergeResourceEntry('));
 });
 
 test('resource editor retains existing project authorization for admin, PM, and VIP roles', () => {
@@ -177,4 +185,19 @@ test('project detail renders resource values without modifying RAG status', () =
   const resourceRenderEnd = dashboard.indexOf('\n}', resourceRenderStart);
   assert.ok(resourceRenderStart >= 0);
   assert.ok(!dashboard.slice(resourceRenderStart, resourceRenderEnd).includes('.status'));
+});
+
+test('project writes re-authorize at the mutation boundary', () => {
+  assert.ok(dashboard.includes("if (isCreatingNew && currentRole !== 'admin') {"));
+  assert.ok(dashboard.includes('const targetProject = week.projects.find(project => project.code === editingProjCode);'));
+  assert.ok(dashboard.includes('if (!targetProject || !canEditProject(targetProject)) {'));
+  assert.ok(dashboard.includes('if (targetIndex < 0) {'));
+  assert.ok(dashboard.includes("if (currentRole !== 'admin') return;"));
+  assert.ok(dashboard.includes('const deleteIndex = week.projects.findIndex(project => project.code === editingProjCode);'));
+  assert.ok(dashboard.includes('if (deleteIndex < 0) {'));
+});
+
+test('UAT handoff identifies Firestore rules as the production authorization boundary', () => {
+  assert.match(readme, /client authorization checks are defense-in-depth/i);
+  assert.match(readme, /verify and deploy Firestore Security Rules/i);
 });

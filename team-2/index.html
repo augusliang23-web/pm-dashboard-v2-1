@@ -1772,7 +1772,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 </div>
 
 <script type="module">
-import { RESOURCE_DISCIPLINES, calculateDropIndex, createDefaultWorkstreams, createTimelineTicks, filterProjects, normalizeProject, normalizeResourceEntry, normalizeWorkstream, parseIsoDate, validateWorkstreams } from "./js/portfolio-core.mjs";
+import { RESOURCE_DISCIPLINES, calculateDropIndex, createDefaultWorkstreams, createTimelineTicks, filterProjects, mergeResourceEntry, normalizeProject, normalizeResourceEntry, normalizeWorkstream, parseIsoDate, validateResourceInput, validateWorkstreams } from "./js/portfolio-core.mjs";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, doc, onSnapshot, setDoc, updateDoc, query, orderBy, where, getDoc, getDocs, increment, serverTimestamp, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, updatePassword, onAuthStateChanged, signOut, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -5282,26 +5282,38 @@ function getEditorPortfolioValue(id, fallback = '') {
 }
 
 function collectEditorResources(previousResources = {}) {
-  const resources = {};
+  const resources = { ...previousResources };
   for (const discipline of RESOURCE_DISCIPLINES) {
     const row = document.querySelector(`[data-resource-discipline="${discipline}"]`);
     const estimatedInput = row.querySelector('.resource-estimated');
     const actualInput = row.querySelector('.resource-actual');
     for (const input of [estimatedInput, actualInput]) {
+      input.setCustomValidity('');
       if (!input.checkValidity()) {
         input.reportValidity();
         return null;
       }
     }
-    const previous = normalizeResourceEntry(previousResources[discipline]);
-    const estimated = Number(estimatedInput.value);
-    const actual = actualInput.value.trim() === '' ? null : Number(actualInput.value);
-    const unchanged = estimated === previous.estimated && actual === previous.actual;
-    resources[discipline] = normalizeResourceEntry({
+    const estimatedResult = validateResourceInput(estimatedInput.valueAsNumber);
+    const actualBlank = actualInput.value.trim() === '';
+    const actualResult = validateResourceInput(actualInput.valueAsNumber, actualBlank);
+    if (!estimatedResult.valid || !actualResult.valid) {
+      const input = !estimatedResult.valid ? estimatedInput : actualInput;
+      input.setCustomValidity('Enter a finite, nonnegative number.');
+      input.reportValidity();
+      return null;
+    }
+    const previousSource = previousResources[discipline] && typeof previousResources[discipline] === 'object'
+      ? previousResources[discipline]
+      : {};
+    const estimated = estimatedResult.value;
+    const actual = actualResult.value;
+    resources[discipline] = mergeResourceEntry(
+      previousSource,
       estimated,
       actual,
-      updatedAt: unchanged ? previous.updatedAt : new Date().toISOString()
-    });
+      new Date().toISOString()
+    );
   }
   return resources;
 }
@@ -5370,11 +5382,24 @@ window.saveProjEdit = async () => {
     }
   };
 
+  if (isCreatingNew && currentRole !== 'admin') {
+    hideLoader();
+    return;
+  }
   if(isCreatingNew) {
     week.projects.push(pData);
   } else {
-    const idx = week.projects.findIndex(x => x.code === editingProjCode);
-    week.projects[idx] = {...week.projects[idx], ...pData};
+    const targetProject = week.projects.find(project => project.code === editingProjCode);
+    if (!targetProject || !canEditProject(targetProject)) {
+      hideLoader();
+      return;
+    }
+    const targetIndex = week.projects.findIndex(project => project.code === editingProjCode);
+    if (targetIndex < 0) {
+      hideLoader();
+      return;
+    }
+    week.projects[targetIndex] = {...targetProject, ...pData};
   }
   
   week.lastModifiedBy = currentUser.email;
@@ -5386,12 +5411,18 @@ window.saveProjEdit = async () => {
 };
 
 window.deleteProject = async () => {
+  if (currentRole !== 'admin') return;
   if(!confirm("Are you sure you want to permanently DELETE this project? This cannot be undone.")) return;
   closeModal('projEditOverlay');
   showLoader("Deleting Project...");
   
   const week = allWeeks[currentIdx];
-  week.projects = week.projects.filter(x => x.code !== editingProjCode);
+  const deleteIndex = week.projects.findIndex(project => project.code === editingProjCode);
+  if (deleteIndex < 0) {
+    hideLoader();
+    return;
+  }
+  week.projects.splice(deleteIndex, 1);
   await setDoc(doc(db, "weeks", week.weekLabel.replace(/\s+/g, '-')), week);
   
   await new Promise(r => setTimeout(r, 600));

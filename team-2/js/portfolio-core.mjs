@@ -19,6 +19,7 @@ export const RESOURCE_DISCIPLINES = Object.freeze([
 
 const PROJECT_LEVELS = new Set(Object.values(PROJECT_LEVEL));
 const PROJECT_LIFECYCLES = new Set(Object.values(PROJECT_LIFECYCLE));
+const RESOURCE_DISCIPLINE_SET = new Set(RESOURCE_DISCIPLINES);
 const WORKSTREAM_STATUSES = new Set(['not-started', 'on-track', 'at-risk', 'delayed', 'completed']);
 const WORKSTREAM_TEMPLATES = Object.freeze({
   [PROJECT_LEVEL.SYSTEM]: Object.freeze(['Design', 'Integration', 'Validation', 'Certification', 'Launch']),
@@ -43,7 +44,12 @@ export function normalizeProject(source = {}) {
       ? project.ganttWorkstreams.map(normalizeWorkstream)
       : [],
     resources: isPlainObject(project.resources)
-      ? Object.fromEntries(Object.entries(project.resources).map(([key, value]) => [key, normalizeResourceEntry(value)]))
+      ? Object.fromEntries(Object.entries(project.resources).map(([key, value]) => [
+        key,
+        RESOURCE_DISCIPLINE_SET.has(key)
+          ? { ...(isPlainObject(value) ? value : {}), ...normalizeResourceEntry(value) }
+          : value,
+      ]))
       : {},
   };
 }
@@ -62,7 +68,28 @@ export function normalizeResourceEntry(source = {}) {
     estimated,
     actual,
     remaining: actual === null ? null : Math.max(estimated - actual, 0),
-    updatedAt: stringValue(entry.updatedAt),
+    updatedAt: normalizeTimestamp(entry.updatedAt),
+  };
+}
+
+export function validateResourceInput(value, blank = false) {
+  if (blank) return { valid: true, value: null };
+  return Number.isFinite(value) && value >= 0
+    ? { valid: true, value }
+    : { valid: false, value: null };
+}
+
+export function mergeResourceEntry(previousSource, estimated, actual, changedAt) {
+  const source = previousSource && typeof previousSource === 'object' ? previousSource : {};
+  const previous = normalizeResourceEntry(source);
+  const unchanged = estimated === previous.estimated && actual === previous.actual;
+  return {
+    ...source,
+    ...normalizeResourceEntry({
+      estimated,
+      actual,
+      updatedAt: unchanged ? previous.updatedAt : changedAt,
+    }),
   };
 }
 
@@ -174,6 +201,28 @@ export function filterProjects(source = [], filters = {}) {
 
 function stringValue(value) {
   return (value ?? '').toString().trim();
+}
+
+function normalizeTimestamp(value) {
+  let date;
+  try {
+    if (value instanceof Date) {
+      date = value;
+    } else if (value && typeof value.toDate === 'function') {
+      date = value.toDate();
+    } else if (value && typeof value === 'object' && Number.isFinite(value.seconds)) {
+      const nanoseconds = value.nanoseconds ?? 0;
+      if (!Number.isFinite(nanoseconds)) return '';
+      date = new Date(value.seconds * 1000 + nanoseconds / 1e6);
+    } else if (typeof value === 'string' && value.trim()) {
+      date = new Date(value.trim());
+    } else {
+      return '';
+    }
+    return date instanceof Date && Number.isFinite(date.getTime()) ? date.toISOString() : '';
+  } catch {
+    return '';
+  }
 }
 
 function isPlainObject(value) {

@@ -8,10 +8,12 @@ import {
   createTimelineTicks,
   createDefaultWorkstreams,
   filterProjects,
+  mergeResourceEntry,
   normalizeProject,
   normalizeResourceEntry,
   normalizeWorkstream,
   parseIsoDate,
+  validateResourceInput,
   validateWorkstreams,
 } from '../team-2/js/portfolio-core.mjs';
 
@@ -20,7 +22,7 @@ test('normalizeResourceEntry keeps a blank actual unknown and does not calculate
     estimated: 12,
     actual: null,
     remaining: null,
-    updatedAt: '2026-06-28T12:00:00Z',
+    updatedAt: '2026-06-28T12:00:00.000Z',
   });
 });
 
@@ -41,6 +43,44 @@ test('normalizeResourceEntry safely normalizes invalid and negative legacy data'
     updatedAt: '',
   });
   assert.equal(normalizeResourceEntry({ actual: 'invalid' }).actual, null);
+});
+
+test('normalizeResourceEntry converts supported timestamps to ISO and rejects invalid timestamps', () => {
+  const iso = '2026-06-28T12:34:56.000Z';
+  assert.equal(normalizeResourceEntry({ updatedAt: iso }).updatedAt, iso);
+  assert.equal(normalizeResourceEntry({ updatedAt: new Date(iso) }).updatedAt, iso);
+  assert.equal(normalizeResourceEntry({ updatedAt: { toDate: () => new Date(iso) } }).updatedAt, iso);
+  assert.equal(normalizeResourceEntry({ updatedAt: { seconds: 1782650096, nanoseconds: 0 } }).updatedAt, iso);
+  assert.equal(normalizeResourceEntry({ updatedAt: 'not-a-date' }).updatedAt, '');
+  assert.equal(normalizeResourceEntry({ updatedAt: { seconds: Infinity } }).updatedAt, '');
+});
+
+test('validateResourceInput rejects negative and non-finite values while allowing blank actual', () => {
+  assert.deepEqual(validateResourceInput(3.5, false), { valid: true, value: 3.5 });
+  assert.deepEqual(validateResourceInput(NaN, false), { valid: false, value: null });
+  assert.deepEqual(validateResourceInput(Infinity, false), { valid: false, value: null });
+  assert.deepEqual(validateResourceInput(-1, false), { valid: false, value: null });
+  assert.deepEqual(validateResourceInput(NaN, true), { valid: true, value: null });
+});
+
+test('mergeResourceEntry preserves metadata and timestamps semantically unchanged values', () => {
+  const previous = {
+    estimated: '4',
+    actual: '2',
+    updatedAt: { seconds: 1782650096, nanoseconds: 0 },
+    source: 'import',
+  };
+  assert.deepEqual(mergeResourceEntry(previous, 4, 2, '2027-01-01T00:00:00Z'), {
+    estimated: 4,
+    actual: 2,
+    remaining: 2,
+    updatedAt: '2026-06-28T12:34:56.000Z',
+    source: 'import',
+  });
+  assert.equal(
+    mergeResourceEntry(previous, 5, 2, '2027-01-01T00:00:00Z').updatedAt,
+    '2027-01-01T00:00:00.000Z',
+  );
 });
 
 test('normalizeProject preserves legacy fields and supplies portfolio defaults', () => {
@@ -76,6 +116,23 @@ test('normalizeProject trims and coerces portfolio text fields', () => {
   assert.equal(project.projectType, 'Platform');
   assert.equal(project.classification, '42');
   assert.equal(project.productFamily, 'Power');
+});
+
+test('normalizeProject preserves unknown resource disciplines and known-entry metadata', () => {
+  const project = normalizeProject({
+    resources: {
+      hardware: { estimated: '3', actual: '', source: 'import' },
+      quality: { headcount: 2, note: 'legacy discipline' },
+    },
+  });
+  assert.deepEqual(project.resources.hardware, {
+    estimated: 3,
+    actual: null,
+    remaining: null,
+    updatedAt: '',
+    source: 'import',
+  });
+  assert.deepEqual(project.resources.quality, { headcount: 2, note: 'legacy discipline' });
 });
 
 test('filterProjects combines portfolio filters and case-insensitive search', () => {
