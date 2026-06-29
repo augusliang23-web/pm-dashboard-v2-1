@@ -58,7 +58,7 @@ export function filterProjects(source = [], filters = {}) {
 }
 
 function stringValue(value) {
-  return typeof value === 'string' ? value : '';
+  return (value ?? '').toString().trim();
 }
 
 function isPlainObject(value) {

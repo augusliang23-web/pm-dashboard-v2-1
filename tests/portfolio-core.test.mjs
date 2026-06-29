@@ -31,6 +31,18 @@ test('normalizeProject preserves legacy fields and supplies portfolio defaults',
   });
 });
 
+test('normalizeProject trims and coerces portfolio text fields', () => {
+  const project = normalizeProject({
+    type: ' Platform ',
+    classification: 42,
+    productFamily: '  Power  ',
+  });
+
+  assert.equal(project.projectType, 'Platform');
+  assert.equal(project.classification, '42');
+  assert.equal(project.productFamily, 'Power');
+});
+
 test('filterProjects combines portfolio filters and case-insensitive search', () => {
   const projects = [
     {
