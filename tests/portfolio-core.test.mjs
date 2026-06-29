@@ -9,9 +9,12 @@ import {
   createDefaultWorkstreams,
   filterProjects,
   formatStatusDate,
+  getOverviewProjectBadgeLabel,
+  getOverviewProjects,
   getFocusTrapIndex,
   mergeResourceEntry,
   normalizeRiskActionRows,
+  normalizeOverviewScope,
   normalizeProject,
   normalizeResourceEntry,
   normalizeWorkstream,
@@ -252,6 +255,55 @@ test('filterProjects all scope does not restrict project level', () => {
   assert.equal(result[0].lifecycle, PROJECT_LIFECYCLE.ACTIVE);
   assert.deepEqual(result[0].ganttWorkstreams, []);
   assert.deepEqual(result[0].resources, {});
+});
+
+test('normalizeOverviewScope defaults missing and invalid values to System projects', () => {
+  assert.equal(normalizeOverviewScope(), PROJECT_LEVEL.SYSTEM);
+  assert.equal(normalizeOverviewScope(''), PROJECT_LEVEL.SYSTEM);
+  assert.equal(normalizeOverviewScope('portfolio'), PROJECT_LEVEL.SYSTEM);
+  assert.equal(normalizeOverviewScope('all'), 'all');
+  assert.equal(normalizeOverviewScope(PROJECT_LEVEL.HARDWARE_MODULE), PROJECT_LEVEL.HARDWARE_MODULE);
+});
+
+test('getOverviewProjects returns only the selected Overview population without mutating input', () => {
+  const projects = [
+    { code: 'SYS', projectLevel: PROJECT_LEVEL.SYSTEM },
+    { code: 'MODULE', projectLevel: PROJECT_LEVEL.HARDWARE_MODULE },
+    { code: 'LEGACY' },
+  ];
+
+  assert.deepEqual(
+    getOverviewProjects(projects, PROJECT_LEVEL.SYSTEM).map(project => project.code),
+    ['SYS', 'LEGACY'],
+  );
+  assert.deepEqual(
+    getOverviewProjects(projects, PROJECT_LEVEL.HARDWARE_MODULE).map(project => project.code),
+    ['MODULE'],
+  );
+  assert.deepEqual(
+    getOverviewProjects(projects, 'all').map(project => project.code),
+    ['SYS', 'MODULE', 'LEGACY'],
+  );
+  assert.equal(projects[2].projectLevel, undefined);
+});
+
+test('Overview project badges are emitted only for the mixed All Projects scope', () => {
+  assert.equal(
+    getOverviewProjectBadgeLabel({ projectLevel: PROJECT_LEVEL.SYSTEM }, 'all'),
+    'System',
+  );
+  assert.equal(
+    getOverviewProjectBadgeLabel({ projectLevel: PROJECT_LEVEL.HARDWARE_MODULE }, 'all'),
+    'Module',
+  );
+  assert.equal(
+    getOverviewProjectBadgeLabel({ projectLevel: PROJECT_LEVEL.SYSTEM }, PROJECT_LEVEL.SYSTEM),
+    '',
+  );
+  assert.equal(
+    getOverviewProjectBadgeLabel({ projectLevel: PROJECT_LEVEL.HARDWARE_MODULE }, PROJECT_LEVEL.HARDWARE_MODULE),
+    '',
+  );
 });
 
 test('createDefaultWorkstreams returns independent templates for each project level', () => {

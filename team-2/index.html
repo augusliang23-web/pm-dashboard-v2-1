@@ -194,6 +194,10 @@ body {
 .portfolio-scope button.active { background:var(--s1); color:var(--accent-hov); box-shadow:0 1px 4px rgba(0,0,0,.08); }
 .portfolio-controls { display:flex; flex:1; flex-wrap:wrap; gap:8px; }
 .portfolio-controls .fi, .portfolio-controls .fs { min-width:135px; margin:0; }
+.overview-scope-wrap { display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+.overview-scope { display:flex; gap:3px; padding:3px; background:var(--s3); border-radius:7px; }
+.overview-scope button { border:0; border-radius:5px; background:transparent; color:var(--text-light); padding:6px 8px; font:700 9px 'Noto Sans TC',sans-serif; cursor:pointer; white-space:nowrap; }
+.overview-scope button.active { background:var(--s1); color:var(--accent-hov); box-shadow:0 1px 4px rgba(0,0,0,.08); }
 .portfolio-controls .portfolio-search { flex:1; min-width:190px; }
 .project-level-badge { display:inline-flex; align-items:center; margin-left:7px; padding:2px 6px; border-radius:4px; background:var(--bdim); color:var(--blue-text); font-size:9px; font-weight:700; vertical-align:middle; }
 .card-stripe { height: 4px; }
@@ -1464,7 +1468,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
     </div>
   </div>
 
-  <div class="portfolio-toolbar no-print" aria-label="Portfolio filters">
+  <div class="portfolio-toolbar no-print" id="portfolioToolbar" aria-label="Portfolio filters">
     <div class="portfolio-scope" id="portfolioScope" aria-label="Project scope">
       <button type="button" data-scope="all">All</button>
       <button type="button" data-scope="system">System</button>
@@ -1870,7 +1874,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 </div>
 
 <script type="module">
-import { RESOURCE_DISCIPLINES, calculateDropIndex, createDefaultWorkstreams, createTimelineTicks, filterProjects, getFocusTrapIndex, mergeResourceEntry, normalizeProject, normalizeResourceEntry, normalizeRiskActionRows, normalizeWorkstream, parseIsoDate, resolveProjectStatusDate, validateResourceInput, validateWorkstreams } from "./js/portfolio-core.mjs";
+import { RESOURCE_DISCIPLINES, calculateDropIndex, createDefaultWorkstreams, createTimelineTicks, filterProjects, getFocusTrapIndex, getOverviewProjectBadgeLabel, getOverviewProjects, mergeResourceEntry, normalizeOverviewScope, normalizeProject, normalizeResourceEntry, normalizeRiskActionRows, normalizeWorkstream, parseIsoDate, resolveProjectStatusDate, validateResourceInput, validateWorkstreams } from "./js/portfolio-core.mjs";
 import { assertReasonableWeekDocument, buildImportResults, formatImportPreviewRow, importResultsToCsv, mergeReadyImportRows, planImport } from "./js/excel-import.mjs";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, doc, onSnapshot, runTransaction, setDoc, updateDoc, query, orderBy, where, getDoc, getDocs, increment, serverTimestamp, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -1901,6 +1905,11 @@ let portfolioScope = (() => {
     return 'all';
   }
 })();
+const OVERVIEW_SCOPE_KEY = 'team2.overviewScope';
+let overviewScope = 'system';
+try {
+  overviewScope = normalizeOverviewScope(localStorage.getItem(OVERVIEW_SCOPE_KEY));
+} catch {}
 let activeStrategicTrack = 'all';
 let activeRoadmapYear = null;
 let isOverview = false;
@@ -1933,6 +1942,11 @@ function getPortfolioFilters() {
     lifecycle: document.getElementById('filterLifecycle')?.value || 'all',
     productFamily: document.getElementById('filterProductFamily')?.value || 'all'
   };
+}
+
+function overviewProjectBadge(project) {
+  const label = getOverviewProjectBadgeLabel(project, overviewScope);
+  return label ? `<span class="project-level-badge">${label}</span>` : '';
 }
 
 function replacePortfolioOptions(selectId, values, allLabel) {
@@ -3129,7 +3143,7 @@ function buildResourceSummary(projects = []) {
       const effort = Number(member.effortPct || member.effort || 0);
       item.total += effort;
       if (member.roleName || member.role) item.roles.add(member.roleName || member.role);
-      item.projects.push({ name: project.name, code: project.code, effort });
+      item.projects.push({ name: project.name, code: project.code, effort, projectLevel: project.projectLevel });
       map.set(name, item);
     });
   });
@@ -3178,7 +3192,7 @@ function renderResourceBudgetOverview(projects) {
         return `<div class="resource-row">
           <div>
             <div class="rb-name">${escHtml(r.name)} <span class="rb-meta">${escHtml(r.roles.join(', ') || '-')}</span></div>
-            <div class="rb-meta">${r.projects.map(p => `${escHtml(p.name)} ${p.effort}%`).join(' · ')}</div>
+            <div class="rb-meta">${r.projects.map(p => `${escHtml(p.name)}${overviewProjectBadge(p)} ${p.effort}%`).join(' · ')}</div>
             <div class="allocation-bar"><div class="allocation-fill ${cls}" style="--pct:${Math.min(r.total, 140)}%;"></div></div>
           </div>
           <div class="rb-number ${cls}">${r.total}%</div>
@@ -3204,10 +3218,11 @@ function renderResourceBudgetOverview(projects) {
         <div class="rb-kpi"><div class="rb-kpi-label">Plan Gap</div><div class="rb-kpi-value ${planGapClass}">${budget.planGap < 0 ? 'Over ' : ''}${fmtMoney(Math.abs(budget.planGap))}</div></div>
       </div>
       <div class="budget-list">${budget.projectRows.slice(0, 6).map(row => {
+        const p = row.project;
         const cls = row.usedPct > 85 ? 'danger' : row.usedPct > 65 ? 'warn' : '';
         return `<div class="budget-row">
           <div>
-            <div class="rb-name">${escHtml(row.project.name)}</div>
+            <div class="rb-name">${escHtml(p.name)}${overviewProjectBadge(p)}</div>
             <div class="rb-meta">${fmtMoney(row.actual)} actual · ${fmtMoney(row.total)} budget · planned ${fmtMoney(row.planned)} · gap ${row.planGap < 0 ? 'over ' : ''}${fmtMoney(Math.abs(row.planGap))}</div>
             <div class="budget-bar"><div class="budget-fill ${cls}" style="--pct:${Math.min(row.usedPct, 100)}%;"></div></div>
           </div>
@@ -3559,9 +3574,11 @@ function projectRiskEntryCount(project) {
   return rawRiskItems(project).length;
 }
 
-function weeklyTrendPoints(weeks) {
-  return weeks.map(week => {
-    const projects = week.projects || [];
+function weeklyTrendPoints(weeks, currentProjects = []) {
+  return weeks.map((week, index) => {
+    const projects = index === weeks.length - 1
+      ? currentProjects
+      : getOverviewProjects(week.projects || [], overviewScope);
     const total = projects.length || 1;
     const riskPressure = projects.reduce((sum, p) => {
       const count = projectRiskEntryCount(p);
@@ -3598,9 +3615,9 @@ function renderTrendSvg(points, key, className = '') {
   </svg>`;
 }
 
-function renderWeeklyTrendPanel() {
+function renderWeeklyTrendPanel(projects) {
   const weeks = getTrendWeeks();
-  const points = weeklyTrendPoints(weeks);
+  const points = weeklyTrendPoints(weeks, projects);
   if (points.length < 2) return '';
   const latest = points[points.length - 1];
   const previous = points[points.length - 2];
@@ -3780,19 +3797,23 @@ function renderSummaryContent(summary, projects = []) {
   if (!text) return '<div class="exec-empty-summary">No weekly summary has been saved yet. Use Week Management to copy the AI prompt, paste the generated output, and save it.</div>';
   const lines = textLines(text);
   const isBullet = line => /^[-*]\s+/.test(line) || /^\d+[.)]\s+/.test(line);
-  const projectKeys = (projects || []).flatMap(p => [p.name, p.code].filter(Boolean).map(v => String(v).trim())).sort((a, b) => b.length - a.length);
+  const projectKeys = (projects || [])
+    .flatMap(project => [project.name, project.code]
+      .filter(Boolean)
+      .map(value => ({ key: String(value).trim(), project })))
+    .sort((a, b) => b.key.length - a.key.length);
   const parseProjectLine = line => {
     const clean = line.replace(/^[-*]\s+/, '').replace(/^\d+[.)]\s+/, '').trim();
     const lower = clean.toLowerCase();
-    for (const key of projectKeys) {
+    for (const { key, project } of projectKeys) {
       const keyLower = key.toLowerCase();
       if (lower.startsWith(`${keyLower}:`)) {
-        return { name: key, body: clean.slice(key.length + 1).trim() };
+        return { name: key, body: clean.slice(key.length + 1).trim(), project };
       }
       if (lower.startsWith(`${keyLower} `)) {
         const remainder = clean.slice(key.length).trim();
         if (/^[^:]{1,48}:\s*\S/.test(remainder)) {
-          return { name: key, body: remainder };
+          return { name: key, body: remainder, project };
         }
       }
     }
@@ -3800,7 +3821,7 @@ function renderSummaryContent(summary, projects = []) {
   };
   const renderProjectItem = item => `
     <div class="exec-summary-project-item">
-      <strong class="exec-summary-project-name">${escHtml(item.name)}</strong>
+      <strong class="exec-summary-project-name">${escHtml(item.name)}${overviewProjectBadge(item.project)}</strong>
       <span class="exec-summary-project-body">${escHtml(item.body)}</span>
     </div>`;
   const isHeading = (line, idx) => {
@@ -4024,7 +4045,7 @@ function renderProjectQuarterMatrix(projs, layer = getStrategyLayer(), activeTra
       ${projects.map(p => {
         const strategy = getProjectStrategy(p, layer);
         return `<div class="pqm-cell pqm-project">
-          <div class="pqm-project-name">${escHtml(p.name)}</div>
+          <div class="pqm-project-name">${escHtml(p.name)}${overviewProjectBadge(p)}</div>
           <div class="pqm-project-meta"><span class="proj-code">${escHtml(p.code)}</span><span class="reason-pill">${escHtml(p.owner || '-')}</span></div>
         </div>
         ${quarters.map(q => {
@@ -4055,7 +4076,7 @@ function renderAttentionMatrix(projs, editable) {
     return `<section class="attention-quad ${key}" ${editable ? `data-attention="${key}"` : ''}>
       <div class="attention-head"><div><div class="attention-title">${title}</div><div class="attention-meta">${meta}</div></div><span class="reason-pill">${items.length}</span></div>
       ${items.map(p => `<div class="attention-item" ${editable ? `draggable="true" data-code="${escHtml(p.code)}"` : ''}>
-        <div class="attention-item-top"><div><div class="attention-name">${escHtml(p.name)}</div><div class="proj-code">${escHtml(p.code)} | ${escHtml(p.owner || '-')}</div></div><span class="exec-status-chip ${p.status}">${getStatusLabel(p.status)}</span></div>
+        <div class="attention-item-top"><div><div class="attention-name">${escHtml(p.name)}${overviewProjectBadge(p)}</div><div class="proj-code">${escHtml(p.code)} | ${escHtml(p.owner || '-')}</div></div><span class="exec-status-chip ${p.status}">${getStatusLabel(p.status)}</span></div>
         <div class="attention-risk">${escHtml(riskItems(p)[0] || '-')}</div>
         ${editable ? `<div class="attention-select-row"><span class="reason-pill">${p.attentionManual ? 'Manual' : 'Suggested'}</span><select class="attention-select" data-code="${escHtml(p.code)}">${Object.entries(ATTENTION_MAP).map(([v,l]) => `<option value="${v}" ${getProjectAttention(p) === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>` : ''}
       </div>`).join('')}</section>`;
@@ -4068,13 +4089,13 @@ function renderRiskActionTable(projs, editable) {
   <table class="risk-action-table"><thead><tr><th>Project</th><th>Risk / Blockers</th><th>Why Escalated</th><th>Owner</th><th>Required Action</th><th>Checkpoint</th></tr></thead><tbody>
     ${rows.map(p => {
       const primary = getPrimaryRiskActionPair(p);
-      return `<tr><td><b>${escHtml(p.name)}</b><br><span class="proj-code">${escHtml(p.code)}</span></td>
+      return `<tr><td><b>${escHtml(p.name)}${overviewProjectBadge(p)}</b><br><span class="proj-code">${escHtml(p.code)}</span></td>
       <td>${primary ? `<span class="reason-pill">Primary</span> ${escHtml(primary.risk || '-')}` : '-'}</td>
       <td><div class="reason-stack">${(p.riskManual ? ['Manually escalated'] : riskReasons(p)).map(r => `<span class="reason-pill ${r === 'Manually escalated' ? 'manual' : ''}">${escHtml(r)}</span>`).join('')}</div></td>
       <td>${escHtml(p.owner || '-')}</td><td>${primary ? escHtml(primary.action || '-') : '-'}</td><td>${escHtml((p.milestones || []).find(m => m.status === 'at-risk')?.date || p.milestones?.[0]?.date || '-')}</td></tr>`;
     }).join('')}
   </tbody></table>
-  ${editable ? `<div class="risk-controls">${projs.map(p => `<label class="risk-control"><input class="risk-toggle" type="checkbox" data-code="${escHtml(p.code)}" ${shouldIncludeRisk(p) ? 'checked' : ''}><span><b>${escHtml(p.name)}</b><span class="proj-code">${escHtml(p.code)} | ${p.riskManual ? 'Manual' : 'Suggested'} | ${escHtml(riskReasons(p).join(' / '))}</span></span></label>`).join('')}</div>` : ''}`;
+  ${editable ? `<div class="risk-controls">${projs.map(p => `<label class="risk-control"><input class="risk-toggle" type="checkbox" data-code="${escHtml(p.code)}" ${shouldIncludeRisk(p) ? 'checked' : ''}><span><b>${escHtml(p.name)}${overviewProjectBadge(p)}</b><span class="proj-code">${escHtml(p.code)} | ${p.riskManual ? 'Manual' : 'Suggested'} | ${escHtml(riskReasons(p).join(' / '))}</span></span></label>`).join('')}</div>` : ''}`;
 }
 
 function projectByCode(list) {
@@ -4411,22 +4432,27 @@ window.render = () => {
     }
   }
 
-  let projs = enrichProjectsPrototype(week.projects || []);
+  let roleVisibleProjects = enrichProjectsPrototype(week.projects || []);
   
   const visFilter = document.getElementById('visSelect') ? document.getElementById('visSelect').value : 'active';
   if (isVipPerspective() || currentRole !== 'admin' || visFilter === 'active') {
-     projs = projs.filter(p => !p.visibility || p.visibility === 'active');
+     roleVisibleProjects = roleVisibleProjects.filter(p => !p.visibility || p.visibility === 'active');
   }
-  refreshPortfolioToolbar(projs);
+  refreshPortfolioToolbar(roleVisibleProjects);
+  const portfolioToolbar = document.getElementById('portfolioToolbar');
+  portfolioToolbar.style.display = isOverview ? 'none' : 'flex';
 
+  const overviewProjects = getOverviewProjects(roleVisibleProjects, overviewScope);
+  let portfolioProjects = roleVisibleProjects;
   if (currentPMFilter !== 'all' && !isOverview) {
-    projs = projs.filter(p => p.owner === currentPMFilter);
+    portfolioProjects = portfolioProjects.filter(p => p.owner === currentPMFilter);
   }
-  projs = filterProjects(projs, getPortfolioFilters());
+  portfolioProjects = filterProjects(portfolioProjects, getPortfolioFilters());
 
-  const total = projs.length;
-  const critical = projs.filter(p => p.status === 'red').length;
-  const atRisk = projs.filter(p => p.status === 'yellow').length;
+  const metricProjects = isOverview ? overviewProjects : portfolioProjects;
+  const total = metricProjects.length;
+  const critical = metricProjects.filter(p => p.status === 'red').length;
+  const atRisk = metricProjects.filter(p => p.status === 'yellow').length;
   const onTrack = total - critical - atRisk;
 
   document.getElementById('m_total').textContent = total;
@@ -4436,8 +4462,8 @@ window.render = () => {
   const showTopMetrics = !(isVipPerspective() || isOverview);
   document.getElementById('topMetricsGrid').style.display = showTopMetrics ? 'grid' : 'none';
 
-  renderNormal(projs);
-  renderExec(projs, week.summary);
+  renderNormal(portfolioProjects);
+  renderExec(overviewProjects, week.summary);
   
   if (isVipPerspective()) {
     document.getElementById('normalView').style.display = 'none';
@@ -4580,7 +4606,14 @@ function renderExec(projs, summary) {
             <div class="exec-eyebrow">Portfolio health</div>
             <div class="exec-panel-title">Project status at a glance</div>
           </div>
-          <div class="exec-panel-note">${total} projects</div>
+          <div class="overview-scope-wrap">
+            <div class="overview-scope no-print" id="overviewScope" aria-label="Overview project scope">
+              <button type="button" data-overview-scope="system" class="${overviewScope === 'system' ? 'active' : ''}" aria-pressed="${overviewScope === 'system'}" onclick="setOverviewScope('system')">System Projects</button>
+              <button type="button" data-overview-scope="hardware-module" class="${overviewScope === 'hardware-module' ? 'active' : ''}" aria-pressed="${overviewScope === 'hardware-module'}" onclick="setOverviewScope('hardware-module')">Hardware Modules</button>
+              <button type="button" data-overview-scope="all" class="${overviewScope === 'all' ? 'active' : ''}" aria-pressed="${overviewScope === 'all'}" onclick="setOverviewScope('all')">All Projects</button>
+            </div>
+            <div class="exec-panel-note">${total} projects</div>
+          </div>
         </div>
         <div class="exec-health-body">
           <div class="exec-donut" style="--critical-end:${criticalEnd}%; --risk-end:${riskEnd}%;">
@@ -4641,7 +4674,7 @@ function renderExec(projs, summary) {
 
     ${renderResourceBudgetOverview(projs)}
 
-    ${renderWeeklyTrendPanel()}
+    ${renderWeeklyTrendPanel(projs)}
 
     <div class="exec-summary-grid">
       <div class="exec-summary-card border-accent">
@@ -4702,11 +4735,11 @@ function renderExec(projs, summary) {
       </div>
 
       <div class="exec-projects project-portfolio-grid">
-        ${projs.map(p => `
+        ${projs.length ? projs.map(p => `
           <article class="exec-project-card ${p.status}" ondblclick="openProjDetail('${p.code}')" title="Double click for details">
             <div class="exec-project-top">
               <div class="exec-project-identity">
-                <div class="exec-project-name">${p.name}<span class="project-level-badge">${p.projectLevel === 'hardware-module' ? 'Module' : 'System'}</span>${p.visibility && p.visibility !== 'active' ? ` <span style="color:var(--red); font-size:10px; font-weight:700;">[${p.visibility.toUpperCase()}]</span>` : ''}</div>
+                <div class="exec-project-name">${p.name}${overviewProjectBadge(p)}${p.visibility && p.visibility !== 'active' ? ` <span style="color:var(--red); font-size:10px; font-weight:700;">[${p.visibility.toUpperCase()}]</span>` : ''}</div>
                 <div class="exec-project-meta">
                   <span class="exec-status-chip ${p.status}">${statusMap[p.status] || p.status}</span>
                   <span class="exec-owner-chip">${p.owner || '-'}</span>
@@ -4745,7 +4778,7 @@ function renderExec(projs, summary) {
               ${formatExecProjectMilestones(p.milestones)}
             </div>
           </article>
-        `).join('')}
+        `).join('') : '<div class="empty-state">No projects in the selected Overview scope.</div>'}
       </div>
     </section>
   `;
@@ -4973,6 +5006,11 @@ window.handleTopPmChange = () => {
 window.toggleOverview = () => {
   if (isVipPerspective()) return; 
   isOverview = !isOverview;
+  render();
+};
+window.setOverviewScope = scope => {
+  overviewScope = normalizeOverviewScope(scope);
+  try { localStorage.setItem(OVERVIEW_SCOPE_KEY, overviewScope); } catch {}
   render();
 };
 window.toggleVipPreview = () => {

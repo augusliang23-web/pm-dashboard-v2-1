@@ -9,6 +9,12 @@ export const PROJECT_LIFECYCLE = Object.freeze({
   COMPLETED: 'completed',
 });
 
+export const OVERVIEW_SCOPE = Object.freeze({
+  SYSTEM: PROJECT_LEVEL.SYSTEM,
+  HARDWARE_MODULE: PROJECT_LEVEL.HARDWARE_MODULE,
+  ALL: 'all',
+});
+
 export const RESOURCE_DISCIPLINES = Object.freeze([
   'hardware',
   'firmware',
@@ -18,6 +24,7 @@ export const RESOURCE_DISCIPLINES = Object.freeze([
 ]);
 
 const PROJECT_LEVELS = new Set(Object.values(PROJECT_LEVEL));
+const OVERVIEW_SCOPES = new Set(Object.values(OVERVIEW_SCOPE));
 const PROJECT_LIFECYCLES = new Set(Object.values(PROJECT_LIFECYCLE));
 const RESOURCE_DISCIPLINE_SET = new Set(RESOURCE_DISCIPLINES);
 const WORKSTREAM_STATUSES = new Set(['not-started', 'on-track', 'at-risk', 'delayed', 'completed']);
@@ -265,6 +272,23 @@ export function filterProjects(source = [], filters = {}) {
       && (!search || normalizedFilter(`${project.code ?? ''} ${project.name ?? ''}`).includes(search))
     );
   });
+}
+
+export function normalizeOverviewScope(value) {
+  return OVERVIEW_SCOPES.has(value) ? value : OVERVIEW_SCOPE.SYSTEM;
+}
+
+export function getOverviewProjects(source = [], scope = OVERVIEW_SCOPE.SYSTEM) {
+  const projects = Array.isArray(source) ? source.map(normalizeProject) : [];
+  const normalizedScope = normalizeOverviewScope(scope);
+  return normalizedScope === OVERVIEW_SCOPE.ALL
+    ? projects
+    : projects.filter(project => project.projectLevel === normalizedScope);
+}
+
+export function getOverviewProjectBadgeLabel(project = {}, scope = OVERVIEW_SCOPE.SYSTEM) {
+  if (normalizeOverviewScope(scope) !== OVERVIEW_SCOPE.ALL) return '';
+  return normalizeProject(project).projectLevel === PROJECT_LEVEL.HARDWARE_MODULE ? 'Module' : 'System';
 }
 
 function stringValue(value) {

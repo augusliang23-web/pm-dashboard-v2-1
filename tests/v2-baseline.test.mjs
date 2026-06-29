@@ -85,14 +85,78 @@ test('exposes portfolio scope, filter, and project editor controls', () => {
   assert.ok(toolbarPosition < dashboard.indexOf('id="execView"'));
 });
 
+test('exposes an Overview-only scope control with an independent persisted System default', () => {
+  assert.match(dashboard, /id="overviewScope"/);
+  assert.match(dashboard, /data-overview-scope="system"[^>]*>System Projects<\/button>/);
+  assert.match(dashboard, /data-overview-scope="hardware-module"[^>]*>Hardware Modules<\/button>/);
+  assert.match(dashboard, /data-overview-scope="all"[^>]*>All Projects<\/button>/);
+  assert.ok(dashboard.includes("const OVERVIEW_SCOPE_KEY = 'team2.overviewScope';"));
+  assert.ok(dashboard.includes('normalizeOverviewScope(localStorage.getItem(OVERVIEW_SCOPE_KEY))'));
+  assert.ok(dashboard.includes("let overviewScope = 'system';"));
+});
+
+test('keeps the portfolio toolbar and filters out of Overview scope calculations', () => {
+  const renderStart = dashboard.indexOf('window.render = () =>');
+  const renderEnd = dashboard.indexOf('function renderNormal(', renderStart);
+  const renderSource = dashboard.slice(renderStart, renderEnd);
+
+  assert.ok(renderSource.includes("portfolioToolbar.style.display = isOverview ? 'none' : 'flex';"));
+  assert.ok(renderSource.includes('const overviewProjects = getOverviewProjects(roleVisibleProjects, overviewScope);'));
+  assert.ok(renderSource.includes('let portfolioProjects = roleVisibleProjects;'));
+  assert.ok(renderSource.includes('portfolioProjects = filterProjects(portfolioProjects, getPortfolioFilters());'));
+  assert.ok(renderSource.includes('const metricProjects = isOverview ? overviewProjects : portfolioProjects;'));
+  assert.ok(renderSource.includes('const total = metricProjects.length;'));
+  assert.ok(renderSource.includes("const critical = metricProjects.filter(p => p.status === 'red').length;"));
+  assert.ok(renderSource.includes("const atRisk = metricProjects.filter(p => p.status === 'yellow').length;"));
+  assert.ok(renderSource.includes('renderNormal(portfolioProjects);'));
+  assert.ok(renderSource.includes('renderExec(overviewProjects, week.summary);'));
+  assert.ok(!renderSource.includes('getOverviewProjects(portfolioProjects'));
+});
+
+test('routes every project-based Overview render input through its scoped project list', () => {
+  const execStart = dashboard.indexOf('function renderExec(projs, summary)');
+  const execEnd = dashboard.indexOf('async function saveCurrentWeekQuietly()', execStart);
+  const execSource = dashboard.slice(execStart, execEnd);
+  const requiredCalls = [
+    'renderResourceBudgetOverview(projs)',
+    'renderWeeklyTrendPanel(projs)',
+    'renderSummaryContent(summary, projs)',
+    'renderAttentionMatrix(projs, editableDecisionView)',
+    'renderRiskActionTable(projs, editableDecisionView)',
+    'renderQuarterlyBoard(projs, strategyLayer, activeTrack, roadmapYear)',
+  ];
+
+  for (const call of requiredCalls) assert.ok(execSource.includes(call), `expected ${call}`);
+  assert.ok(dashboard.includes('getOverviewProjects(week.projects || [], overviewScope)'));
+});
+
+test('Overview scope changes persist locally and redraw once without Firestore writes', () => {
+  const handlerStart = dashboard.indexOf('window.setOverviewScope = scope =>');
+  const handlerEnd = dashboard.indexOf('\n};', handlerStart);
+  const handlerSource = dashboard.slice(handlerStart, handlerEnd);
+
+  assert.ok(handlerStart >= 0);
+  assert.ok(handlerSource.includes('overviewScope = normalizeOverviewScope(scope);'));
+  assert.ok(handlerSource.includes('localStorage.setItem(OVERVIEW_SCOPE_KEY, overviewScope)'));
+  assert.equal((handlerSource.match(/\brender\(\);/g) || []).length, 1);
+  assert.doesNotMatch(handlerSource, /setDoc|updateDoc|runTransaction|saveCurrentWeek/);
+});
+
+test('mixed Overview lists use conditional project-level badges and empty scope messaging', () => {
+  const badgeUses = dashboard.match(/overviewProjectBadge\(p\)/g) || [];
+  assert.ok(badgeUses.length >= 7, `expected badges in every mixed list, found ${badgeUses.length}`);
+  assert.ok(dashboard.includes('No projects in the selected Overview scope.'));
+  assert.ok(dashboard.includes("overviewScope === 'all'"));
+});
+
 test('builds portfolio facets from role-visible projects and uses neutral executive totals', () => {
   const renderStart = dashboard.indexOf('window.render = () =>');
   const renderEnd = dashboard.indexOf('function renderNormal(', renderStart);
   const renderSource = dashboard.slice(renderStart, renderEnd);
   const visibilityPosition = renderSource.indexOf(
-    "projs = projs.filter(p => !p.visibility || p.visibility === 'active');",
+    "roleVisibleProjects = roleVisibleProjects.filter(p => !p.visibility || p.visibility === 'active');",
   );
-  const facetPosition = renderSource.indexOf('refreshPortfolioToolbar(projs);');
+  const facetPosition = renderSource.indexOf('refreshPortfolioToolbar(roleVisibleProjects);');
 
   assert.ok(visibilityPosition >= 0);
   assert.ok(facetPosition > visibilityPosition);
