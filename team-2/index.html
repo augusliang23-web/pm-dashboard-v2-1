@@ -1680,6 +1680,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 </div>
 
 <script type="module">
+import { normalizeProject } from "./js/portfolio-core.mjs";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, doc, onSnapshot, setDoc, updateDoc, query, orderBy, where, getDoc, getDocs, increment, serverTimestamp, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, updatePassword, onAuthStateChanged, signOut, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -2479,7 +2480,14 @@ function initData() {
     : query(weeksRef, orderBy("weekLabel"));
 
   weeksUnsub = onSnapshot(weeksQuery, snap => {
-    let fetchedWeeks = snap.docs.map(d => d.data());
+    let fetchedWeeks = snap.docs.map(d => {
+      const week = d.data();
+      return {
+        ...week,
+        id: d.id,
+        projects: (week.projects || []).map(normalizeProject)
+      };
+    });
     if (!fetchedWeeks.length) fetchedWeeks = buildPrototypeWeeks();
     allWeeks = sortWeeksByLabel(fetchedWeeks);
     
@@ -4859,6 +4867,11 @@ window.saveProjEdit = async () => {
   if (budgetMode === 'auto') updateBudgetLinkSummary();
   
   const pData = {
+    projectLevel: document.getElementById('pe_project_level')?.value ?? previousProject?.projectLevel ?? 'system',
+    lifecycle: document.getElementById('pe_lifecycle')?.value ?? previousProject?.lifecycle ?? 'active',
+    projectType: document.getElementById('pe_project_type')?.value ?? previousProject?.projectType ?? previousProject?.type ?? '',
+    classification: document.getElementById('pe_classification')?.value ?? previousProject?.classification ?? '',
+    productFamily: document.getElementById('pe_product_family')?.value ?? previousProject?.productFamily ?? '',
     name: document.getElementById('pe_name').value,
     code: document.getElementById('pe_code').value,
     owner: document.getElementById('pe_owner').value,
