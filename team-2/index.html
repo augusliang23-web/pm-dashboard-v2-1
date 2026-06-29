@@ -1854,7 +1854,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 <script src="./vendor/xlsx.full.min.js"></script>
 <script type="module">
 import { RESOURCE_DISCIPLINES, calculateDropIndex, createDefaultWorkstreams, createTimelineTicks, filterProjects, getFocusTrapIndex, mergeResourceEntry, normalizeProject, normalizeResourceEntry, normalizeRiskActionRows, normalizeWorkstream, parseIsoDate, resolveProjectStatusDate, validateResourceInput, validateWorkstreams } from "./js/portfolio-core.mjs";
-import { planImport } from "./js/excel-import.mjs";
+import { formatImportPreviewRow, planImport } from "./js/excel-import.mjs";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, doc, onSnapshot, setDoc, updateDoc, query, orderBy, where, getDoc, getDocs, increment, serverTimestamp, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, updatePassword, onAuthStateChanged, signOut, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -5012,7 +5012,9 @@ function openAccessibleModal(modal) {
 // EXCEL IMPORT (Task 7 is deliberately preview-only; persistence is added only after confirmation work.)
 const MAX_IMPORT_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_IMPORT_ROWS = 5000;
+let excelImportRequestToken = 0;
 function resetExcelImportPreview() {
+  excelImportRequestToken += 1;
   pendingExcelImportPlan = null;
   document.getElementById('excelImportError').textContent = '';
   document.getElementById('excelImportPreview').replaceChildren();
@@ -5024,6 +5026,12 @@ function clearExcelImport() {
   resetExcelImportPreview();
   const file = document.getElementById('excelImportFile');
   if (file) file.value = '';
+}
+function isExcelImportRequestCurrent(requestToken, file, fileInput) {
+  return requestToken === excelImportRequestToken
+    && currentRole === 'admin'
+    && fileInput.files?.[0] === file
+    && document.getElementById('excelImportOverlay').classList.contains('open');
 }
 window.openExcelImport = () => {
   if (currentRole !== 'admin') return;
@@ -5048,8 +5056,7 @@ function renderExcelImportPlan(plan) {
     for (const row of rows) {
       const item = document.createElement('div');
       item.className = 'import-preview-row';
-      const details = row.reason || row.warnings.join(' ') || 'Validated.';
-      item.textContent = `Row ${row.rowNumber} · ${status} · ${row.project.code || 'No ID'} · ${details}`;
+      item.textContent = formatImportPreviewRow(row, status);
       preview.append(item);
     }
   }
@@ -5057,8 +5064,10 @@ function renderExcelImportPlan(plan) {
 window.handleExcelImportFile = async event => {
   if (currentRole !== 'admin') return;
   resetExcelImportPreview();
+  const requestToken = excelImportRequestToken;
   const error = document.getElementById('excelImportError');
-  const file = event.target.files?.[0];
+  const fileInput = event.currentTarget ?? event.target;
+  const file = fileInput.files?.[0];
   if (!file) return;
   if (file.size > MAX_IMPORT_FILE_BYTES) {
     error.textContent = 'File is too large. Select a file no larger than 10 MB.';
@@ -5069,16 +5078,21 @@ window.handleExcelImportFile = async event => {
     return;
   }
   try {
-    const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+    const fileData = await file.arrayBuffer();
+    if (!isExcelImportRequestCurrent(requestToken, file, fileInput)) return;
+    const workbook = XLSX.read(fileData, { type: 'array' });
     const firstSheetName = workbook.SheetNames?.[0];
     if (!firstSheetName || !workbook.Sheets?.[firstSheetName]) throw new Error('Workbook has no sheets.');
     const rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheetName], { defval: '', raw: true });
     if (!rows.length) throw new Error('The first sheet has no data rows.');
     if (rows.length > MAX_IMPORT_ROWS) throw new Error(`The first sheet exceeds the ${MAX_IMPORT_ROWS}-row limit.`);
     const existingIds = allWeeks.flatMap(week => (week.projects || []).map(project => project.code));
-    pendingExcelImportPlan = planImport(rows, existingIds);
+    const importPlan = planImport(rows, existingIds);
+    if (!isExcelImportRequestCurrent(requestToken, file, fileInput)) return;
+    pendingExcelImportPlan = importPlan;
     renderExcelImportPlan(pendingExcelImportPlan);
   } catch (parseError) {
+    if (!isExcelImportRequestCurrent(requestToken, file, fileInput)) return;
     pendingExcelImportPlan = null;
     error.textContent = parseError instanceof Error ? parseError.message : 'Could not parse this workbook.';
   }

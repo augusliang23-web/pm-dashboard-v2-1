@@ -2,7 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-import { normalizeImportRow, planImport } from '../team-2/js/excel-import.mjs';
+import {
+  formatImportPreviewRow,
+  normalizeImportRow,
+  planImport,
+} from '../team-2/js/excel-import.mjs';
 
 const dashboard = await readFile(new URL('../team-2/index.html', import.meta.url), 'utf8');
 
@@ -39,6 +43,7 @@ test('normalizes case-insensitive, whitespace-tolerant headers into a safe proje
     classification: 'Internal',
     productFamily: 'Power',
     pm: 'Morgan',
+    owner: 'Morgan',
     piiMysVolume: 200,
     leads: {
       hardware: 'A',
@@ -54,6 +59,97 @@ test('normalizes case-insensitive, whitespace-tolerant headers into a safe proje
       pmo: { estimated: 3, actual: null, remaining: null, updatedAt: '' },
     },
   });
+});
+
+test('uses the original SheetJS worksheet row number when available', () => {
+  const plan = planImport([
+    { __rowNum__: 12, 'Project ID/Code': 'ROW-13', 'Project Name': 'Original row' },
+    { __rowNum__: Infinity, 'Project ID/Code': 'ROW-3', 'Project Name': 'Fallback row' },
+  ]);
+
+  assert.equal(plan.ready[0].rowNumber, 13);
+  assert.equal(plan.ready[1].rowNumber, 3);
+});
+
+test('keeps valid PMO completed hours pending confirmation and never sets actual', () => {
+  const result = normalizeImportRow({
+    'Project ID/Code': 'PMO-1',
+    'Project Name': 'PMO pending',
+    PMO: ' Morgan ',
+    'PMO Hours Completed': '6.5',
+  }, 2);
+
+  assert.equal(result.project.pm, 'Morgan');
+  assert.equal(result.project.owner, 'Morgan');
+  assert.equal(result.pmoCompletedHoursPending, 6.5);
+  assert.equal(result.project.resources.pmo.actual, null);
+  assert.ok(result.warnings.some(message => (
+    /PMO Hours Completed/.test(message) && /explicit confirmation/i.test(message)
+  )));
+
+  for (const completed of ['#DIV/0!', -1]) {
+    const invalid = normalizeImportRow({
+      'Project ID/Code': 'PMO-2',
+      'Project Name': 'Invalid PMO completed',
+      'PMO Hours Completed': completed,
+    }, 3);
+    assert.equal(invalid.pmoCompletedHoursPending, null);
+    assert.equal(invalid.project.resources.pmo.actual, null);
+    assert.ok(invalid.warnings.some(message => /PMO Hours Completed is invalid/.test(message)));
+  }
+});
+
+test('formats a complete safe preview with blocking reason and every warning', () => {
+  const preview = formatImportPreviewRow({
+    rowNumber: 7,
+    project: {
+      code: 'SAFE-1',
+      name: '<img src=x onerror=alert(1)>',
+      projectLevel: 'hardware-module',
+      pm: 'Morgan',
+      owner: 'Morgan',
+      classification: 'Internal',
+      resources: {
+        hardware: { estimated: 1 },
+        firmware: { estimated: 2 },
+        systemElectrical: { estimated: 3 },
+        mechanical: { estimated: 4 },
+        pmo: { estimated: 5, actual: null },
+      },
+    },
+    pmoCompletedHoursPending: 2.5,
+    reason: 'Project ID already exists.',
+    warnings: ['First warning.', 'Second warning.'],
+  }, 'Skipped');
+
+  for (const expected of [
+    'Row 7',
+    'Skipped',
+    'SAFE-1',
+    '<img src=x onerror=alert(1)>',
+    'hardware-module',
+    'Morgan',
+    'Internal',
+    'Hardware 1',
+    'Firmware 2',
+    'System/Electrical 3',
+    'Mechanical 4',
+    'PMO 5',
+    'Pending PMO completed 2.5',
+    'Blocking reason: Project ID already exists.',
+    'First warning.',
+    'Second warning.',
+  ]) {
+    assert.ok(preview.includes(expected), `expected preview to include ${expected}`);
+  }
+  assert.equal(preview.match(/First warning\./g)?.length, 1);
+  assert.equal(preview.match(/Second warning\./g)?.length, 1);
+
+  const renderStart = dashboard.indexOf('function renderExcelImportPlan(plan)');
+  const renderEnd = dashboard.indexOf('window.handleExcelImportFile', renderStart);
+  const renderSource = dashboard.slice(renderStart, renderEnd);
+  assert.ok(renderSource.includes('item.textContent = formatImportPreviewRow(row, status);'));
+  assert.doesNotMatch(renderSource, /\.innerHTML\s*=/);
 });
 
 test('uses hardware-module with warnings for blank or unknown level and invalid estimates', () => {
@@ -199,4 +295,36 @@ test('workbook integration locks first-sheet parsing and all bounded error paths
   assert.ok(catchStart >= 0);
   assert.ok(catchSource.includes('pendingExcelImportPlan = null;'));
   assert.ok(catchSource.includes("error.textContent = parseError instanceof Error ? parseError.message : 'Could not parse this workbook.';"));
+});
+
+test('async preview requests are invalidated and rechecked before rendering or reporting errors', () => {
+  const blockStart = dashboard.indexOf('// EXCEL IMPORT');
+  const end = dashboard.indexOf('// END EXCEL IMPORT', blockStart);
+  const importBlock = dashboard.slice(blockStart, end);
+  const resetStart = importBlock.indexOf('function resetExcelImportPreview()');
+  const clearStart = importBlock.indexOf('function clearExcelImport()', resetStart);
+  const resetSource = importBlock.slice(resetStart, clearStart);
+  const openStart = importBlock.indexOf('window.openExcelImport', clearStart);
+  const clearSource = importBlock.slice(clearStart, openStart);
+  const closeStart = importBlock.indexOf('window.closeExcelImport', openStart);
+  const closeSource = importBlock.slice(closeStart, importBlock.indexOf('function renderExcelImportPlan', closeStart));
+  const handlerStart = importBlock.indexOf('window.handleExcelImportFile');
+  const handler = importBlock.slice(handlerStart);
+  const renderPosition = handler.indexOf('renderExcelImportPlan(pendingExcelImportPlan);');
+  const finalGuardPosition = handler.lastIndexOf('if (!isExcelImportRequestCurrent(requestToken, file, fileInput)) return;', renderPosition);
+  const catchPosition = handler.indexOf('} catch (parseError) {');
+
+  assert.ok(importBlock.includes('let excelImportRequestToken = 0;'));
+  assert.ok(resetSource.includes('excelImportRequestToken += 1;'));
+  assert.ok(clearSource.includes('resetExcelImportPreview();'));
+  assert.ok(closeSource.includes('clearExcelImport();'));
+  assert.ok(importBlock.includes("currentRole === 'admin'"));
+  assert.ok(importBlock.includes("document.getElementById('excelImportOverlay').classList.contains('open')"));
+  assert.ok(importBlock.includes('fileInput.files?.[0] === file'));
+  assert.ok(handler.indexOf('resetExcelImportPreview();') < handler.indexOf('const requestToken = excelImportRequestToken;'));
+  assert.ok(finalGuardPosition >= 0 && finalGuardPosition < renderPosition);
+  assert.ok(catchPosition >= 0);
+  assert.ok(handler.slice(catchPosition).includes(
+    'if (!isExcelImportRequestCurrent(requestToken, file, fileInput)) return;',
+  ));
 });

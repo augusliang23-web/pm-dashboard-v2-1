@@ -19,6 +19,7 @@ const FIELDS = Object.freeze({
   systemHours: ['estimated sys hours', 'estimated system hours', 'estimated system electrical hours', 'sys. hours'],
   mechanicalHours: ['estimated mech hours', 'estimated mechanical hours', 'mech. hours'],
   pmoHours: ['estimated pmo hours', 'pmo hours'],
+  pmoCompletedHours: ['pmo hours completed'],
 });
 
 function key(value) {
@@ -62,6 +63,18 @@ function resource(estimated) {
   return { estimated, actual: null, remaining: null, updatedAt: '' };
 }
 
+function pendingCompletedHours(value, warnings) {
+  const text = textValue(value);
+  if (!text) return null;
+  const numeric = typeof value === 'number' ? value : Number(text);
+  if (!Number.isFinite(numeric) || numeric < 0) {
+    warnings.push('PMO Hours Completed is invalid; it will not be imported.');
+    return null;
+  }
+  warnings.push('PMO Hours Completed is pending; explicit confirmation is required before setting actual hours.');
+  return numeric;
+}
+
 function safeProjectId(value) {
   const normalized = key(value);
   return /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(value)
@@ -87,6 +100,8 @@ export function normalizeImportRow(source, rowNumber = 2) {
     warnings.push(`Project Level "${levelSource}" is unknown; using hardware-module.`);
   }
 
+  const pm = textValue(read('pm'));
+  const pmoCompletedHoursPending = pendingCompletedHours(read('pmoCompletedHours'), warnings);
   const project = {
     code,
     name,
@@ -95,7 +110,8 @@ export function normalizeImportRow(source, rowNumber = 2) {
     projectType: textValue(read('type')),
     classification: textValue(read('classification')),
     productFamily: textValue(read('productFamily')),
-    pm: textValue(read('pm')),
+    pm,
+    owner: pm,
     piiMysVolume: estimate(read('volume'), 'PII MYS Volume', warnings),
     leads: {
       hardware: textValue(read('hardwareLead')),
@@ -112,7 +128,33 @@ export function normalizeImportRow(source, rowNumber = 2) {
     },
   };
 
-  return { rowNumber, project, warnings, errors };
+  const worksheetRowNumber = Number.isFinite(source?.__rowNum__) ? source.__rowNum__ + 1 : rowNumber;
+  return { rowNumber: worksheetRowNumber, project, pmoCompletedHoursPending, warnings, errors };
+}
+
+export function formatImportPreviewRow(row, status) {
+  const project = row?.project ?? {};
+  const resources = project.resources ?? {};
+  const estimateFor = discipline => resources[discipline]?.estimated ?? 0;
+  const pmOwner = project.pm || project.owner || 'Not provided';
+  const warnings = Array.isArray(row?.warnings) ? row.warnings : [];
+  const pendingCompleted = Number.isFinite(row?.pmoCompletedHoursPending)
+    ? row.pmoCompletedHoursPending
+    : 'Not provided';
+
+  return [
+    `Row ${row?.rowNumber ?? 'Unknown'}`,
+    status,
+    `ID ${project.code || 'No ID'}`,
+    `Name ${project.name || 'No name'}`,
+    `Level ${project.projectLevel || 'Not provided'}`,
+    `PM/Owner ${pmOwner}`,
+    `Classification ${project.classification || 'Not provided'}`,
+    `Resource estimates: Hardware ${estimateFor('hardware')}, Firmware ${estimateFor('firmware')}, System/Electrical ${estimateFor('systemElectrical')}, Mechanical ${estimateFor('mechanical')}, PMO ${estimateFor('pmo')}`,
+    `Pending PMO completed ${pendingCompleted}`,
+    `Blocking reason: ${row?.reason || 'None.'}`,
+    `Warnings: ${warnings.length ? warnings.join(' | ') : 'None.'}`,
+  ].join(' · ');
 }
 
 export function planImport(rows = [], existingIds = []) {
