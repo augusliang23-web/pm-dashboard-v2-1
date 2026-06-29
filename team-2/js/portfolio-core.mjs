@@ -9,6 +9,14 @@ export const PROJECT_LIFECYCLE = Object.freeze({
   COMPLETED: 'completed',
 });
 
+export const RESOURCE_DISCIPLINES = Object.freeze([
+  'hardware',
+  'firmware',
+  'systemElectrical',
+  'mechanical',
+  'pmo',
+]);
+
 const PROJECT_LEVELS = new Set(Object.values(PROJECT_LEVEL));
 const PROJECT_LIFECYCLES = new Set(Object.values(PROJECT_LIFECYCLE));
 const WORKSTREAM_STATUSES = new Set(['not-started', 'on-track', 'at-risk', 'delayed', 'completed']);
@@ -34,7 +42,27 @@ export function normalizeProject(source = {}) {
     ganttWorkstreams: Array.isArray(project.ganttWorkstreams)
       ? project.ganttWorkstreams.map(normalizeWorkstream)
       : [],
-    resources: isPlainObject(project.resources) ? project.resources : {},
+    resources: isPlainObject(project.resources)
+      ? Object.fromEntries(Object.entries(project.resources).map(([key, value]) => [key, normalizeResourceEntry(value)]))
+      : {},
+  };
+}
+
+export function normalizeResourceEntry(source = {}) {
+  const entry = source && typeof source === 'object' ? source : {};
+  const estimatedNumber = Number(entry.estimated);
+  const actualBlank = entry.actual === null
+    || entry.actual === undefined
+    || (typeof entry.actual === 'string' && !entry.actual.trim());
+  const actualNumber = actualBlank ? NaN : Number(entry.actual);
+  const estimated = Number.isFinite(estimatedNumber) ? Math.max(estimatedNumber, 0) : 0;
+  const actual = !actualBlank && Number.isFinite(actualNumber) ? Math.max(actualNumber, 0) : null;
+
+  return {
+    estimated,
+    actual,
+    remaining: actual === null ? null : Math.max(estimated - actual, 0),
+    updatedAt: stringValue(entry.updatedAt),
   };
 }
 

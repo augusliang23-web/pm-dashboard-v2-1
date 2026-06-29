@@ -131,3 +131,39 @@ test('milestone deletion confirms linked schedule updates', () => {
   assert.ok(dashboard.includes("confirm('This milestone is linked"));
   assert.ok(dashboard.includes('validateWorkstreams(ganttWorkstreams, milestoneIds)'));
 });
+
+test('resource editor exposes fixed disciplines with estimated and optional actual inputs', () => {
+  for (const discipline of ['hardware', 'firmware', 'systemElectrical', 'mechanical', 'pmo']) {
+    assert.match(dashboard, new RegExp(`data-resource-discipline=["']${discipline}["']`));
+  }
+  assert.ok(dashboard.includes('class="fi resource-estimated"'));
+  assert.ok(dashboard.includes('class="fi resource-actual"'));
+  assert.ok(dashboard.includes('min="0"'));
+  assert.ok(dashboard.includes('Actual (optional)'));
+});
+
+test('resource save validates user input and only timestamps changed values', () => {
+  assert.ok(dashboard.includes('function collectEditorResources(previousResources = {})'));
+  assert.ok(dashboard.includes('input.reportValidity()'));
+  assert.ok(dashboard.includes('normalizeResourceEntry(previousResources[discipline])'));
+  assert.ok(dashboard.includes('estimated === previous.estimated && actual === previous.actual'));
+  assert.ok(dashboard.includes('updatedAt: unchanged ? previous.updatedAt : new Date().toISOString()'));
+  assert.ok(dashboard.includes('resources: editorResources'));
+});
+
+test('resource editor retains existing project authorization for admin, PM, and VIP roles', () => {
+  assert.ok(dashboard.includes("if (isNew ? currentRole !== 'admin' : !canEditProject(existingProject)) return;"));
+  assert.ok(dashboard.includes("if (currentRole === 'admin') return true;"));
+  assert.ok(dashboard.includes("if (currentRole === 'vip') return false;"));
+});
+
+test('project detail renders resource values without modifying RAG status', () => {
+  assert.match(dashboard, /id="pd_resources"/);
+  assert.ok(dashboard.includes("formatResourceValue(entry.actual)"));
+  assert.ok(dashboard.includes("formatResourceUpdatedAt(entry.updatedAt)"));
+  assert.ok(dashboard.includes('— Not updated'));
+  const resourceRenderStart = dashboard.indexOf('function renderProjectResources(');
+  const resourceRenderEnd = dashboard.indexOf('\n}', resourceRenderStart);
+  assert.ok(resourceRenderStart >= 0);
+  assert.ok(!dashboard.slice(resourceRenderStart, resourceRenderEnd).includes('.status'));
+});

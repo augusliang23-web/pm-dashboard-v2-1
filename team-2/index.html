@@ -778,6 +778,13 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 .detail-rb-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:22px; }
 .detail-rb-box { border:1px solid var(--border); border-radius:10px; background:var(--s2); padding:14px; }
 .detail-rb-list { display:grid; gap:7px; margin-top:10px; font-size:12px; color:var(--text-light); }
+.resource-editor-grid { display:grid; gap:8px; margin-top:10px; }
+.resource-editor-row { display:grid; grid-template-columns:1.2fr 1fr 1fr; gap:10px; align-items:end; padding:10px; border:1px solid var(--border); border-radius:8px; background:#fff; }
+.resource-editor-row .fg { margin:0; }
+.resource-discipline { align-self:center; font-size:12px; font-weight:800; }
+.resource-detail-table { width:100%; border-collapse:collapse; margin-top:10px; font-size:11px; }
+.resource-detail-table th, .resource-detail-table td { padding:7px 6px; border-bottom:1px solid var(--border); text-align:right; }
+.resource-detail-table th:first-child, .resource-detail-table td:first-child { text-align:left; }
 @media(max-width: 1100px) {
   .rb-overview-grid, .proto-grid-2, .detail-rb-grid, .budget-control-top { grid-template-columns:1fr; }
   .rb-kpi-grid { grid-template-columns:1fr 1fr; }
@@ -1369,7 +1376,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
       </button>
 
-      <button class="btn-icon vip-hidden" onclick="openProjEdit('', true)" title="Add New Project">
+      <button class="btn-icon admin-only" onclick="openProjEdit('', true)" title="Add New Project">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
       </button>
     </div>
@@ -1476,6 +1483,8 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
       <div id="pd_schedule"></div>
       <div class="info-lbl" style="margin:24px 0 12px;">Quarterly Milestones</div>
       <div class="detail-qms-list" id="pd_quarterly_milestones"></div>
+      <div class="info-lbl" style="margin:24px 0 12px;">Resources</div>
+      <div id="pd_resources"></div>
       <div class="detail-rb-grid">
         <div class="detail-rb-box">
           <div class="info-lbl">Team & Effort</div>
@@ -1582,6 +1591,17 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
           <button class="btn btn-ghost" onclick="addTeamMemberRow()">+ Add Member</button>
         </div>
         <div id="teamMemberContainer"></div>
+      </section>
+      <section class="proto-editor-section">
+        <div class="proto-section-title">Resources</div>
+        <div class="proto-section-note">Estimated staffing and optional actual staffing by discipline.</div>
+        <div class="resource-editor-grid">
+          <div class="resource-editor-row" data-resource-discipline="hardware"><div class="resource-discipline">Hardware</div><div class="fg"><label class="fl">Estimated</label><input class="fi resource-estimated" type="number" min="0" step="any" required></div><div class="fg"><label class="fl">Actual (optional)</label><input class="fi resource-actual" type="number" min="0" step="any"></div></div>
+          <div class="resource-editor-row" data-resource-discipline="firmware"><div class="resource-discipline">Firmware</div><div class="fg"><label class="fl">Estimated</label><input class="fi resource-estimated" type="number" min="0" step="any" required></div><div class="fg"><label class="fl">Actual (optional)</label><input class="fi resource-actual" type="number" min="0" step="any"></div></div>
+          <div class="resource-editor-row" data-resource-discipline="systemElectrical"><div class="resource-discipline">System Electrical</div><div class="fg"><label class="fl">Estimated</label><input class="fi resource-estimated" type="number" min="0" step="any" required></div><div class="fg"><label class="fl">Actual (optional)</label><input class="fi resource-actual" type="number" min="0" step="any"></div></div>
+          <div class="resource-editor-row" data-resource-discipline="mechanical"><div class="resource-discipline">Mechanical</div><div class="fg"><label class="fl">Estimated</label><input class="fi resource-estimated" type="number" min="0" step="any" required></div><div class="fg"><label class="fl">Actual (optional)</label><input class="fi resource-actual" type="number" min="0" step="any"></div></div>
+          <div class="resource-editor-row" data-resource-discipline="pmo"><div class="resource-discipline">PMO</div><div class="fg"><label class="fl">Estimated</label><input class="fi resource-estimated" type="number" min="0" step="any" required></div><div class="fg"><label class="fl">Actual (optional)</label><input class="fi resource-actual" type="number" min="0" step="any"></div></div>
+        </div>
       </section>
 
       <section class="proto-editor-section budget-control-panel">
@@ -1752,7 +1772,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 </div>
 
 <script type="module">
-import { calculateDropIndex, createDefaultWorkstreams, createTimelineTicks, filterProjects, normalizeProject, normalizeWorkstream, parseIsoDate, validateWorkstreams } from "./js/portfolio-core.mjs";
+import { RESOURCE_DISCIPLINES, calculateDropIndex, createDefaultWorkstreams, createTimelineTicks, filterProjects, normalizeProject, normalizeResourceEntry, normalizeWorkstream, parseIsoDate, validateWorkstreams } from "./js/portfolio-core.mjs";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, doc, onSnapshot, setDoc, updateDoc, query, orderBy, where, getDoc, getDocs, increment, serverTimestamp, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, updatePassword, onAuthStateChanged, signOut, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -4079,6 +4099,35 @@ function renderProjectGantt(project) {
     </div></div>`;
 }
 
+const RESOURCE_LABELS = {
+  hardware: 'Hardware',
+  firmware: 'Firmware',
+  systemElectrical: 'System Electrical',
+  mechanical: 'Mechanical',
+  pmo: 'PMO'
+};
+
+function formatResourceValue(value) {
+  return value === null ? '— Not updated' : Number(value).toLocaleString();
+}
+
+function formatResourceUpdatedAt(value) {
+  if (!value) return '— Not updated';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? escHtml(value) : date.toLocaleString();
+}
+
+function renderProjectResources(project) {
+  const resources = project?.resources || {};
+  document.getElementById('pd_resources').innerHTML = `<table class="resource-detail-table">
+    <thead><tr><th>Discipline</th><th>Estimated</th><th>Actual</th><th>Remaining</th><th>Last updated</th></tr></thead>
+    <tbody>${RESOURCE_DISCIPLINES.map(discipline => {
+      const entry = normalizeResourceEntry(resources[discipline]);
+      return `<tr><td>${RESOURCE_LABELS[discipline]}</td><td>${formatResourceValue(entry.estimated)}</td><td>${formatResourceValue(entry.actual)}</td><td>${formatResourceValue(entry.remaining)}</td><td>${formatResourceUpdatedAt(entry.updatedAt)}</td></tr>`;
+    }).join('')}</tbody>
+  </table>`;
+}
+
 window.openProjDetail = (code) => {
   const week = allWeeks[currentIdx];
   const rawProject = week.projects.find(x => x.code === code);
@@ -4116,6 +4165,7 @@ window.openProjDetail = (code) => {
     </div>
   `).join('');
   document.getElementById('pd_quarterly_milestones').innerHTML = formatDetailQuarterlyMilestones(p);
+  renderProjectResources(normalizeProject(p));
   renderProjectGantt(normalizeProject(p));
   document.getElementById('pd_team_effort').innerHTML = (p.teamMembers || []).map(m => `
     <div><b>${escHtml(m.name || '-')}</b> · ${escHtml(m.roleName || m.role || '-')} · ${Number(m.effortPct || m.effort || 0)}%</div>
@@ -5128,6 +5178,9 @@ function showWorkstreamErrors(errors) {
 }
 
 window.openProjEdit = (code, isNew = false) => {
+  const existingProject = allWeeks[currentIdx]?.projects.find(project => project.code === code);
+  if (!isNew && !existingProject) return;
+  if (isNew ? currentRole !== 'admin' : !canEditProject(existingProject)) return;
   isCreatingNew = isNew;
   editingProjCode = code;
   const week = allWeeks[currentIdx];
@@ -5164,6 +5217,11 @@ window.openProjEdit = (code, isNew = false) => {
   document.getElementById('pe_project_type').value = p.projectType;
   document.getElementById('pe_classification').value = p.classification;
   document.getElementById('pe_product_family').value = p.productFamily;
+  document.querySelectorAll('.resource-editor-row').forEach(row => {
+    const entry = normalizeResourceEntry(p.resources?.[row.dataset.resourceDiscipline]);
+    row.querySelector('.resource-estimated').value = entry.estimated;
+    row.querySelector('.resource-actual').value = entry.actual ?? '';
+  });
   document.getElementById('pe_visibility').value = p.visibility || 'active';
   
   const msCont = document.getElementById('msListContainer');
@@ -5222,9 +5280,36 @@ function getEditorPortfolioValue(id, fallback = '') {
   return control ? control.value.trim() : fallback;
 }
 
+function collectEditorResources(previousResources = {}) {
+  const resources = {};
+  for (const discipline of RESOURCE_DISCIPLINES) {
+    const row = document.querySelector(`[data-resource-discipline="${discipline}"]`);
+    const estimatedInput = row.querySelector('.resource-estimated');
+    const actualInput = row.querySelector('.resource-actual');
+    for (const input of [estimatedInput, actualInput]) {
+      if (!input.checkValidity()) {
+        input.reportValidity();
+        return null;
+      }
+    }
+    const previous = normalizeResourceEntry(previousResources[discipline]);
+    const estimated = Number(estimatedInput.value);
+    const actual = actualInput.value.trim() === '' ? null : Number(actualInput.value);
+    const unchanged = estimated === previous.estimated && actual === previous.actual;
+    resources[discipline] = normalizeResourceEntry({
+      estimated,
+      actual,
+      updatedAt: unchanged ? previous.updatedAt : new Date().toISOString()
+    });
+  }
+  return resources;
+}
+
 window.saveProjEdit = async () => {
   const week = allWeeks[currentIdx];
   const previousProject = isCreatingNew ? null : week.projects.find(x => x.code === editingProjCode);
+  const editorResources = collectEditorResources(previousProject?.resources);
+  if (!editorResources) return;
   const ganttWorkstreams = collectWorkstreams();
   const milestoneIds = Array.from(document.querySelectorAll('.ms-row')).map(row => row.dataset.planId).filter(Boolean);
   const workstreamErrors = validateWorkstreams(ganttWorkstreams, milestoneIds);
@@ -5255,6 +5340,7 @@ window.saveProjEdit = async () => {
     classification: getEditorPortfolioValue('pe_classification', previousProject?.classification ?? ''),
     productFamily: getEditorPortfolioValue('pe_product_family', previousProject?.productFamily ?? ''),
     ganttWorkstreams,
+    resources: editorResources,
     name: document.getElementById('pe_name').value,
     code: document.getElementById('pe_code').value,
     owner: document.getElementById('pe_owner').value,

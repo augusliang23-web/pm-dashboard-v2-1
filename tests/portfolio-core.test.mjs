@@ -9,10 +9,39 @@ import {
   createDefaultWorkstreams,
   filterProjects,
   normalizeProject,
+  normalizeResourceEntry,
   normalizeWorkstream,
   parseIsoDate,
   validateWorkstreams,
 } from '../team-2/js/portfolio-core.mjs';
+
+test('normalizeResourceEntry keeps a blank actual unknown and does not calculate remaining', () => {
+  assert.deepEqual(normalizeResourceEntry({ estimated: 12, actual: '  ', updatedAt: ' 2026-06-28T12:00:00Z ' }), {
+    estimated: 12,
+    actual: null,
+    remaining: null,
+    updatedAt: '2026-06-28T12:00:00Z',
+  });
+});
+
+test('normalizeResourceEntry accepts numeric strings and floors overrun remaining at zero', () => {
+  assert.deepEqual(normalizeResourceEntry({ estimated: '10.5', actual: '12' }), {
+    estimated: 10.5,
+    actual: 12,
+    remaining: 0,
+    updatedAt: '',
+  });
+});
+
+test('normalizeResourceEntry safely normalizes invalid and negative legacy data', () => {
+  assert.deepEqual(normalizeResourceEntry({ estimated: 'invalid', actual: -4 }), {
+    estimated: 0,
+    actual: 0,
+    remaining: 0,
+    updatedAt: '',
+  });
+  assert.equal(normalizeResourceEntry({ actual: 'invalid' }).actual, null);
+});
 
 test('normalizeProject preserves legacy fields and supplies portfolio defaults', () => {
   const source = {
