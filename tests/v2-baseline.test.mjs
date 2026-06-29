@@ -98,3 +98,9 @@ test('builds portfolio facets from role-visible projects and uses neutral execut
   assert.ok(dashboard.includes('<div class="exec-panel-note">${total} projects</div>'));
   assert.ok(!dashboard.includes('<div class="exec-panel-note">${total} active projects</div>'));
 });
+
+test('schedule editor supports dropping a workstream at the end of the list', () => {
+  assert.ok(dashboard.includes("container.addEventListener('dragover', event =>"));
+  assert.ok(dashboard.includes("container.addEventListener('drop', event =>"));
+  assert.ok(dashboard.includes('container.appendChild(dragging);'));
+});
