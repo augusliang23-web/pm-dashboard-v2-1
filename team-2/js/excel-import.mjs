@@ -1,5 +1,9 @@
+import { normalizeProject } from './portfolio-core.mjs';
+
 const MISSING_VALUES = new Set(['', 'n/a', 'na']);
 const UNSAFE_IDS = new Set(['__proto__', 'constructor', 'prototype']);
+export const MAX_IMPORT_WEEK_PROJECTS = 500;
+export const MAX_IMPORT_WEEK_BYTES = 900 * 1024;
 
 const FIELDS = Object.freeze({
   id: ['project id/code', 'project id', 'project code'],
@@ -197,4 +201,129 @@ export function planImport(rows = [], existingIds = []) {
     failed,
     counts: { ready: ready.length, skipped: skipped.length, failed: failed.length },
   };
+}
+
+function projectId(value) {
+  return textValue(value?.project?.code ?? value?.projectId ?? value?.code);
+}
+
+function prepareImportedProject(row, timestamp, confirmPmoCompleted) {
+  const project = normalizeProject(row.project);
+  const pmoCompleted = row.pmoCompletedHoursPending;
+  if (confirmPmoCompleted && Number.isFinite(pmoCompleted)) {
+    const estimated = project.resources.pmo?.estimated ?? 0;
+    project.resources.pmo = {
+      ...project.resources.pmo,
+      actual: pmoCompleted,
+      remaining: Math.max(estimated - pmoCompleted, 0),
+      updatedAt: timestamp,
+    };
+  }
+  return {
+    ...project,
+    importSource: 'excel-one-time',
+    importedAt: timestamp,
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  };
+}
+
+function jsonByteLength(value) {
+  return new TextEncoder().encode(JSON.stringify(value)).length;
+}
+
+export function assertReasonableWeekDocument(week, options = {}) {
+  const {
+    maxBytes = MAX_IMPORT_WEEK_BYTES,
+    maxProjects = MAX_IMPORT_WEEK_PROJECTS,
+  } = options;
+  const projects = Array.isArray(week?.projects) ? week.projects : [];
+  if (projects.length > maxProjects) {
+    throw new Error(`Import aborted: project count safety limit of ${maxProjects} would be exceeded.`);
+  }
+  if (jsonByteLength(week) > maxBytes) {
+    throw new Error(`Import aborted: document size safety limit of ${maxBytes} bytes would be exceeded.`);
+  }
+}
+
+export function mergeReadyImportRows(currentProjects = [], readyRows = [], options = {}) {
+  const {
+    confirmPmoCompleted = false,
+    maxBytes = MAX_IMPORT_WEEK_BYTES,
+    maxProjects = MAX_IMPORT_WEEK_PROJECTS,
+    timestamp,
+  } = options;
+  if (!timestamp || Number.isNaN(Date.parse(timestamp))) {
+    throw new Error('A valid ISO import timestamp is required.');
+  }
+
+  const projects = (Array.isArray(currentProjects) ? currentProjects : []).map(normalizeProject);
+  const liveCodes = new Set(projects.map(project => key(project.code)).filter(Boolean));
+  const results = [];
+
+  for (const row of Array.isArray(readyRows) ? readyRows : []) {
+    const id = projectId(row);
+    const normalizedId = key(id);
+    if (!normalizedId || liveCodes.has(normalizedId)) {
+      results.push({
+        rowNumber: row?.rowNumber ?? '',
+        projectId: id,
+        status: 'skipped',
+        reason: 'Project ID conflicts with the live target week; the existing project was preserved.',
+      });
+      continue;
+    }
+    projects.push(prepareImportedProject(row, timestamp, confirmPmoCompleted));
+    liveCodes.add(normalizedId);
+    results.push({
+      rowNumber: row?.rowNumber ?? '',
+      projectId: id,
+      status: 'success',
+      reason: 'Imported.',
+    });
+  }
+
+  assertReasonableWeekDocument({ projects }, { maxBytes, maxProjects });
+  return { projects, results };
+}
+
+function plannedResult(row, status) {
+  return {
+    rowNumber: row?.rowNumber ?? '',
+    projectId: projectId(row),
+    status,
+    reason: row?.reason || (status === 'failed' ? 'Validation failed.' : 'Skipped.'),
+  };
+}
+
+export function buildImportResults(plan, attemptedResults = [], writeFailure = '') {
+  const results = [
+    ...(plan?.skipped ?? []).map(row => plannedResult(row, 'skipped')),
+    ...(plan?.failed ?? []).map(row => plannedResult(row, 'failed')),
+    ...(Array.isArray(attemptedResults) ? attemptedResults : []).map(result => (
+      writeFailure && result.status === 'success'
+        ? { ...result, status: 'failed', reason: writeFailure }
+        : { ...result }
+    )),
+  ];
+  return results.sort((a, b) => Number(a.rowNumber || 0) - Number(b.rowNumber || 0));
+}
+
+function safeCsvValue(value) {
+  let text = String(value ?? '');
+  if (/^[\s]*[=+\-@]/.test(text)) text = `'${text}`;
+  return /[",\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+}
+
+export function importResultsToCsv(results = []) {
+  const header = ['rowNumber', 'projectId', 'status', 'reason'];
+  const rows = (Array.isArray(results) ? results : []).map(result => [
+    result.rowNumber,
+    result.projectId,
+    result.status,
+    result.reason,
+  ]);
+  return [header, ...rows]
+    .map(row => row.map(safeCsvValue).join(','))
+    .join('\r\n') + '\r\n';
 }

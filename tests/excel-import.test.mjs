@@ -3,7 +3,10 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 import {
+  buildImportResults,
+  importResultsToCsv,
   formatImportPreviewRow,
+  mergeReadyImportRows,
   normalizeImportRow,
   planImport,
 } from '../team-2/js/excel-import.mjs';
@@ -271,7 +274,102 @@ test('planImport skips existing and in-file duplicate IDs case-insensitively', (
   assert.match(plan.skipped[1].reason, /already exists/i);
 });
 
-test('dashboard import is admin-only, preview-only, and has no write API in its handlers', () => {
+test('confirmed merge skips live conflicts and preserves normalized existing project metadata', () => {
+  const plan = planImport([
+    { 'Project ID/Code': 'NEW-1', 'Project Name': 'New project' },
+    { 'Project ID/Code': 'LIVE-1', 'Project Name': 'Now conflicting' },
+  ]);
+  const timestamp = '2026-06-29T12:00:00.000Z';
+  const merged = mergeReadyImportRows([
+    {
+      code: 'live-1',
+      name: 'Existing',
+      customField: { keep: true },
+      resources: { customDiscipline: { note: 'keep' } },
+    },
+  ], plan.ready, { timestamp, confirmPmoCompleted: false });
+
+  assert.equal(merged.projects.length, 2);
+  assert.deepEqual(merged.projects[0].customField, { keep: true });
+  assert.deepEqual(merged.projects[0].resources.customDiscipline, { note: 'keep' });
+  assert.equal(merged.projects[0].projectLevel, 'system');
+  assert.deepEqual(merged.results.map(result => result.status), ['success', 'skipped']);
+  assert.match(merged.results[1].reason, /live target week/i);
+  assert.equal(merged.projects[1].importSource, 'excel-one-time');
+  assert.equal(merged.projects[1].importedAt, timestamp);
+  assert.equal(merged.projects[1].createdAt, timestamp);
+  assert.equal(merged.projects[1].updatedAt, timestamp);
+});
+
+test('PMO completed hours persist only after explicit semantics confirmation', () => {
+  const row = normalizeImportRow({
+    'Project ID/Code': 'PMO-3',
+    'Project Name': 'PMO semantics',
+    'Estimated PMO Hours': 10,
+    'PMO Hours Completed': 4,
+  });
+  const timestamp = '2026-06-29T12:00:00.000Z';
+
+  const unconfirmed = mergeReadyImportRows([], [row], {
+    timestamp,
+    confirmPmoCompleted: false,
+  }).projects[0];
+  assert.equal(unconfirmed.resources.pmo.actual, null);
+  assert.equal(unconfirmed.resources.pmo.remaining, null);
+  assert.equal('pmoCompletedHoursPending' in unconfirmed, false);
+
+  const confirmed = mergeReadyImportRows([], [row], {
+    timestamp,
+    confirmPmoCompleted: true,
+  }).projects[0];
+  assert.equal(confirmed.resources.pmo.actual, 4);
+  assert.equal(confirmed.resources.pmo.remaining, 6);
+  assert.equal(confirmed.resources.pmo.updatedAt, timestamp);
+});
+
+test('merge rejects unreasonable project counts and estimated week document size', () => {
+  const row = normalizeImportRow({
+    'Project ID/Code': 'LIMIT-1',
+    'Project Name': 'Limit',
+  });
+  assert.throws(
+    () => mergeReadyImportRows([], [row], { timestamp: '2026-06-29T12:00:00.000Z', maxProjects: 0 }),
+    /project count safety limit/i,
+  );
+  assert.throws(
+    () => mergeReadyImportRows([], [row], { timestamp: '2026-06-29T12:00:00.000Z', maxBytes: 1 }),
+    /document size safety limit/i,
+  );
+});
+
+test('result construction marks attempted rows failed after a write failure', () => {
+  const plan = planImport([
+    { 'Project ID/Code': 'OK-1', 'Project Name': 'Ready' },
+    { 'Project ID/Code': 'EXISTING', 'Project Name': 'Skipped' },
+    { 'Project ID/Code': '', 'Project Name': 'Failed validation' },
+  ], ['existing']);
+  const attempted = mergeReadyImportRows([], plan.ready, {
+    timestamp: '2026-06-29T12:00:00.000Z',
+  });
+  const results = buildImportResults(plan, attempted.results, 'Firestore write failed.');
+
+  assert.deepEqual(results.map(result => result.status).sort(), ['failed', 'failed', 'skipped']);
+  assert.match(results.find(result => result.projectId === 'OK-1').reason, /Firestore write failed/);
+});
+
+test('results CSV escapes fields and prevents spreadsheet formula injection', () => {
+  const csv = importResultsToCsv([
+    { rowNumber: 2, projectId: '=HYPERLINK("bad")', status: 'failed', reason: 'Comma, quote " and\nline' },
+    { rowNumber: 3, projectId: 'SAFE-1', status: 'success', reason: '' },
+  ]);
+
+  assert.ok(csv.startsWith('rowNumber,projectId,status,reason\r\n'));
+  assert.ok(csv.includes('"\'=HYPERLINK(""bad"")"'));
+  assert.ok(csv.includes('"Comma, quote "" and\nline"'));
+  assert.ok(csv.endsWith('3,SAFE-1,success,\r\n'));
+});
+
+test('dashboard import is admin-only and uses a target-week transaction only after two confirmations', () => {
   assert.match(dashboard, /id="importExcelBtn"[^>]+admin-only/);
   assert.ok(dashboard.includes("if (currentRole !== 'admin') return;"));
   assert.ok(dashboard.includes("new Worker('./js/excel-worker.js')"));
@@ -279,13 +377,52 @@ test('dashboard import is admin-only, preview-only, and has no write API in its 
   assert.ok(dashboard.includes('worker.postMessage(fileData, [fileData])'));
   assert.ok(dashboard.includes('resetExcelImportPreview();'));
   assert.ok(dashboard.includes('.textContent ='));
-  assert.doesNotMatch(dashboard, /id="confirmImportBtn"/);
+  assert.match(dashboard, /id="confirmImportBtn"/);
+  assert.match(dashboard, /id="executeImportBtn"/);
+  assert.match(dashboard, /id="importConfirmationAcknowledged"[^>]+type="checkbox"/);
+  assert.match(dashboard, /id="confirmPmoActual"[^>]+type="checkbox"/);
+  assert.ok(dashboard.includes('runTransaction(db, async transaction =>'));
+  assert.ok(dashboard.includes("doc(db, 'weeks', targetWeekId)"));
+  assert.ok(dashboard.includes('transaction.update(targetWeekRef'));
+  assert.doesNotMatch(dashboard, /collection\(db,\s*['"]projects['"]\)/);
 
   const start = dashboard.indexOf('window.openExcelImport');
   const end = dashboard.indexOf('// END EXCEL IMPORT', start);
   const importSource = dashboard.slice(start, end);
   assert.ok(start >= 0 && end > start);
-  assert.doesNotMatch(importSource, /\b(?:setDoc|writeBatch|addDoc|updateDoc|deleteDoc)\s*\(/);
+  assert.ok(importSource.includes("currentRole !== 'admin'"));
+  assert.ok(importSource.includes('isPendingExcelImportCurrent(plan)'));
+  assert.ok(dashboard.includes("document.getElementById('excelImportOverlay').classList.contains('open')"));
+  assert.ok(importSource.includes('pendingExcelImportPlan !== plan'));
+  assert.ok(importSource.includes('getSelectedImportWeek()?.weekLabel'));
+  assert.ok(importSource.includes('excelImportInFlight'));
+  assert.ok(importSource.includes('await runTransaction'));
+  assert.ok(importSource.includes('}, { maxAttempts: 1 });'));
+  const transactionStart = importSource.indexOf('await runTransaction');
+  const transactionEnd = importSource.indexOf('}, { maxAttempts: 1 });', transactionStart);
+  const transactionSource = importSource.slice(transactionStart, transactionEnd);
+  assert.ok(transactionSource.indexOf('await transaction.get(targetWeekRef)') >= 0);
+  const boundaryGuard = transactionSource.indexOf(
+    'isPendingExcelImportCurrent(plan)',
+    transactionSource.indexOf('await transaction.get(targetWeekRef)'),
+  );
+  assert.ok(boundaryGuard >= 0 && boundaryGuard < transactionSource.indexOf('transaction.update(targetWeekRef'));
+  assert.doesNotMatch(transactionSource, /serverTimestamp\s*\(/);
+  assert.ok(importSource.indexOf("showSaveToast('Excel import completed')") > transactionEnd);
+});
+
+test('confirmation UI reports exact counts and target while results are available only after an attempt', () => {
+  assert.match(dashboard, /id="excelImportConfirmation"/);
+  assert.match(dashboard, /id="excelImportConfirmationText"/);
+  assert.match(dashboard, /PMO Hours Completed[\s\S]+actual\/remaining/i);
+  assert.match(dashboard, /id="downloadImportResultsBtn"[^>]+hidden/);
+  assert.ok(dashboard.includes('plan.counts.ready'));
+  assert.ok(dashboard.includes('plan.counts.skipped'));
+  assert.ok(dashboard.includes('plan.counts.failed'));
+  assert.ok(dashboard.includes('plan.targetWeekLabel'));
+  assert.ok(dashboard.includes('lastExcelImportResults = results;'));
+  assert.ok(dashboard.includes('pendingExcelImportPlan = null;'));
+  assert.ok(dashboard.includes("document.getElementById('downloadImportResultsBtn').hidden = false;"));
 });
 
 test('every file selection resets pending plan, rows, counts, and status before validation', () => {
