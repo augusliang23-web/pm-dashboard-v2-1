@@ -41,3 +41,21 @@ test('exposes the v2.0T release and base commit in the UI', () => {
     ),
   );
 });
+
+test('trims portfolio editor values while guarding controls not yet rendered', () => {
+  assert.ok(
+    dashboard.includes(
+      "const control = document.getElementById(id);",
+    ),
+  );
+  assert.ok(
+    dashboard.includes(
+      "return control ? control.value.trim() : fallback;",
+    ),
+  );
+  assert.ok(
+    dashboard.includes(
+      "projectType: getEditorPortfolioValue('pe_project_type', previousProject?.projectType ?? previousProject?.type ?? '')",
+    ),
+  );
+});

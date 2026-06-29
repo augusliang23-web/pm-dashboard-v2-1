@@ -89,12 +89,15 @@ test('filterProjects combines portfolio filters and case-insensitive search', ()
 
 test('filterProjects all scope does not restrict project level', () => {
   const projects = [
-    { code: 'SYS', projectLevel: PROJECT_LEVEL.SYSTEM },
+    { code: 'SYS' },
     { code: 'HW', projectLevel: PROJECT_LEVEL.HARDWARE_MODULE },
   ];
 
-  assert.deepEqual(
-    filterProjects(projects, { scope: 'all' }).map(project => project.code),
-    ['SYS', 'HW'],
-  );
+  const result = filterProjects(projects, { scope: 'all' });
+
+  assert.deepEqual(result.map(project => project.code), ['SYS', 'HW']);
+  assert.equal(result[0].projectLevel, PROJECT_LEVEL.SYSTEM);
+  assert.equal(result[0].lifecycle, PROJECT_LIFECYCLE.ACTIVE);
+  assert.deepEqual(result[0].ganttWorkstreams, []);
+  assert.deepEqual(result[0].resources, {});
 });

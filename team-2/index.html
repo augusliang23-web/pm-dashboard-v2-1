@@ -2484,7 +2484,6 @@ function initData() {
       const week = d.data();
       return {
         ...week,
-        id: d.id,
         projects: (week.projects || []).map(normalizeProject)
       };
     });
@@ -4846,6 +4845,11 @@ window.openProjEdit = (code, isNew = false) => {
   document.getElementById('projEditOverlay').classList.add('open');
 };
 
+function getEditorPortfolioValue(id, fallback = '') {
+  const control = document.getElementById(id);
+  return control ? control.value.trim() : fallback;
+}
+
 window.saveProjEdit = async () => {
   closeModal('projEditOverlay');
   showLoader("Saving Project...");
@@ -4867,11 +4871,11 @@ window.saveProjEdit = async () => {
   if (budgetMode === 'auto') updateBudgetLinkSummary();
   
   const pData = {
-    projectLevel: document.getElementById('pe_project_level')?.value ?? previousProject?.projectLevel ?? 'system',
-    lifecycle: document.getElementById('pe_lifecycle')?.value ?? previousProject?.lifecycle ?? 'active',
-    projectType: document.getElementById('pe_project_type')?.value ?? previousProject?.projectType ?? previousProject?.type ?? '',
-    classification: document.getElementById('pe_classification')?.value ?? previousProject?.classification ?? '',
-    productFamily: document.getElementById('pe_product_family')?.value ?? previousProject?.productFamily ?? '',
+    projectLevel: getEditorPortfolioValue('pe_project_level', previousProject?.projectLevel ?? 'system'),
+    lifecycle: getEditorPortfolioValue('pe_lifecycle', previousProject?.lifecycle ?? 'active'),
+    projectType: getEditorPortfolioValue('pe_project_type', previousProject?.projectType ?? previousProject?.type ?? ''),
+    classification: getEditorPortfolioValue('pe_classification', previousProject?.classification ?? ''),
+    productFamily: getEditorPortfolioValue('pe_product_family', previousProject?.productFamily ?? ''),
     name: document.getElementById('pe_name').value,
     code: document.getElementById('pe_code').value,
     owner: document.getElementById('pe_owner').value,

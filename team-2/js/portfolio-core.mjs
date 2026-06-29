@@ -34,7 +34,7 @@ export function normalizeProject(source = {}) {
 }
 
 export function filterProjects(source = [], filters = {}) {
-  const projects = Array.isArray(source) ? source : [];
+  const projects = Array.isArray(source) ? source.map(normalizeProject) : [];
   const scope = normalizedFilter(filters.scope);
   const pm = normalizedFilter(filters.pm);
   const rag = normalizedFilter(filters.rag);
@@ -42,8 +42,7 @@ export function filterProjects(source = [], filters = {}) {
   const productFamily = normalizedFilter(filters.productFamily);
   const search = normalizedFilter(filters.search);
 
-  return projects.filter(rawProject => {
-    const project = normalizeProject(rawProject);
+  return projects.filter(project => {
     const projectManager = project.pm ?? project.projectManager ?? project.owner;
 
     return (
