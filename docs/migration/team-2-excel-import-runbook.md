@@ -15,6 +15,7 @@ Record these values before starting:
 - Workbook filename:
 - Workbook SHA-256:
 - Worksheet name:
+- Worksheet row count (excluding the header):
 - First and last imported worksheet row:
 
 Do not run the import from a production URL until UAT approval and Firestore Rules verification are documented.
@@ -32,7 +33,7 @@ Do not run the import from a production URL until UAT approval and Firestore Rul
 1. Select the intended target week in the dashboard, open **Import Excel**, and select the workbook.
 2. Record the preview Ready, Skipped, and Failed counts and the target week.
 3. Reconcile every source row to exactly one preview outcome. Confirm that Ready + Skipped + Failed equals the expected source-row count.
-4. Review every skipped and failed reason. Resolve source errors in a new, re-hashed workbook; never edit Firestore to make a preview pass.
+4. Stop if the preview contains any failed rows. Resolve every failed source row in a new, re-hashed workbook and repeat preview; never edit Firestore to make a preview pass.
 5. Review the PMO Hours Completed warning. Leave its confirmation unchecked unless the operator and reviewer have verified that the workbook column means PMO actual hours. If checked, the dashboard will set PMO actual and calculate remaining as Estimated minus Actual, with a floor of zero.
 6. Have the reviewer verify a sample of Project ID, Project Name, PM/Owner, project level, classification, product family, leads, volume, and resource estimates against the workbook.
 
@@ -54,7 +55,8 @@ Do not run the import from a production URL until UAT approval and Firestore Rul
 4. Verify skipped live conflicts still contain their original data.
 5. If PMO semantics was not confirmed, verify PMO actual/remaining is empty. If confirmed, verify actual/remaining against the source.
 6. Verify each imported project has `importSource: "excel-one-time"` and ISO `importedAt`, `createdAt`, and `updatedAt` values.
-7. Record the spot-checked IDs, reviewer, result, and any discrepancy.
+7. Open **Overview** and verify the imported System and Hardware Module projects appear in the expected portfolio scopes and do not distort the displayed totals.
+8. Record the spot-checked IDs, reviewer, result, and any discrepancy.
 
 ## Rollback
 

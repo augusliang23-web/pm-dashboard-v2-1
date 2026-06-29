@@ -257,8 +257,11 @@ export function mergeReadyImportRows(currentProjects = [], readyRows = [], optio
     throw new Error('A valid ISO import timestamp is required.');
   }
 
-  const projects = (Array.isArray(currentProjects) ? currentProjects : []).map(normalizeProject);
-  const liveCodes = new Set(projects.map(project => key(project.code)).filter(Boolean));
+  const liveProjects = Array.isArray(currentProjects) ? currentProjects : [];
+  const projects = [...liveProjects];
+  const liveCodes = new Set(
+    liveProjects.map(project => key(normalizeProject(project).code)).filter(Boolean),
+  );
   const results = [];
 
   for (const row of Array.isArray(readyRows) ? readyRows : []) {
@@ -278,8 +281,8 @@ export function mergeReadyImportRows(currentProjects = [], readyRows = [], optio
     results.push({
       rowNumber: row?.rowNumber ?? '',
       projectId: id,
-      status: 'success',
-      reason: 'Imported.',
+      status: 'pending',
+      reason: 'Pending transaction.',
     });
   }
 
@@ -297,12 +300,24 @@ function plannedResult(row, status) {
 }
 
 export function buildImportResults(plan, attemptedResults = [], writeFailure = '') {
+  const attempts = Array.isArray(attemptedResults) && attemptedResults.length
+    ? attemptedResults
+    : (writeFailure ? (plan?.ready ?? []).map(row => ({
+      rowNumber: row?.rowNumber ?? '',
+      projectId: projectId(row),
+      status: 'pending',
+      reason: 'Pending transaction.',
+    })) : []);
   const results = [
     ...(plan?.skipped ?? []).map(row => plannedResult(row, 'skipped')),
     ...(plan?.failed ?? []).map(row => plannedResult(row, 'failed')),
-    ...(Array.isArray(attemptedResults) ? attemptedResults : []).map(result => (
-      writeFailure && result.status === 'success'
-        ? { ...result, status: 'failed', reason: writeFailure }
+    ...attempts.map(result => (
+      result.status === 'pending'
+        ? {
+          ...result,
+          status: writeFailure ? 'failed' : 'success',
+          reason: writeFailure || 'Imported.',
+        }
         : { ...result }
     )),
   ];

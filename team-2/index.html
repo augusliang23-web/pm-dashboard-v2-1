@@ -1838,11 +1838,12 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
   <div class="modal" style="width:760px">
     <div class="modal-hdr">
       <h3 id="excelImportTitle">Import Excel · Preview &amp; Confirm</h3>
-      <button class="modal-x" onclick="closeExcelImport()" aria-label="Close">×</button>
+      <button id="closeExcelImportXBtn" class="modal-x" onclick="closeExcelImport()" aria-label="Close">×</button>
     </div>
     <p style="font-size:12px; color:var(--text-light); line-height:1.5;">Select an .xlsx or .xls file to preview its first sheet. Nothing will be written in this step.</p>
     <input id="excelImportFile" type="file" accept=".xlsx,.xls" style="margin-top:16px;" onchange="handleExcelImportFile(event)">
     <div id="excelImportError" class="import-error" role="alert"></div>
+    <div id="excelImportTargetWeek" style="font-size:12px; font-weight:700; color:var(--text-light);">Target week: —</div>
     <div class="import-summary" aria-live="polite">
       <div><strong id="importReadyCount">0</strong>Ready</div>
       <div><strong id="importSkippedCount">0</strong>Skipped</div>
@@ -1861,7 +1862,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
     <div id="excelImportResult" class="import-result" aria-live="polite"></div>
     <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px;">
       <button id="downloadImportResultsBtn" class="btn btn-ghost" hidden onclick="downloadExcelImportResults()">Download Results CSV</button>
-      <button class="btn btn-ghost" onclick="closeExcelImport()">Close</button>
+      <button id="closeExcelImportBtn" class="btn btn-ghost" onclick="closeExcelImport()">Close</button>
       <button id="confirmImportBtn" class="btn btn-primary" disabled onclick="prepareExcelImportConfirmation()">Confirm Import</button>
     </div>
   </div>
@@ -2708,6 +2709,7 @@ function setupUI() {
 // ── DATA ──
 window.jumpToWeek = (idx) => {
   currentIdx = parseInt(idx, 10);
+  invalidateExcelImportForWeekChange();
   render();
 };
 
@@ -2769,7 +2771,8 @@ function initData() {
     } else if (sel) {
       sel.innerHTML = '<option value="">No Weeks Available</option>';
     }
-    
+
+    invalidateExcelImportForWeekChange();
     render();
     hideLoader();
   }, showDataLoadError);
@@ -5031,6 +5034,9 @@ function openAccessibleModal(modal) {
 const MAX_IMPORT_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_EXCEL_PARSE_MS = 15 * 1000;
 let excelImportRequestToken = 0;
+let excelImportAttemptToken = 0;
+let activeExcelImportAttempt = null;
+let excelImportPreviewTarget = null;
 let excelImportWorker = null;
 let excelImportWorkerReject = null;
 let excelImportWorkerTimer = null;
@@ -5053,10 +5059,25 @@ function terminateExcelImportWorker() {
     reject(cancellation);
   }
 }
+function setExcelImportControlsDisabled(disabled) {
+  for (const id of [
+    'excelImportFile',
+    'closeExcelImportXBtn',
+    'closeExcelImportBtn',
+    'confirmPmoActual',
+    'importConfirmationAcknowledged',
+    'confirmImportBtn',
+    'executeImportBtn',
+  ]) {
+    document.getElementById(id).disabled = disabled;
+  }
+}
 function resetExcelImportPreview() {
+  if (excelImportInFlight) return false;
   excelImportRequestToken += 1;
   terminateExcelImportWorker();
   pendingExcelImportPlan = null;
+  excelImportPreviewTarget = null;
   lastExcelImportResults = null;
   lastExcelImportTargetWeekId = '';
   document.getElementById('excelImportError').textContent = '';
@@ -5068,14 +5089,18 @@ function resetExcelImportPreview() {
   document.getElementById('confirmImportBtn').disabled = true;
   document.getElementById('executeImportBtn').disabled = true;
   document.getElementById('downloadImportResultsBtn').hidden = true;
+  document.getElementById('excelImportTargetWeek').textContent = 'Target week: —';
   for (const id of ['importReadyCount', 'importSkippedCount', 'importFailedCount']) {
     document.getElementById(id).textContent = '0';
   }
+  return true;
 }
 function clearExcelImport() {
-  resetExcelImportPreview();
+  if (excelImportInFlight) return false;
+  if (!resetExcelImportPreview()) return false;
   const file = document.getElementById('excelImportFile');
   if (file) file.value = '';
+  return true;
 }
 function isExcelImportRequestCurrent(requestToken, file, fileInput) {
   return requestToken === excelImportRequestToken
@@ -5101,6 +5126,24 @@ function isPendingExcelImportCurrent(plan) {
     && selectedWeek?.weekLabel === plan.targetWeekLabel
     && weekDocumentId(selectedWeek) === plan.targetWeekId
     && document.getElementById('excelImportOverlay').classList.contains('open');
+}
+function isExcelImportAttemptCurrent(attemptToken, plan) {
+  return activeExcelImportAttempt?.token === attemptToken
+    && activeExcelImportAttempt.plan === plan;
+}
+function invalidateExcelImportForWeekChange() {
+  if (excelImportInFlight) return;
+  const plan = pendingExcelImportPlan;
+  const previewTarget = plan || excelImportPreviewTarget;
+  const selectedWeek = getSelectedImportWeek();
+  if (!previewTarget || (previewTarget.targetWeekLabel === selectedWeek?.weekLabel
+    && previewTarget.targetWeekId === weekDocumentId(selectedWeek))) return;
+  resetExcelImportPreview();
+  document.getElementById('excelImportFile').value = '';
+  document.getElementById('excelImportTargetWeek').textContent =
+    `Target week: ${selectedWeek?.weekLabel || 'none'} (preview required)`;
+  document.getElementById('excelImportError').textContent =
+    'The selected week changed. Select the workbook again to create a new preview.';
 }
 function parseExcelWorkbook(fileData) {
   if (typeof Worker !== 'function') {
@@ -5150,18 +5193,21 @@ function parseExcelWorkbook(fileData) {
   });
 }
 window.openExcelImport = () => {
-  if (currentRole !== 'admin') return;
+  if (currentRole !== 'admin' || excelImportInFlight) return;
   clearExcelImport();
   openAccessibleModal(document.getElementById('excelImportOverlay'));
 };
 window.closeExcelImport = () => {
-  clearExcelImport();
+  if (excelImportInFlight) return;
+  if (!clearExcelImport()) return;
   closeModal('excelImportOverlay');
 };
 function renderExcelImportPlan(plan) {
   document.getElementById('importReadyCount').textContent = String(plan.counts.ready);
   document.getElementById('importSkippedCount').textContent = String(plan.counts.skipped);
   document.getElementById('importFailedCount').textContent = String(plan.counts.failed);
+  document.getElementById('excelImportTargetWeek').textContent =
+    `Target week: ${plan.targetWeekLabel}`;
   const preview = document.getElementById('excelImportPreview');
   preview.replaceChildren();
   for (const [status, rows] of Object.entries({
@@ -5179,13 +5225,24 @@ function renderExcelImportPlan(plan) {
   document.getElementById('confirmImportBtn').disabled = plan.counts.ready === 0;
 }
 window.handleExcelImportFile = async event => {
-  if (currentRole !== 'admin') return;
-  resetExcelImportPreview();
+  if (currentRole !== 'admin' || excelImportInFlight) return;
+  if (!resetExcelImportPreview()) return;
   const requestToken = excelImportRequestToken;
   const error = document.getElementById('excelImportError');
   const fileInput = event.currentTarget ?? event.target;
   const file = fileInput.files?.[0];
   if (!file) return;
+  const targetWeek = getSelectedImportWeek();
+  if (!targetWeek) {
+    error.textContent = 'No target week is selected.';
+    return;
+  }
+  excelImportPreviewTarget = {
+    targetWeekLabel: targetWeek.weekLabel,
+    targetWeekId: weekDocumentId(targetWeek),
+  };
+  document.getElementById('excelImportTargetWeek').textContent =
+    `Target week: ${targetWeek.weekLabel} (parsing preview)`;
   if (file.size > MAX_IMPORT_FILE_BYTES) {
     error.textContent = 'File is too large. Select a file no larger than 10 MB.';
     return;
@@ -5195,8 +5252,6 @@ window.handleExcelImportFile = async event => {
     if (!isExcelImportRequestCurrent(requestToken, file, fileInput)) return;
     const rows = await parseExcelWorkbook(fileData);
     if (!isExcelImportRequestCurrent(requestToken, file, fileInput)) return;
-    const targetWeek = getSelectedImportWeek();
-    if (!targetWeek) throw new Error('No target week is selected.');
     const existingIds = (targetWeek.projects || []).map(project => project.code);
     const importPlan = planImport(rows, existingIds);
     if (!isExcelImportRequestCurrent(requestToken, file, fileInput)) return;
@@ -5229,14 +5284,6 @@ window.updateImportExecutionState = () => {
   document.getElementById('executeImportBtn').disabled =
     excelImportInFlight || !acknowledged || !isPendingExcelImportCurrent(pendingExcelImportPlan);
 };
-function attemptedReadyResults(plan) {
-  return plan.ready.map(row => ({
-    rowNumber: row.rowNumber,
-    projectId: row.project.code,
-    status: 'success',
-    reason: 'Imported.',
-  }));
-}
 function showExcelImportResults(results, message, targetWeekId) {
   lastExcelImportResults = results;
   lastExcelImportTargetWeekId = targetWeekId;
@@ -5255,20 +5302,22 @@ window.executeConfirmedExcelImport = async () => {
     return;
   }
 
+  const attemptToken = ++excelImportAttemptToken;
+  activeExcelImportAttempt = { token: attemptToken, plan };
   excelImportInFlight = true;
-  window.updateImportExecutionState();
-  document.getElementById('confirmImportBtn').disabled = true;
+  setExcelImportControlsDisabled(true);
   document.getElementById('excelImportError').textContent = '';
   document.getElementById('excelImportResult').textContent = 'Import in progress…';
   const confirmPmoCompleted = document.getElementById('confirmPmoActual').checked;
   const targetWeekId = plan.targetWeekId;
   const targetWeekLabel = plan.targetWeekLabel;
   const timestamp = new Date().toISOString();
-  let transactionResults = attemptedReadyResults(plan);
+  let transactionResults = [];
 
   try {
     // Revalidate authorization, modal/request state, selected week, and plan at the write boundary.
-    if (!isPendingExcelImportCurrent(plan) || pendingExcelImportPlan !== plan
+    if (!isExcelImportAttemptCurrent(attemptToken, plan)
+      || !isPendingExcelImportCurrent(plan) || pendingExcelImportPlan !== plan
       || getSelectedImportWeek()?.weekLabel !== targetWeekLabel) {
       throw new Error('Import aborted because the target week or preview changed.');
     }
@@ -5292,7 +5341,8 @@ window.executeConfirmedExcelImport = async () => {
         lastModifiedAt: timestamp,
       };
       assertReasonableWeekDocument(updatedWeek);
-      if (!isPendingExcelImportCurrent(plan) || currentRole !== 'admin'
+      if (!isExcelImportAttemptCurrent(attemptToken, plan)
+        || !isPendingExcelImportCurrent(plan) || currentRole !== 'admin'
         || pendingExcelImportPlan !== plan || getSelectedImportWeek()?.weekLabel !== targetWeekLabel) {
         throw new Error('Import aborted because authorization, the modal, or target week changed.');
       }
@@ -5304,19 +5354,37 @@ window.executeConfirmedExcelImport = async () => {
       return merged;
     }, { maxAttempts: 1 });
 
+    if (!isExcelImportAttemptCurrent(attemptToken, plan)) return;
     const results = buildImportResults(plan, mergeResult.results);
     showExcelImportResults(results, `Import completed for ${targetWeekLabel}. Download and retain the results CSV.`, targetWeekId);
     pendingExcelImportPlan = null;
+    excelImportPreviewTarget = null;
     excelImportRequestToken += 1;
     document.getElementById('excelImportConfirmation').hidden = true;
     showSaveToast('Excel import completed');
   } catch (writeError) {
+    if (!isExcelImportAttemptCurrent(attemptToken, plan)) return;
     const reason = writeError instanceof Error ? writeError.message : 'Firestore write failed.';
     const results = buildImportResults(plan, transactionResults, reason);
     showExcelImportResults(results, `Import failed for ${targetWeekLabel}. No success is reported; download the results CSV.`, targetWeekId);
     document.getElementById('excelImportError').textContent = reason;
   } finally {
+    if (!isExcelImportAttemptCurrent(attemptToken, plan)) return;
+    const selectedWeek = getSelectedImportWeek();
+    const targetChanged = selectedWeek?.weekLabel !== targetWeekLabel
+      || weekDocumentId(selectedWeek) !== targetWeekId;
+    activeExcelImportAttempt = null;
     excelImportInFlight = false;
+    setExcelImportControlsDisabled(false);
+    if (targetChanged && pendingExcelImportPlan === plan) {
+      pendingExcelImportPlan = null;
+      excelImportPreviewTarget = null;
+      excelImportRequestToken += 1;
+      document.getElementById('excelImportFile').value = '';
+      document.getElementById('excelImportConfirmation').hidden = true;
+      document.getElementById('excelImportTargetWeek').textContent =
+        `Target week: ${selectedWeek?.weekLabel || 'none'} (preview required)`;
+    }
     window.updateImportExecutionState();
     document.getElementById('confirmImportBtn').disabled =
       !isPendingExcelImportCurrent(pendingExcelImportPlan);
@@ -5335,6 +5403,7 @@ window.downloadExcelImportResults = () => {
 // END EXCEL IMPORT
 
 window.closeModal = id => {
+  if (id === 'excelImportOverlay' && excelImportInFlight) return;
   const modal = document.getElementById(id);
   if (id === 'excelImportOverlay') clearExcelImport();
   modal?.classList.remove('open');
