@@ -1543,6 +1543,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, doc, onSnapshot, setDoc, updateDoc, query, orderBy, where, getDoc, getDocs, increment, serverTimestamp, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, updatePassword, onAuthStateChanged, signOut, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { confirmWeekMutation, getWriteErrorMessage } from "./sync-core.js";
 
 const app = initializeApp(FIREBASE_CONFIG);
 const db = getFirestore(app);
@@ -1563,6 +1564,7 @@ let editingProjCode = null;
 let isCreatingNew = false;
 let PM_LIST = []; 
 let jumpToLatestOnNextRender = false;
+let releaseWriteInProgress = false;
 
 // ── IDLE DETECTION ──
 let heartbeatInterval = null;
@@ -2580,22 +2582,39 @@ window.jumpToWeek = (idx) => {
 
 window.toggleReleaseWeek = async () => {
   const week = allWeeks[currentIdx];
-  if(!week) return;
+  if (!week || !currentUser || releaseWriteInProgress) return;
   
   const isCurrentlyReleased = isWeekReleased(week);
   const newStatus = !isCurrentlyReleased;
-  
+  const changes = {
+    isReleased: newStatus,
+    lastModifiedBy: currentUser.email
+  };
+  releaseWriteInProgress = true;
   showLoader(newStatus ? "Releasing to VIP..." : "Reverting to Draft...");
   
   const id = week.weekLabel.replace(/\s+/g, '-');
-  week.isReleased = newStatus;
-  week.lastModifiedBy = currentUser.email;
-  
-  await setDoc(doc(db, "weeks", id), week);
-  
-  await new Promise(r => setTimeout(r, 600));
-  hideLoader();
-  showSaveToast(newStatus ? "Week released to VIP!" : "Week reverted to Draft");
+  try {
+    const savedWeek = await confirmWeekMutation(
+      week,
+      changes,
+      async () => {
+        await updateDoc(doc(db, "weeks", id), {
+          isReleased: newStatus,
+          lastModifiedBy: currentUser.email
+        });
+      }
+    );
+    allWeeks[currentIdx] = savedWeek;
+    render();
+    showSaveToast(newStatus ? "Week released to VIP!" : "Week reverted to Draft");
+  } catch (err) {
+    console.error("Release status update failed", err);
+    showSaveToast(getWriteErrorMessage(err));
+  } finally {
+    releaseWriteInProgress = false;
+    hideLoader();
+  }
 };
 
 function initData() {
@@ -4200,22 +4219,28 @@ window.saveStrategyLayer = async () => {
         projectMap[code] = { businessObjective, checkpoint };
       }
     });
-    week.strategyLayer = {
+    const strategyLayer = {
       activeTrack: 'all',
       tracks: base.tracks || STRATEGIC_TRACKS,
       quarterGoals: base.quarterGoals || {},
       executiveMilestoneTimeline,
       projectMap
     };
-    week.lastModifiedBy = currentUser.email;
+    const savedWeek = await confirmWeekMutation(
+      week,
+      { strategyLayer, lastModifiedBy: currentUser.email },
+      candidate => setDoc(
+        doc(db, "weeks", candidate.weekLabel.replace(/\s+/g, '-')),
+        candidate
+      )
+    );
+    allWeeks[currentIdx] = savedWeek;
     closeModal('strategyOverlay');
-    await setDoc(doc(db, "weeks", week.weekLabel.replace(/\s+/g, '-')), cleanFirestoreData(week));
-    await new Promise(r => setTimeout(r, 500));
     render();
     showSaveToast("Strategy layer saved");
   } catch (err) {
     console.error("Strategy layer save failed", err);
-    showSaveToast("Strategy layer save failed");
+    showSaveToast(getWriteErrorMessage(err));
   } finally {
     hideLoader();
   }
