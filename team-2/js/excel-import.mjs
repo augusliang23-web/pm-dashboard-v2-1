@@ -30,6 +30,7 @@ function normalizedCells(source) {
   const cells = Object.create(null);
   if (!source || typeof source !== 'object' || Array.isArray(source)) return cells;
   for (const [header, value] of Object.entries(source)) {
+    if (header.startsWith('__')) continue;
     const normalizedHeader = key(header);
     if (normalizedHeader && !Object.hasOwn(cells, normalizedHeader)) cells[normalizedHeader] = value;
   }
@@ -86,8 +87,8 @@ export function normalizeImportRow(source, rowNumber = 2) {
   const read = field => valueFor(cells, FIELDS[field]);
   const code = textValue(read('id'));
   const name = textValue(read('name'));
-  const warnings = [];
-  const errors = [];
+  const warnings = Array.isArray(source?.__importWarnings__) ? [...source.__importWarnings__] : [];
+  const errors = Array.isArray(source?.__importErrors__) ? [...source.__importErrors__] : [];
 
   if (!code) errors.push('Project ID/Code is required.');
   else if (!safeProjectId(code)) errors.push('Project ID/Code contains unsafe characters or a reserved value.');

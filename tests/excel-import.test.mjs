@@ -71,6 +71,20 @@ test('uses the original SheetJS worksheet row number when available', () => {
   assert.equal(plan.ready[1].rowNumber, 3);
 });
 
+test('merges parser warnings and errors into row validation', () => {
+  const plan = planImport([{
+    __rowNum__: 4,
+    __importWarnings__: ['Project Name contains Excel error #VALUE!.'],
+    __importErrors__: ['A numeric Project ID/Code requires an explicit text format.'],
+    'Project ID/Code': '',
+    'Project Name': '#VALUE!',
+  }]);
+
+  assert.equal(plan.failed[0].rowNumber, 5);
+  assert.ok(plan.failed[0].warnings.includes('Project Name contains Excel error #VALUE!.'));
+  assert.match(plan.failed[0].reason, /explicit text format/i);
+});
+
 test('keeps valid PMO completed hours pending confirmation and never sets actual', () => {
   const result = normalizeImportRow({
     'Project ID/Code': 'PMO-1',
@@ -244,9 +258,9 @@ test('planImport skips existing and in-file duplicate IDs case-insensitively', (
 test('dashboard import is admin-only, preview-only, and has no write API in its handlers', () => {
   assert.match(dashboard, /id="importExcelBtn"[^>]+admin-only/);
   assert.ok(dashboard.includes("if (currentRole !== 'admin') return;"));
-  assert.ok(dashboard.includes("XLSX.read("));
+  assert.ok(dashboard.includes("new Worker('./js/excel-worker.js')"));
   assert.ok(dashboard.includes("planImport("));
-  assert.ok(dashboard.includes("sheet_to_json(workbook.Sheets[firstSheetName], { defval: '', raw: true })"));
+  assert.ok(dashboard.includes('worker.postMessage(fileData, [fileData])'));
   assert.ok(dashboard.includes('resetExcelImportPreview();'));
   assert.ok(dashboard.includes('.textContent ='));
   assert.doesNotMatch(dashboard, /id="confirmImportBtn"/);
@@ -270,7 +284,7 @@ test('every file selection resets pending plan, rows, counts, and status before 
   assert.ok(dashboard.includes("document.getElementById(id).textContent = '0';"));
 });
 
-test('workbook integration locks first-sheet parsing and all bounded error paths', () => {
+test('workbook integration delegates parsing to one cancellable worker per request', () => {
   const blockStart = dashboard.indexOf('// EXCEL IMPORT');
   const handlerStart = dashboard.indexOf('window.handleExcelImportFile', blockStart);
   const end = dashboard.indexOf('// END EXCEL IMPORT', handlerStart);
@@ -281,14 +295,12 @@ test('workbook integration locks first-sheet parsing and all bounded error paths
   assert.ok(handler.includes('if (!file) return;'));
   assert.ok(importBlock.includes('MAX_IMPORT_FILE_BYTES = 10 * 1024 * 1024'));
   assert.ok(handler.includes('File is too large. Select a file no larger than 10 MB.'));
-  assert.ok(handler.includes("if (!window.XLSX?.read || !window.XLSX?.utils?.sheet_to_json)"));
-  assert.ok(handler.includes('Excel parser is unavailable. Reload the page and try again.'));
-  assert.ok(handler.includes('const firstSheetName = workbook.SheetNames?.[0];'));
-  assert.ok(handler.includes('workbook.Sheets[firstSheetName]'));
-  assert.ok(handler.includes("throw new Error('Workbook has no sheets.')"));
-  assert.ok(handler.includes("throw new Error('The first sheet has no data rows.')"));
-  assert.ok(importBlock.includes('MAX_IMPORT_ROWS = 5000'));
-  assert.ok(handler.includes('The first sheet exceeds the ${MAX_IMPORT_ROWS}-row limit.'));
+  assert.ok(importBlock.includes('let excelImportWorker = null;'));
+  assert.ok(importBlock.includes('worker?.terminate();'));
+  assert.ok(importBlock.includes("const worker = new Worker('./js/excel-worker.js');"));
+  assert.ok(importBlock.includes('excelImportWorker = worker;'));
+  assert.ok(importBlock.includes('worker.postMessage(fileData, [fileData])'));
+  assert.ok(importBlock.includes('worker.terminate();'));
 
   const catchStart = handler.indexOf('} catch (parseError) {');
   const catchSource = handler.slice(catchStart);
@@ -316,6 +328,7 @@ test('async preview requests are invalidated and rechecked before rendering or r
 
   assert.ok(importBlock.includes('let excelImportRequestToken = 0;'));
   assert.ok(resetSource.includes('excelImportRequestToken += 1;'));
+  assert.ok(resetSource.includes('terminateExcelImportWorker();'));
   assert.ok(clearSource.includes('resetExcelImportPreview();'));
   assert.ok(closeSource.includes('clearExcelImport();'));
   assert.ok(importBlock.includes("currentRole === 'admin'"));

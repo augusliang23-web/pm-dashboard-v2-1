@@ -1851,7 +1851,6 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
   </div>
 </div>
 
-<script src="./vendor/xlsx.full.min.js"></script>
 <script type="module">
 import { RESOURCE_DISCIPLINES, calculateDropIndex, createDefaultWorkstreams, createTimelineTicks, filterProjects, getFocusTrapIndex, mergeResourceEntry, normalizeProject, normalizeResourceEntry, normalizeRiskActionRows, normalizeWorkstream, parseIsoDate, resolveProjectStatusDate, validateResourceInput, validateWorkstreams } from "./js/portfolio-core.mjs";
 import { formatImportPreviewRow, planImport } from "./js/excel-import.mjs";
@@ -5011,10 +5010,24 @@ function openAccessibleModal(modal) {
 
 // EXCEL IMPORT (Task 7 is deliberately preview-only; persistence is added only after confirmation work.)
 const MAX_IMPORT_FILE_BYTES = 10 * 1024 * 1024;
-const MAX_IMPORT_ROWS = 5000;
 let excelImportRequestToken = 0;
+let excelImportWorker = null;
+let excelImportWorkerReject = null;
+function terminateExcelImportWorker() {
+  const worker = excelImportWorker;
+  const reject = excelImportWorkerReject;
+  excelImportWorker = null;
+  excelImportWorkerReject = null;
+  worker?.terminate();
+  if (reject) {
+    const cancellation = new Error('Excel import cancelled.');
+    cancellation.name = 'AbortError';
+    reject(cancellation);
+  }
+}
 function resetExcelImportPreview() {
   excelImportRequestToken += 1;
+  terminateExcelImportWorker();
   pendingExcelImportPlan = null;
   document.getElementById('excelImportError').textContent = '';
   document.getElementById('excelImportPreview').replaceChildren();
@@ -5032,6 +5045,35 @@ function isExcelImportRequestCurrent(requestToken, file, fileInput) {
     && currentRole === 'admin'
     && fileInput.files?.[0] === file
     && document.getElementById('excelImportOverlay').classList.contains('open');
+}
+function parseExcelWorkbook(fileData) {
+  if (typeof Worker !== 'function') {
+    throw new Error('Excel parser is unavailable. Reload the page and try again.');
+  }
+  const worker = new Worker('./js/excel-worker.js');
+  excelImportWorker = worker;
+  return new Promise((resolve, reject) => {
+    excelImportWorkerReject = reject;
+    const finish = callback => value => {
+      if (excelImportWorker === worker) {
+        excelImportWorker = null;
+        excelImportWorkerReject = null;
+      }
+      worker.terminate();
+      callback(value);
+    };
+    worker.onmessage = finish(message => {
+      if (message.data?.ok && Array.isArray(message.data.rows)) {
+        resolve(message.data.rows);
+      } else {
+        reject(new Error(message.data?.error || 'Could not parse this workbook.'));
+      }
+    });
+    worker.onerror = finish(() => reject(
+      new Error('Excel parser is unavailable. Reload the page and try again.'),
+    ));
+    worker.postMessage(fileData, [fileData]);
+  });
 }
 window.openExcelImport = () => {
   if (currentRole !== 'admin') return;
@@ -5073,19 +5115,11 @@ window.handleExcelImportFile = async event => {
     error.textContent = 'File is too large. Select a file no larger than 10 MB.';
     return;
   }
-  if (!window.XLSX?.read || !window.XLSX?.utils?.sheet_to_json) {
-    error.textContent = 'Excel parser is unavailable. Reload the page and try again.';
-    return;
-  }
   try {
     const fileData = await file.arrayBuffer();
     if (!isExcelImportRequestCurrent(requestToken, file, fileInput)) return;
-    const workbook = XLSX.read(fileData, { type: 'array' });
-    const firstSheetName = workbook.SheetNames?.[0];
-    if (!firstSheetName || !workbook.Sheets?.[firstSheetName]) throw new Error('Workbook has no sheets.');
-    const rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheetName], { defval: '', raw: true });
-    if (!rows.length) throw new Error('The first sheet has no data rows.');
-    if (rows.length > MAX_IMPORT_ROWS) throw new Error(`The first sheet exceeds the ${MAX_IMPORT_ROWS}-row limit.`);
+    const rows = await parseExcelWorkbook(fileData);
+    if (!isExcelImportRequestCurrent(requestToken, file, fileInput)) return;
     const existingIds = allWeeks.flatMap(week => (week.projects || []).map(project => project.code));
     const importPlan = planImport(rows, existingIds);
     if (!isExcelImportRequestCurrent(requestToken, file, fileInput)) return;
