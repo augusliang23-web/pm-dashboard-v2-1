@@ -120,9 +120,18 @@ test('formats a complete safe preview with blocking reason and every warning', (
       code: 'SAFE-1',
       name: '<img src=x onerror=alert(1)>',
       projectLevel: 'hardware-module',
+      projectType: 'Platform',
       pm: 'Morgan',
       owner: 'Morgan',
       classification: 'Internal',
+      productFamily: 'Power',
+      piiMysVolume: 200,
+      leads: {
+        hardware: 'Alex',
+        firmware: 'Blair',
+        systemElectrical: 'Casey',
+        mechanical: 'Devon',
+      },
       resources: {
         hardware: { estimated: 1 },
         firmware: { estimated: 2 },
@@ -142,8 +151,15 @@ test('formats a complete safe preview with blocking reason and every warning', (
     'SAFE-1',
     '<img src=x onerror=alert(1)>',
     'hardware-module',
+    'Type Platform',
     'Morgan',
     'Internal',
+    'Product family Power',
+    'PII MYS volume 200',
+    'Hardware lead Alex',
+    'Firmware lead Blair',
+    'System/Electrical lead Casey',
+    'Mechanical lead Devon',
     'Hardware 1',
     'Firmware 2',
     'System/Electrical 3',
@@ -301,12 +317,38 @@ test('workbook integration delegates parsing to one cancellable worker per reque
   assert.ok(importBlock.includes('excelImportWorker = worker;'));
   assert.ok(importBlock.includes('worker.postMessage(fileData, [fileData])'));
   assert.ok(importBlock.includes('worker.terminate();'));
+  assert.ok(importBlock.includes('const MAX_EXCEL_PARSE_MS = 15 * 1000;'));
+  assert.ok(importBlock.includes('let excelImportWorkerTimer = null;'));
+  assert.ok(importBlock.includes('clearTimeout(excelImportWorkerTimer);'));
+  assert.ok(importBlock.includes('excelImportWorkerTimer = setTimeout('));
+  assert.match(importBlock, /Excel parsing timed out after 15 seconds/i);
 
   const catchStart = handler.indexOf('} catch (parseError) {');
   const catchSource = handler.slice(catchStart);
   assert.ok(catchStart >= 0);
   assert.ok(catchSource.includes('pendingExcelImportPlan = null;'));
   assert.ok(catchSource.includes("error.textContent = parseError instanceof Error ? parseError.message : 'Could not parse this workbook.';"));
+});
+
+test('worker timeout is cleared on completion and cancellation paths', () => {
+  const blockStart = dashboard.indexOf('// EXCEL IMPORT');
+  const end = dashboard.indexOf('// END EXCEL IMPORT', blockStart);
+  const importBlock = dashboard.slice(blockStart, end);
+  const terminateStart = importBlock.indexOf('function terminateExcelImportWorker()');
+  const resetStart = importBlock.indexOf('function resetExcelImportPreview()', terminateStart);
+  const terminateSource = importBlock.slice(terminateStart, resetStart);
+  const parseStart = importBlock.indexOf('function parseExcelWorkbook(');
+  const openStart = importBlock.indexOf('window.openExcelImport', parseStart);
+  const parseSource = importBlock.slice(parseStart, openStart);
+
+  assert.ok(terminateSource.includes('clearExcelImportWorkerTimer();'));
+  assert.ok(parseSource.includes('clearExcelImportWorkerTimer();'));
+  assert.ok(parseSource.includes('worker.terminate();'));
+  assert.ok(parseSource.includes('excelImportWorker = null;'));
+  assert.ok(parseSource.includes('excelImportWorkerReject = null;'));
+  assert.ok(parseSource.includes('settle(reject, new Error('));
+  assert.ok(parseSource.includes('let settled = false;'));
+  assert.match(parseSource, /try\s*\{\s*worker\.postMessage\(fileData, \[fileData\]\);\s*\}\s*catch/);
 });
 
 test('async preview requests are invalidated and rechecked before rendering or reporting errors', () => {

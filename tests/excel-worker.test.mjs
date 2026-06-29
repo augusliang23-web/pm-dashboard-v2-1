@@ -16,6 +16,7 @@ const workerCore = (() => {
 const {
   parseWorkbookData,
   parseWorksheet,
+  preflightXlsxZip,
   validateWorkbookSignature,
 } = workerCore;
 const workerSource = await readFile(
@@ -31,9 +32,37 @@ function workbookBytes(rows, mutateSheet = () => {}) {
   return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
 }
 
+function craftedCentralDirectoryZip(uncompressedSizes, {
+  entryCount = uncompressedSizes.length,
+  centralDirectoryOffset = 4,
+  zip64Locator = false,
+} = {}) {
+  const centralDirectory = Buffer.alloc(uncompressedSizes.length * 46);
+  uncompressedSizes.forEach((size, index) => {
+    const offset = index * 46;
+    centralDirectory.writeUInt32LE(0x02014b50, offset);
+    centralDirectory.writeUInt32LE(size, offset + 24);
+  });
+  const eocd = Buffer.alloc(22);
+  eocd.writeUInt32LE(0x06054b50, 0);
+  eocd.writeUInt16LE(entryCount, 8);
+  eocd.writeUInt16LE(entryCount, 10);
+  eocd.writeUInt32LE(centralDirectory.length, 12);
+  eocd.writeUInt32LE(centralDirectoryOffset, 16);
+  const locator = zip64Locator ? Buffer.alloc(20) : Buffer.alloc(0);
+  if (zip64Locator) locator.writeUInt32LE(0x07064b50, 0);
+  return Buffer.concat([
+    Buffer.from([0x50, 0x4b, 0x03, 0x04]),
+    centralDirectory,
+    locator,
+    eocd,
+  ]);
+}
+
 test('exposes a pure workbook parser for worker and Node integration tests', () => {
   assert.equal(typeof parseWorkbookData, 'function');
   assert.equal(typeof parseWorksheet, 'function');
+  assert.equal(typeof preflightXlsxZip, 'function');
   assert.equal(typeof validateWorkbookSignature, 'function');
 });
 
@@ -95,6 +124,81 @@ test('uses bounded SheetJS options and parses only the first worksheet', () => {
   assert.deepEqual(readOptions, { type: 'array', sheetRows: 5002, sheets: 0 });
   assert.equal(rows.length, 1);
   assert.equal(rows[0]['Project ID/Code'], 'FIRST');
+});
+
+test('preflights XLSX central-directory entry and expansion budgets before SheetJS reads', () => {
+  const valid = workbookBytes([['Project ID/Code'], ['P-1']]);
+  assert.doesNotThrow(() => preflightXlsxZip(valid));
+  assert.throws(
+    () => preflightXlsxZip(craftedCentralDirectoryZip([1], { entryCount: 2001 })),
+    /more than 2,000 ZIP entries/i,
+  );
+  assert.throws(
+    () => preflightXlsxZip(craftedCentralDirectoryZip([60 * 1024 * 1024, 50 * 1024 * 1024])),
+    /uncompressed data exceeds 100 MB/i,
+  );
+
+  let readCalled = false;
+  assert.throws(
+    () => parseWorkbookData(
+      craftedCentralDirectoryZip([1], { entryCount: 2001 }),
+      { read() { readCalled = true; } },
+    ),
+    /more than 2,000 ZIP entries/i,
+  );
+  assert.equal(readCalled, false);
+});
+
+test('rejects malformed and unsupported ZIP64 XLSX metadata before parsing', () => {
+  assert.throws(
+    () => preflightXlsxZip(Uint8Array.from([0x50, 0x4b, 0x03, 0x04])),
+    /malformed ZIP central directory/i,
+  );
+  assert.throws(
+    () => preflightXlsxZip(craftedCentralDirectoryZip([1], {
+      centralDirectoryOffset: 0xfffffff0,
+    })),
+    /malformed ZIP central directory/i,
+  );
+  assert.throws(
+    () => preflightXlsxZip(craftedCentralDirectoryZip([1], { entryCount: 0xffff })),
+    /ZIP64/i,
+  );
+  assert.throws(
+    () => preflightXlsxZip(craftedCentralDirectoryZip([1], { zip64Locator: true })),
+    /ZIP64/i,
+  );
+});
+
+test('rejects a capped A10:B5010 used range instead of silently returning 4,992 rows', () => {
+  const rows = Array.from({ length: 5000 }, (_, index) => [
+    `P-${index + 1}`,
+    `Project ${index + 1}`,
+  ]);
+  const bytes = workbookBytes([
+    ...Array.from({ length: 9 }, () => []),
+    ['Project ID/Code', 'Project Name'],
+    ...rows,
+  ], sheet => {
+    sheet['!ref'] = 'A10:B5010';
+  });
+
+  assert.throws(
+    () => parseWorkbookData(bytes, XLSX),
+    /header row must be worksheet row 1/i,
+  );
+});
+
+test('validates the original SheetJS full range when sheetRows truncates !ref', () => {
+  assert.throws(
+    () => parseWorksheet({
+      A1: { t: 's', v: 'Project ID/Code' },
+      A2: { t: 's', v: 'P-1' },
+      '!ref': 'A1:A5001',
+      '!fullref': 'A1:A6000',
+    }, XLSX),
+    /5,001-row limit/i,
+  );
 });
 
 test('preserves formatted numeric project identities and visible Excel errors', () => {
