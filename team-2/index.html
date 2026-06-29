@@ -682,6 +682,33 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 /* Resource & Budget Prototype */
 .proto-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
 .proto-editor-section { margin-top:20px; padding:16px; border:1px solid var(--border); border-radius:10px; background:var(--s2); }
+.schedule-editor-list { display:grid; gap:8px; margin-top:10px; overflow-x:auto; }
+.schedule-edit-row { display:grid; grid-template-columns:24px minmax(130px,1.4fr) 125px 125px 120px 80px minmax(130px,1fr) 34px; gap:7px; align-items:start; min-width:850px; padding:8px; border:1px solid var(--border); border-radius:8px; background:#fff; }
+.schedule-edit-row .drag-handle { cursor:grab; color:var(--muted); padding-top:9px; text-align:center; }
+.schedule-edit-row.has-error { border-color:var(--red); background:#fff8f8; }
+.schedule-field-error { border-color:var(--red) !important; outline:1px solid var(--red); }
+.schedule-error-summary { display:none; color:var(--red); font-size:11px; margin-top:8px; }
+.schedule-error-summary.show { display:block; }
+.gantt-toolbar { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; }
+.gantt-toggle { display:inline-flex; border:1px solid var(--border); border-radius:7px; overflow:hidden; }
+.gantt-toggle button { border:0; background:#fff; color:var(--muted); padding:5px 10px; cursor:pointer; }
+.gantt-toggle button.active { background:var(--blue); color:#fff; }
+.gantt-chart { overflow-x:auto; border:1px solid var(--border); border-radius:8px; background:#fff; }
+.gantt-grid { min-width:680px; }
+.gantt-axis, .gantt-row { display:grid; grid-template-columns:150px minmax(500px,1fr); }
+.gantt-axis { border-bottom:1px solid var(--border); }
+.gantt-axis-label, .gantt-name { padding:8px 10px; font-size:10px; color:var(--muted); }
+.gantt-ticks { display:flex; min-height:32px; position:relative; }
+.gantt-tick { flex:1; min-width:42px; border-left:1px solid var(--border); padding:8px 4px; font-size:9px; color:var(--muted); white-space:nowrap; }
+.gantt-row { border-bottom:1px solid var(--border); }
+.gantt-row:last-child { border-bottom:0; }
+.gantt-name { font-size:11px; font-weight:700; color:var(--text); }
+.gantt-track { position:relative; min-height:42px; background:repeating-linear-gradient(to right, transparent 0, transparent calc(10% - 1px), var(--border) calc(10% - 1px), var(--border) 10%); }
+.gantt-bar { position:absolute; top:9px; height:24px; min-width:4px; border-radius:5px; color:#fff; padding:5px 7px; font-size:9px; overflow:hidden; white-space:nowrap; }
+.gantt-bar.not-started { background:#8291a3; }.gantt-bar.on-track { background:var(--green); }.gantt-bar.at-risk { background:var(--yellow); }.gantt-bar.delayed { background:var(--red); }.gantt-bar.completed { background:var(--blue); }
+.gantt-today { position:absolute; top:0; bottom:0; width:2px; background:var(--red); z-index:2; }
+.gantt-milestone { position:absolute; top:14px; width:12px; height:12px; background:#26384a; transform:rotate(45deg); z-index:3; }
+.gantt-empty { padding:18px; color:var(--muted); font-size:12px; }
 .proto-section-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
 .proto-section-title { font-size:13px; font-weight:800; color:var(--text); }
 .proto-section-note { font-size:11px; color:var(--muted); line-height:1.45; }
@@ -1444,6 +1471,8 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
       </div>
       <div class="info-lbl" style="margin-bottom:16px;">Milestones Roadmap</div>
       <div class="ms-container" id="pd_milestones"></div>
+      <div class="info-lbl" style="margin:24px 0 12px;">Schedule</div>
+      <div id="pd_schedule"></div>
       <div class="info-lbl" style="margin:24px 0 12px;">Quarterly Milestones</div>
       <div class="detail-qms-list" id="pd_quarterly_milestones"></div>
       <div class="detail-rb-grid">
@@ -1534,6 +1563,14 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
         <button class="btn btn-ghost" onclick="addQuarterlyMilestoneRow()" style="width:100%; margin-top:10px;">+ Add Quarterly Milestone</button>
       </div>
 
+      <section class="proto-editor-section">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+          <div><label class="fl">Schedule</label><div class="proto-section-note">Plan project workstreams and optionally link them to milestones.</div></div>
+          <button type="button" class="btn btn-ghost" onclick="addWorkstreamRow()">+ Add</button>
+        </div>
+        <div id="workstreamListContainer" class="schedule-editor-list"></div>
+        <div id="workstreamErrors" class="schedule-error-summary" role="alert"></div>
+      </section>
       <section class="proto-editor-section">
         <div class="proto-section-head">
           <div>
@@ -1713,7 +1750,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 </div>
 
 <script type="module">
-import { filterProjects, normalizeProject } from "./js/portfolio-core.mjs";
+import { createDefaultWorkstreams, filterProjects, normalizeProject, normalizeWorkstream, validateWorkstreams } from "./js/portfolio-core.mjs";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, doc, onSnapshot, setDoc, updateDoc, query, orderBy, where, getDoc, getDocs, increment, serverTimestamp, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, updatePassword, onAuthStateChanged, signOut, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -1744,6 +1781,8 @@ let isOverview = false;
 const isVipPerspective = () => currentRole === 'vip' || (currentRole === 'admin' && isAdminVipPreview);
 let editingProjCode = null;
 let isCreatingNew = false;
+let newProjectScheduleUntouched = false;
+let ganttScale = 'month';
 let PM_LIST = []; 
 let jumpToLatestOnNextRender = false;
 let overviewCurrency = 'USD';
@@ -3992,11 +4031,67 @@ function buildCopilotPrompt() {
   return `You are preparing an executive weekly movement summary for LITEON PM Dashboard. The result will be pasted directly into the dashboard and email.\n\nGoal:\nCompare LAST WEEK and THIS WEEK PM inputs. Generate a concise executive summary focused on movement, not static status.\n\nRequired plain-text format:\n- Return plain text only. Do not use Markdown heading symbols, bold text, tables, or code fences.\n- Return exactly these two section headings, each on its own line: WEEKLY MOVEMENT and MANAGEMENT ASK.\n- Under each section, use one bullet per project in this exact pattern: - Exact Project Name: concise update.\n- Use the exact official project name from the supplied data before the colon. Do not add labels such as Delays, Recovery, Escalation, or Kickoff to the project name.\n- Keep every project in a separate bullet and insert one blank line between project bullets so the text remains readable when pasted into email.\n- Each project bullet may contain 1 to 3 concise sentences covering the meaningful movement, business impact, and next step when relevant.\n- Never combine multiple projects into one bullet. Use a separate Portfolio: bullet only for a genuinely portfolio-wide point.\n- WEEKLY MOVEMENT should normally contain 4 to 6 project bullets focused on progress changes, newly completed milestones, delayed milestones, new/continued/resolved risks, and attention changes.\n- MANAGEMENT ASK should contain 2 to 4 project bullets and only decisions, escalations, or unblock actions needed from management.\n- If no management action is needed, write exactly: - No immediate management decision required this week.\n\nContent and tone rules:\n- Do not invent facts. Use only the data below.\n- Do not repeat every project status.\n- Prioritize Executive Action, At Risk, Critical, changed items, and management blockers.\n- The audience includes cross-functional department leaders. Use professional, constructive, and diplomatically neutral language.\n- Avoid blame, implied ownership disputes, or potentially contentious labels such as "scope creep". Describe the observable change, impact, and needed action instead.\n- For internally driven issues, keep the wording positive and neutral, emphasizing alignment, clarification, recovery, or next steps rather than fault.\n- For externally driven issues, preserve the relevant verified facts, source, timing, and impact without speculation or emotional wording.\n- Do not assign responsibility to a person or department unless the supplied data explicitly states it and the attribution is essential to a management decision.\n\nDATA\n\nWEEK COMPARISON\nLast week: ${prev ? `${prev.weekLabel} (${prev.weekDate})` : 'No previous week available'}\nThis week: ${cur.weekLabel} (${cur.weekDate})\n\nPORTFOLIO MOVEMENT\nTotal projects: ${a.total} -> ${b.total}\nOn Track: ${a.ok} -> ${b.ok}\nAt Risk: ${a.risk} -> ${b.risk}\nCritical: ${a.critical} -> ${b.critical}\nExecutive Action: ${a.action} -> ${b.action}\nMilestones: ${a.ms} -> ${b.ms}\n\nPROJECT MOVEMENT DETAILS\n${movements}\n\nCURRENT EXECUTIVE RISK LIST\n${curProjects.filter(shouldIncludeRisk).map(p => `- ${p.name}: ${riskItems(p).join(' | ') || 'No blocker text'}; why escalated: ${riskReasons(p).join(' / ')}; owner: ${p.owner || '-'}; next action: ${textLines(p.next)[0] || '-'}`).join('\n') || '- No current executive risks.'}\n`;
 }
 
+window.setGanttScale = scale => {
+  ganttScale = scale === 'week' ? 'week' : 'month';
+  const code = document.getElementById('projDetailOverlay')?.dataset.projectCode;
+  const project = allWeeks[currentIdx]?.projects?.find(item => item.code === code);
+  if (project) renderProjectGantt(normalizeProject(project));
+};
+
+function ganttDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) return null;
+  const date = new Date(`${value}T00:00:00Z`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function renderProjectGantt(project) {
+  const target = document.getElementById('pd_schedule');
+  const rows = (project.ganttWorkstreams || []).map(normalizeWorkstream).filter(row => ganttDate(row.startDate) && ganttDate(row.endDate) && row.endDate >= row.startDate);
+  const toggle = `<div class="gantt-toggle" aria-label="Schedule scale"><button type="button" class="${ganttScale === 'week' ? 'active' : ''}" onclick="setGanttScale('week')">Week</button><button type="button" class="${ganttScale === 'month' ? 'active' : ''}" onclick="setGanttScale('month')">Month</button></div>`;
+  if (!rows.length) {
+    target.innerHTML = `<div class="gantt-toolbar"><span></span>${toggle}</div><div class="gantt-empty">No dated schedule workstreams yet.</div>`;
+    return;
+  }
+  const starts = rows.map(row => ganttDate(row.startDate).getTime());
+  const ends = rows.map(row => ganttDate(row.endDate).getTime());
+  const min = new Date(Math.min(...starts));
+  const max = new Date(Math.max(...ends));
+  const day = 86400000;
+  const total = Math.max(day, max.getTime() - min.getTime() + day);
+  const ticks = [];
+  const cursor = new Date(min);
+  if (ganttScale === 'month') cursor.setUTCDate(1);
+  else cursor.setUTCDate(cursor.getUTCDate() - cursor.getUTCDay());
+  while (cursor <= max && ticks.length < 60) {
+    ticks.push(new Date(cursor));
+    ganttScale === 'month' ? cursor.setUTCMonth(cursor.getUTCMonth() + 1) : cursor.setUTCDate(cursor.getUTCDate() + 7);
+  }
+  const milestones = new Map((project.milestones || []).map((item, index) => [item.planId || item.id || `milestone-${index + 1}`, item]));
+  const pct = date => ((date.getTime() - min.getTime()) / total) * 100;
+  const today = new Date();
+  const todayUtc = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+  const todayLine = todayUtc >= min && todayUtc <= max ? `<span class="gantt-today" style="left:${pct(todayUtc)}%" title="Today"></span>` : '';
+  target.innerHTML = `
+    <div class="gantt-toolbar"><span>${rows.length} workstream${rows.length === 1 ? '' : 's'}</span>${toggle}</div>
+    <div class="gantt-chart" role="region" aria-label="Project Gantt schedule" tabindex="0"><div class="gantt-grid">
+      <div class="gantt-axis"><div class="gantt-axis-label">Workstream</div><div class="gantt-ticks">${ticks.map(tick => `<span class="gantt-tick">${ganttScale === 'month' ? tick.toLocaleDateString(undefined,{month:'short',year:'2-digit',timeZone:'UTC'}) : tick.toLocaleDateString(undefined,{month:'short',day:'numeric',timeZone:'UTC'})}</span>`).join('')}</div></div>
+      ${rows.map(row => {
+        const start = ganttDate(row.startDate);
+        const end = ganttDate(row.endDate);
+        const milestone = milestones.get(row.milestoneId);
+        const milestoneDate = ganttDate(milestone?.date);
+        const marker = milestoneDate && milestoneDate >= min && milestoneDate <= max ? `<span class="gantt-milestone" style="left:${pct(milestoneDate)}%" title="${escHtml(milestone.name || 'Linked milestone')}"></span>` : '';
+        return `<div class="gantt-row"><div class="gantt-name">${escHtml(row.name)}<br><span style="font-weight:400;color:var(--muted)">${row.progress}%</span></div><div class="gantt-track">${todayLine}<span class="gantt-bar ${row.status}" style="left:${Math.max(0,pct(start))}%;width:${Math.max(.7,((end-start+day)/total)*100)}%" title="${escHtml(row.name)}: ${row.progress}%">${row.progress}%</span>${marker}</div></div>`;
+      }).join('')}
+    </div></div>`;
+}
+
 window.openProjDetail = (code) => {
   const week = allWeeks[currentIdx];
   const rawProject = week.projects.find(x => x.code === code);
   if(!rawProject) return;
   const p = enrichProjectPrototype(rawProject, week.projects.findIndex(x => x.code === code));
+  document.getElementById('projDetailOverlay').dataset.projectCode = code;
   
   document.getElementById('pd_title').innerHTML = `${p.name} <span class="proj-code" style="margin-left:8px; font-size:13px;">${p.code}</span>`;
   document.getElementById('pd_owner').textContent = p.owner || '-';
@@ -4028,6 +4123,7 @@ window.openProjDetail = (code) => {
     </div>
   `).join('');
   document.getElementById('pd_quarterly_milestones').innerHTML = formatDetailQuarterlyMilestones(p);
+  renderProjectGantt(normalizeProject(p));
   document.getElementById('pd_team_effort').innerHTML = (p.teamMembers || []).map(m => `
     <div><b>${escHtml(m.name || '-')}</b> · ${escHtml(m.roleName || m.role || '-')} · ${Number(m.effortPct || m.effort || 0)}%</div>
   `).join('') || '<div>No team allocation yet.</div>';
@@ -4874,6 +4970,106 @@ window.addBudgetActualRow = (item = {}) => {
   updateBudgetLinkSummary();
 };
 
+function newWorkstreamId() {
+  return `ws-${globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`}`;
+}
+
+function editorMilestoneOptions(selected = '') {
+  const options = Array.from(document.querySelectorAll('.ms-row')).map(row => ({
+    id: row.dataset.planId || '',
+    name: row.querySelector('.ms-name')?.value || 'Milestone'
+  })).filter(item => item.id);
+  return `<option value="">No milestone</option>${options.map(item => `<option value="${escHtml(item.id)}" ${item.id === selected ? 'selected' : ''}>${escHtml(item.name)}</option>`).join('')}`;
+}
+
+window.refreshWorkstreamMilestoneOptions = () => {
+  document.querySelectorAll('.ws-milestone').forEach(select => {
+    const selected = select.value;
+    select.innerHTML = editorMilestoneOptions(selected);
+  });
+};
+
+window.addWorkstreamRow = (source = {}, untouched = false) => {
+  const container = document.getElementById('workstreamListContainer');
+  if (!container) return;
+  const index = container.children.length;
+  const row = normalizeWorkstream(source, index);
+  if (!source.id) row.id = newWorkstreamId();
+  const div = document.createElement('div');
+  div.className = 'schedule-edit-row';
+  div.dataset.workstreamId = row.id;
+  div.draggable = true;
+  div.innerHTML = `
+    <span class="drag-handle" title="Drag to reorder">☰</span>
+    <input class="fi ws-name" value="${escHtml(row.name)}" placeholder="Workstream name" aria-label="Workstream name">
+    <input class="fi ws-start" type="date" value="${escHtml(row.startDate)}" aria-label="Start date">
+    <input class="fi ws-end" type="date" value="${escHtml(row.endDate)}" aria-label="End date">
+    <select class="fs ws-status" aria-label="Status">
+      ${['not-started','on-track','at-risk','delayed','completed'].map(status => `<option value="${status}" ${status === row.status ? 'selected' : ''}>${status}</option>`).join('')}
+    </select>
+    <input class="fi ws-progress" type="number" min="0" max="100" value="${row.progress}" aria-label="Progress percent">
+    <select class="fs ws-milestone" aria-label="Linked milestone">${editorMilestoneOptions(row.milestoneId)}</select>
+    <button type="button" class="row-delete" title="Remove workstream" onclick="this.parentElement.remove(); newProjectScheduleUntouched=false;">🗑️</button>`;
+  div.addEventListener('input', () => { newProjectScheduleUntouched = false; clearWorkstreamErrors(); });
+  div.ondragstart = () => div.classList.add('dragging');
+  div.ondragend = () => div.classList.remove('dragging');
+  div.ondragover = event => {
+    event.preventDefault();
+    const dragging = container.querySelector('.dragging');
+    if (dragging && dragging !== div) container.insertBefore(dragging, div);
+    newProjectScheduleUntouched = false;
+  };
+  container.appendChild(div);
+  if (!untouched) newProjectScheduleUntouched = false;
+};
+
+function replaceWorkstreamTemplate(level) {
+  const container = document.getElementById('workstreamListContainer');
+  container.innerHTML = '';
+  createDefaultWorkstreams(level).forEach(({ id, ...row }) => addWorkstreamRow(row, true));
+  newProjectScheduleUntouched = true;
+}
+
+function collectWorkstreams() {
+  return Array.from(document.querySelectorAll('.schedule-edit-row')).map((div, index) => normalizeWorkstream({
+    id: div.dataset.workstreamId || newWorkstreamId(),
+    name: div.querySelector('.ws-name').value,
+    startDate: div.querySelector('.ws-start').value,
+    endDate: div.querySelector('.ws-end').value,
+    status: div.querySelector('.ws-status').value,
+    progress: div.querySelector('.ws-progress').value,
+    milestoneId: div.querySelector('.ws-milestone').value,
+    sortOrder: index
+  }, index));
+}
+
+function clearWorkstreamErrors() {
+  document.querySelectorAll('.schedule-edit-row').forEach(row => {
+    row.classList.remove('has-error');
+    row.querySelectorAll('.schedule-field-error').forEach(field => field.classList.remove('schedule-field-error'));
+  });
+  const summary = document.getElementById('workstreamErrors');
+  summary.classList.remove('show');
+  summary.textContent = '';
+}
+
+function showWorkstreamErrors(errors) {
+  clearWorkstreamErrors();
+  const fieldSelectors = { name: '.ws-name', startDate: '.ws-start', endDate: '.ws-end', progress: '.ws-progress' };
+  errors.forEach(error => {
+    const row = document.querySelectorAll('.schedule-edit-row')[error.index];
+    row?.classList.add('has-error');
+    Object.entries(error.fields).forEach(([field, message]) => {
+      const control = row?.querySelector(fieldSelectors[field]);
+      control?.classList.add('schedule-field-error');
+      if (control) control.setAttribute('title', message);
+    });
+  });
+  const summary = document.getElementById('workstreamErrors');
+  summary.textContent = 'Fix the highlighted schedule fields before saving.';
+  summary.classList.add('show');
+}
+
 window.openProjEdit = (code, isNew = false) => {
   isCreatingNew = isNew;
   editingProjCode = code;
@@ -4916,6 +5112,18 @@ window.openProjEdit = (code, isNew = false) => {
   const msCont = document.getElementById('msListContainer');
   msCont.innerHTML = '';
   (p.milestones || []).forEach((m, index) => addMilestoneRow(m.name, m.status, m.date, normalizeMilestonePlan(m, index)));
+  const workstreamCont = document.getElementById('workstreamListContainer');
+  workstreamCont.innerHTML = '';
+  if (isNew) replaceWorkstreamTemplate(p.projectLevel);
+  else p.ganttWorkstreams.forEach(row => addWorkstreamRow(row, true));
+  newProjectScheduleUntouched = isNew;
+  clearWorkstreamErrors();
+  document.getElementById('pe_project_level').onchange = event => {
+    if (!isCreatingNew) return;
+    if (newProjectScheduleUntouched || confirm('Replace the current schedule with the template for this project level?')) {
+      replaceWorkstreamTemplate(event.target.value);
+    }
+  };
   const qmsCont = document.getElementById('qmsListContainer');
   qmsCont.innerHTML = '';
   getQuarterlyMilestones(p).forEach(m => addQuarterlyMilestoneRow(m.quarter, m.goal, m.window, m.status));
@@ -4958,11 +5166,16 @@ function getEditorPortfolioValue(id, fallback = '') {
 }
 
 window.saveProjEdit = async () => {
-  closeModal('projEditOverlay');
-  showLoader("Saving Project...");
-  
   const week = allWeeks[currentIdx];
   const previousProject = isCreatingNew ? null : week.projects.find(x => x.code === editingProjCode);
+  const ganttWorkstreams = collectWorkstreams();
+  const workstreamErrors = validateWorkstreams(ganttWorkstreams);
+  if (workstreamErrors.length) {
+    showWorkstreamErrors(workstreamErrors);
+    return;
+  }
+  closeModal('projEditOverlay');
+  showLoader("Saving Project...");
   const milestones = collectMilestonesWithHistory(previousProject);
   const quarterlyMilestones = Array.from(document.querySelectorAll('.qms-row')).map(div => ({
     quarter: div.querySelector('.qms-quarter').value,
@@ -4983,6 +5196,7 @@ window.saveProjEdit = async () => {
     projectType: getEditorPortfolioValue('pe_project_type', previousProject?.projectType ?? previousProject?.type ?? ''),
     classification: getEditorPortfolioValue('pe_classification', previousProject?.classification ?? ''),
     productFamily: getEditorPortfolioValue('pe_product_family', previousProject?.productFamily ?? ''),
+    ganttWorkstreams,
     name: document.getElementById('pe_name').value,
     code: document.getElementById('pe_code').value,
     owner: document.getElementById('pe_owner').value,
@@ -5062,11 +5276,12 @@ window.addMilestoneRow = (name='', status='to-do', dateStr='', planData = null) 
       <option ${status==='at-risk'?'selected':''}>at-risk</option>
       <option ${status==='done'?'selected':''}>done</option>
     </select>
-    <button onclick="this.parentElement.remove(); checkMsDates();" style="border:none; background:none; cursor:pointer;">🗑️</button>
+    <button onclick="this.parentElement.remove(); checkMsDates(); refreshWorkstreamMilestoneOptions();" style="border:none; background:none; cursor:pointer;">🗑️</button>
   `;
   div.insertAdjacentHTML('beforeend', milestoneHistoryHtml(normalized));
   document.getElementById('msListContainer').appendChild(div);
   checkMsDates();
+  refreshWorkstreamMilestoneOptions();
 }
 
 window.addQuarterlyMilestoneRow = (quarter='', goal='', windowText='', status='planned') => {

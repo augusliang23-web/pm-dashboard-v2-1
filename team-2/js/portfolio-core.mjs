@@ -11,6 +11,11 @@ export const PROJECT_LIFECYCLE = Object.freeze({
 
 const PROJECT_LEVELS = new Set(Object.values(PROJECT_LEVEL));
 const PROJECT_LIFECYCLES = new Set(Object.values(PROJECT_LIFECYCLE));
+const WORKSTREAM_STATUSES = new Set(['not-started', 'on-track', 'at-risk', 'delayed', 'completed']);
+const WORKSTREAM_TEMPLATES = Object.freeze({
+  [PROJECT_LEVEL.SYSTEM]: Object.freeze(['Design', 'Integration', 'Validation', 'Certification', 'Launch']),
+  [PROJECT_LEVEL.HARDWARE_MODULE]: Object.freeze(['Documentation', 'BOM Verification', 'Procurement', 'Assembly/Test', 'Certification']),
+});
 
 export function normalizeProject(source = {}) {
   const project = source && typeof source === 'object' ? source : {};
@@ -27,10 +32,52 @@ export function normalizeProject(source = {}) {
     classification: stringValue(project.classification),
     productFamily: stringValue(project.productFamily),
     ganttWorkstreams: Array.isArray(project.ganttWorkstreams)
-      ? project.ganttWorkstreams
+      ? project.ganttWorkstreams.map(normalizeWorkstream)
       : [],
     resources: isPlainObject(project.resources) ? project.resources : {},
   };
+}
+
+export function createDefaultWorkstreams(projectLevel) {
+  const level = PROJECT_LEVELS.has(projectLevel) ? projectLevel : PROJECT_LEVEL.SYSTEM;
+  return WORKSTREAM_TEMPLATES[level].map((name, index) => normalizeWorkstream({ name }, index));
+}
+
+export function normalizeWorkstream(source = {}, index = 0) {
+  const row = source && typeof source === 'object' ? source : {};
+  const numericProgress = Number(row.progress);
+  const numericSortOrder = Number(row.sortOrder);
+
+  return {
+    id: stringValue(row.id) || `workstream-${index + 1}`,
+    name: stringValue(row.name),
+    startDate: stringValue(row.startDate),
+    endDate: stringValue(row.endDate),
+    status: WORKSTREAM_STATUSES.has(row.status) ? row.status : 'not-started',
+    progress: Number.isFinite(numericProgress) ? numericProgress : 0,
+    milestoneId: stringValue(row.milestoneId),
+    sortOrder: Number.isFinite(numericSortOrder) ? numericSortOrder : index,
+  };
+}
+
+export function validateWorkstreams(rows = []) {
+  if (!Array.isArray(rows)) return [];
+  const errors = [];
+
+  rows.forEach((source, index) => {
+    const row = normalizeWorkstream(source, index);
+    const fields = {};
+    if (!row.name) fields.name = 'Name is required.';
+    if (row.startDate && row.endDate && row.endDate < row.startDate) {
+      fields.endDate = 'End date cannot be before start date.';
+    }
+    if (row.progress < 0 || row.progress > 100) {
+      fields.progress = 'Progress must be between 0 and 100.';
+    }
+    if (Object.keys(fields).length) errors.push({ index, fields });
+  });
+
+  return errors;
 }
 
 export function filterProjects(source = [], filters = {}) {
