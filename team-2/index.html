@@ -5012,15 +5012,18 @@ function openAccessibleModal(modal) {
 // EXCEL IMPORT (Task 7 is deliberately preview-only; persistence is added only after confirmation work.)
 const MAX_IMPORT_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_IMPORT_ROWS = 5000;
-function clearExcelImport() {
+function resetExcelImportPreview() {
   pendingExcelImportPlan = null;
-  const file = document.getElementById('excelImportFile');
-  if (file) file.value = '';
   document.getElementById('excelImportError').textContent = '';
   document.getElementById('excelImportPreview').replaceChildren();
   for (const id of ['importReadyCount', 'importSkippedCount', 'importFailedCount']) {
     document.getElementById(id).textContent = '0';
   }
+}
+function clearExcelImport() {
+  resetExcelImportPreview();
+  const file = document.getElementById('excelImportFile');
+  if (file) file.value = '';
 }
 window.openExcelImport = () => {
   if (currentRole !== 'admin') return;
@@ -5053,10 +5056,8 @@ function renderExcelImportPlan(plan) {
 }
 window.handleExcelImportFile = async event => {
   if (currentRole !== 'admin') return;
-  pendingExcelImportPlan = null;
-  document.getElementById('excelImportPreview').replaceChildren();
+  resetExcelImportPreview();
   const error = document.getElementById('excelImportError');
-  error.textContent = '';
   const file = event.target.files?.[0];
   if (!file) return;
   if (file.size > MAX_IMPORT_FILE_BYTES) {
@@ -5071,7 +5072,7 @@ window.handleExcelImportFile = async event => {
     const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' });
     const firstSheetName = workbook.SheetNames?.[0];
     if (!firstSheetName || !workbook.Sheets?.[firstSheetName]) throw new Error('Workbook has no sheets.');
-    const rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheetName], { defval: '' });
+    const rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheetName], { defval: '', raw: true });
     if (!rows.length) throw new Error('The first sheet has no data rows.');
     if (rows.length > MAX_IMPORT_ROWS) throw new Error(`The first sheet exceeds the ${MAX_IMPORT_ROWS}-row limit.`);
     const existingIds = allWeeks.flatMap(week => (week.projects || []).map(project => project.code));

@@ -12,19 +12,19 @@ test('normalizes case-insensitive, whitespace-tolerant headers into a safe proje
     'PROJECT NAME': ' Power Shelf ',
     ' Project Level ': ' SYSTEM ',
     Type: ' Platform ',
-    Classification: ' Internal ',
+    'Project Classification': ' Internal ',
     'Product Family': ' Power ',
     PMO: ' Morgan ',
-    'PII MYS Volume': ' 200K ',
-    'Hardware Lead': ' A ',
-    'Firmware Lead': ' B ',
-    'System Electrical Lead': ' C ',
-    'Mechanical Lead': ' D ',
-    'Estimated Hard Hours': '12.5',
-    'Estimated Firm Hours': 9,
-    'Estimated Sys Hours': 7,
-    'Estimated Mech Hours': 4,
-    'Estimated PMO Hours': 3,
+    'PII MYS Volume': ' 200 ',
+    'Lead Hardware Eng.': ' A ',
+    'Lead Firmware Eng.': ' B ',
+    'Lead Elec/Sys Engineer': ' C ',
+    'Lead Mechanical Engineer': ' D ',
+    'Hard. Hours': '12.5',
+    'Firm. Hours': 9,
+    'Sys. Hours': 7,
+    'Mech. Hours': 4,
+    'PMO Hours': 3,
   }, 2);
 
   assert.deepEqual(result.errors, []);
@@ -34,16 +34,23 @@ test('normalizes case-insensitive, whitespace-tolerant headers into a safe proje
     code: 'SYS-10',
     name: 'Power Shelf',
     projectLevel: 'system',
+    lifecycle: 'active',
     projectType: 'Platform',
     classification: 'Internal',
     productFamily: 'Power',
-    owner: 'Morgan',
-    piiMysVolume: '200K',
+    pm: 'Morgan',
+    piiMysVolume: 200,
+    leads: {
+      hardware: 'A',
+      firmware: 'B',
+      systemElectrical: 'C',
+      mechanical: 'D',
+    },
     resources: {
-      hardware: { lead: 'A', estimated: 12.5, actual: null, remaining: null, updatedAt: '' },
-      firmware: { lead: 'B', estimated: 9, actual: null, remaining: null, updatedAt: '' },
-      systemElectrical: { lead: 'C', estimated: 7, actual: null, remaining: null, updatedAt: '' },
-      mechanical: { lead: 'D', estimated: 4, actual: null, remaining: null, updatedAt: '' },
+      hardware: { estimated: 12.5, actual: null, remaining: null, updatedAt: '' },
+      firmware: { estimated: 9, actual: null, remaining: null, updatedAt: '' },
+      systemElectrical: { estimated: 7, actual: null, remaining: null, updatedAt: '' },
+      mechanical: { estimated: 4, actual: null, remaining: null, updatedAt: '' },
       pmo: { estimated: 3, actual: null, remaining: null, updatedAt: '' },
     },
   });
@@ -60,7 +67,7 @@ test('uses hardware-module with warnings for blank or unknown level and invalid 
   }, 8);
 
   assert.equal(blank.project.projectLevel, 'hardware-module');
-  assert.deepEqual(blank.project.resources.hardware, { lead: '', estimated: 0, actual: null, remaining: null, updatedAt: '' });
+  assert.deepEqual(blank.project.resources.hardware, { estimated: 0, actual: null, remaining: null, updatedAt: '' });
   assert.equal(blank.warnings.length, 4);
   assert.ok(blank.warnings.some(message => /Project Level/.test(message)));
   assert.ok(blank.warnings.some(message => /Estimated Hard Hours/.test(message)));
@@ -72,6 +79,21 @@ test('uses hardware-module with warnings for blank or unknown level and invalid 
   }, 9);
   assert.equal(unknown.project.projectLevel, 'hardware-module');
   assert.ok(unknown.warnings.some(message => /subassembly/.test(message)));
+});
+
+test('supports long-form lead aliases and warns while normalizing invalid volume', () => {
+  const result = normalizeImportRow({
+    'Project ID/Code': 'ALIAS-1',
+    'Project Name': 'Aliases',
+    'Lead Mechanical Eng.': 'Mech',
+    'Lead Electrical/System Engineer': 'Sys',
+    'PII MYS Volume': '#DIV/0!',
+  }, 6);
+
+  assert.equal(result.project.leads.mechanical, 'Mech');
+  assert.equal(result.project.leads.systemElectrical, 'Sys');
+  assert.equal(result.project.piiMysVolume, 0);
+  assert.ok(result.warnings.some(message => /PII MYS Volume/.test(message)));
 });
 
 test('treats blank and N/A values as missing without numeric warnings', () => {
@@ -124,6 +146,8 @@ test('dashboard import is admin-only, preview-only, and has no write API in its 
   assert.ok(dashboard.includes("if (currentRole !== 'admin') return;"));
   assert.ok(dashboard.includes("XLSX.read("));
   assert.ok(dashboard.includes("planImport("));
+  assert.ok(dashboard.includes("sheet_to_json(workbook.Sheets[firstSheetName], { defval: '', raw: true })"));
+  assert.ok(dashboard.includes('resetExcelImportPreview();'));
   assert.ok(dashboard.includes('.textContent ='));
   assert.doesNotMatch(dashboard, /id="confirmImportBtn"/);
 
@@ -132,4 +156,16 @@ test('dashboard import is admin-only, preview-only, and has no write API in its 
   const importSource = dashboard.slice(start, end);
   assert.ok(start >= 0 && end > start);
   assert.doesNotMatch(importSource, /\b(?:setDoc|writeBatch|addDoc|updateDoc|deleteDoc)\s*\(/);
+});
+
+test('every file selection resets pending plan, rows, counts, and status before validation', () => {
+  const start = dashboard.indexOf('window.handleExcelImportFile');
+  const end = dashboard.indexOf('// END EXCEL IMPORT', start);
+  const handler = dashboard.slice(start, end);
+  const resetPosition = handler.indexOf('resetExcelImportPreview();');
+  const filePosition = handler.indexOf('const file =');
+  assert.ok(resetPosition >= 0 && resetPosition < filePosition);
+  assert.ok(dashboard.includes("document.getElementById('excelImportError').textContent = '';"));
+  assert.ok(dashboard.includes("document.getElementById('excelImportPreview').replaceChildren();"));
+  assert.ok(dashboard.includes("document.getElementById(id).textContent = '0';"));
 });

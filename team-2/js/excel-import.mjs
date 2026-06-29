@@ -6,19 +6,19 @@ const FIELDS = Object.freeze({
   name: ['project name'],
   level: ['project level'],
   type: ['type', 'project type'],
-  classification: ['classification'],
+  classification: ['classification', 'project classification'],
   productFamily: ['product family'],
   pm: ['pmo'],
   volume: ['pii mys volume'],
-  hardwareLead: ['hardware lead', 'hard lead'],
-  firmwareLead: ['firmware lead', 'firm lead'],
-  systemLead: ['system electrical lead', 'system lead', 'sys lead'],
-  mechanicalLead: ['mechanical lead', 'mech lead'],
-  hardwareHours: ['estimated hard hours', 'estimated hardware hours'],
-  firmwareHours: ['estimated firm hours', 'estimated firmware hours'],
-  systemHours: ['estimated sys hours', 'estimated system hours', 'estimated system electrical hours'],
-  mechanicalHours: ['estimated mech hours', 'estimated mechanical hours'],
-  pmoHours: ['estimated pmo hours'],
+  hardwareLead: ['hardware lead', 'hard lead', 'lead hardware eng.'],
+  firmwareLead: ['firmware lead', 'firm lead', 'lead firmware eng.'],
+  systemLead: ['system electrical lead', 'system lead', 'sys lead', 'lead elec/sys engineer', 'lead electrical/system engineer'],
+  mechanicalLead: ['mechanical lead', 'mech lead', 'lead mechanical eng.', 'lead mechanical engineer'],
+  hardwareHours: ['estimated hard hours', 'estimated hardware hours', 'hard. hours'],
+  firmwareHours: ['estimated firm hours', 'estimated firmware hours', 'firm. hours'],
+  systemHours: ['estimated sys hours', 'estimated system hours', 'estimated system electrical hours', 'sys. hours'],
+  mechanicalHours: ['estimated mech hours', 'estimated mechanical hours', 'mech. hours'],
+  pmoHours: ['estimated pmo hours', 'pmo hours'],
 });
 
 function key(value) {
@@ -58,14 +58,8 @@ function estimate(value, label, warnings) {
   return numeric;
 }
 
-function resource(estimated, lead) {
-  return {
-    ...(lead === undefined ? {} : { lead }),
-    estimated,
-    actual: null,
-    remaining: null,
-    updatedAt: '',
-  };
+function resource(estimated) {
+  return { estimated, actual: null, remaining: null, updatedAt: '' };
 }
 
 function safeProjectId(value) {
@@ -97,16 +91,23 @@ export function normalizeImportRow(source, rowNumber = 2) {
     code,
     name,
     projectLevel,
+    lifecycle: 'active',
     projectType: textValue(read('type')),
     classification: textValue(read('classification')),
     productFamily: textValue(read('productFamily')),
-    owner: textValue(read('pm')),
-    piiMysVolume: textValue(read('volume')),
+    pm: textValue(read('pm')),
+    piiMysVolume: estimate(read('volume'), 'PII MYS Volume', warnings),
+    leads: {
+      hardware: textValue(read('hardwareLead')),
+      firmware: textValue(read('firmwareLead')),
+      systemElectrical: textValue(read('systemLead')),
+      mechanical: textValue(read('mechanicalLead')),
+    },
     resources: {
-      hardware: resource(estimate(read('hardwareHours'), 'Estimated Hard Hours', warnings), textValue(read('hardwareLead'))),
-      firmware: resource(estimate(read('firmwareHours'), 'Estimated Firm Hours', warnings), textValue(read('firmwareLead'))),
-      systemElectrical: resource(estimate(read('systemHours'), 'Estimated Sys Hours', warnings), textValue(read('systemLead'))),
-      mechanical: resource(estimate(read('mechanicalHours'), 'Estimated Mech Hours', warnings), textValue(read('mechanicalLead'))),
+      hardware: resource(estimate(read('hardwareHours'), 'Estimated Hard Hours', warnings)),
+      firmware: resource(estimate(read('firmwareHours'), 'Estimated Firm Hours', warnings)),
+      systemElectrical: resource(estimate(read('systemHours'), 'Estimated Sys Hours', warnings)),
+      mechanical: resource(estimate(read('mechanicalHours'), 'Estimated Mech Hours', warnings)),
       pmo: resource(estimate(read('pmoHours'), 'Estimated PMO Hours', warnings)),
     },
   };
