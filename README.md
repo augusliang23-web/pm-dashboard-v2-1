@@ -4,3 +4,7 @@ DCDC PM dashboard for PMs status update
 ## UAT security handoff
 
 The client authorization checks are defense-in-depth only. Before production release, verify and deploy Firestore Security Rules that enforce admin project creation/deletion, PM updates only for owned projects, and VIP read-only access. The complete production data schema and deployed rules are not present in this repository, so UAT approval must include a review against the actual Firebase project rather than relying on browser checks.
+
+## Vendored dependencies
+
+`team-2/vendor/xlsx.full.min.js` is SheetJS CE 0.20.3 from `https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js`. SHA-256: `CC015130AA8521E7F088F88898EBA949CCDCBFB38DF0BD129B44B7273C3A6F41`.

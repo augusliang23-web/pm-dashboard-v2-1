@@ -147,6 +147,13 @@ body {
 .btn-primary:hover { background: var(--accent-hov); }
 .btn-ghost { font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border2); transition: all .2s; white-space: nowrap; background: var(--s1); color: var(--text-light); }
 .btn-ghost:hover { background: var(--s2); color: var(--text); }
+.import-summary { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:18px 0; }
+.import-summary div { padding:12px; border:1px solid var(--border); border-radius:8px; background:var(--s2); text-align:center; }
+.import-summary strong { display:block; font-size:20px; color:var(--text); }
+.import-preview { max-height:320px; overflow:auto; border:1px solid var(--border); border-radius:8px; }
+.import-preview-row { padding:9px 12px; border-bottom:1px solid var(--border); font-size:12px; line-height:1.45; }
+.import-preview-row:last-child { border-bottom:0; }
+.import-error { color:#B35858; margin-top:10px; font-size:12px; min-height:18px; }
 
 /* Compact Icons */
 .btn-icon {
@@ -1405,6 +1412,9 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
       <button id="addProjectBtn" class="btn-icon admin-only" onclick="openProjEdit('', true)" title="Add New Project">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
       </button>
+      <button id="importExcelBtn" class="btn-icon admin-only" style="display:none;" onclick="openExcelImport()" title="Import Excel" aria-label="Import Excel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+      </button>
     </div>
     
     <div class="user-block">
@@ -1820,8 +1830,31 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 </div>
 </div>
 
+<div class="overlay" id="excelImportOverlay" role="dialog" aria-modal="true" aria-labelledby="excelImportTitle">
+  <div class="modal" style="width:760px">
+    <div class="modal-hdr">
+      <h3 id="excelImportTitle">Import Excel · Dry Run</h3>
+      <button class="modal-x" onclick="closeExcelImport()" aria-label="Close">×</button>
+    </div>
+    <p style="font-size:12px; color:var(--text-light); line-height:1.5;">Select an .xlsx or .xls file to preview its first sheet. Nothing will be written in this step.</p>
+    <input id="excelImportFile" type="file" accept=".xlsx,.xls" style="margin-top:16px;" onchange="handleExcelImportFile(event)">
+    <div id="excelImportError" class="import-error" role="alert"></div>
+    <div class="import-summary" aria-live="polite">
+      <div><strong id="importReadyCount">0</strong>Ready</div>
+      <div><strong id="importSkippedCount">0</strong>Skipped</div>
+      <div><strong id="importFailedCount">0</strong>Failed</div>
+    </div>
+    <div id="excelImportPreview" class="import-preview"></div>
+    <div style="display:flex; justify-content:flex-end; margin-top:18px;">
+      <button class="btn btn-ghost" onclick="closeExcelImport()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="./vendor/xlsx.full.min.js"></script>
 <script type="module">
 import { RESOURCE_DISCIPLINES, calculateDropIndex, createDefaultWorkstreams, createTimelineTicks, filterProjects, getFocusTrapIndex, mergeResourceEntry, normalizeProject, normalizeResourceEntry, normalizeRiskActionRows, normalizeWorkstream, parseIsoDate, resolveProjectStatusDate, validateResourceInput, validateWorkstreams } from "./js/portfolio-core.mjs";
+import { planImport } from "./js/excel-import.mjs";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, doc, onSnapshot, setDoc, updateDoc, query, orderBy, where, getDoc, getDocs, increment, serverTimestamp, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, updatePassword, onAuthStateChanged, signOut, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -1835,6 +1868,7 @@ let allWeeks = [];
 let currentIdx = -1;
 let currentUser = null;
 let currentRole = 'pm';
+let pendingExcelImportPlan = null;
 let isAdminVipPreview = false;
 let currentPMFilter = 'all';
 const PORTFOLIO_SCOPE_KEY = 'team2.portfolioScope';
@@ -2632,6 +2666,7 @@ function setupUI() {
     document.getElementById('presenceUsageBtn').style.display = 'inline-flex';
     document.getElementById('vipPreviewBtn').style.display = 'inline-flex';
     document.getElementById('addProjectBtn').style.display = 'inline-flex';
+    document.getElementById('importExcelBtn').style.display = 'inline-flex';
   } 
   else if (currentRole === 'pm') {
     document.getElementById('onlineUsersContainer').style.display = 'flex';
@@ -4973,8 +5008,85 @@ function openAccessibleModal(modal) {
   modal.classList.add('open');
   requestAnimationFrame(() => modal.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')?.focus());
 }
+
+// EXCEL IMPORT (Task 7 is deliberately preview-only; persistence is added only after confirmation work.)
+const MAX_IMPORT_FILE_BYTES = 10 * 1024 * 1024;
+const MAX_IMPORT_ROWS = 5000;
+function clearExcelImport() {
+  pendingExcelImportPlan = null;
+  const file = document.getElementById('excelImportFile');
+  if (file) file.value = '';
+  document.getElementById('excelImportError').textContent = '';
+  document.getElementById('excelImportPreview').replaceChildren();
+  for (const id of ['importReadyCount', 'importSkippedCount', 'importFailedCount']) {
+    document.getElementById(id).textContent = '0';
+  }
+}
+window.openExcelImport = () => {
+  if (currentRole !== 'admin') return;
+  clearExcelImport();
+  openAccessibleModal(document.getElementById('excelImportOverlay'));
+};
+window.closeExcelImport = () => {
+  clearExcelImport();
+  closeModal('excelImportOverlay');
+};
+function renderExcelImportPlan(plan) {
+  document.getElementById('importReadyCount').textContent = String(plan.counts.ready);
+  document.getElementById('importSkippedCount').textContent = String(plan.counts.skipped);
+  document.getElementById('importFailedCount').textContent = String(plan.counts.failed);
+  const preview = document.getElementById('excelImportPreview');
+  preview.replaceChildren();
+  for (const [status, rows] of Object.entries({
+    Ready: plan.ready,
+    Skipped: plan.skipped,
+    Failed: plan.failed,
+  })) {
+    for (const row of rows) {
+      const item = document.createElement('div');
+      item.className = 'import-preview-row';
+      const details = row.reason || row.warnings.join(' ') || 'Validated.';
+      item.textContent = `Row ${row.rowNumber} · ${status} · ${row.project.code || 'No ID'} · ${details}`;
+      preview.append(item);
+    }
+  }
+}
+window.handleExcelImportFile = async event => {
+  if (currentRole !== 'admin') return;
+  pendingExcelImportPlan = null;
+  document.getElementById('excelImportPreview').replaceChildren();
+  const error = document.getElementById('excelImportError');
+  error.textContent = '';
+  const file = event.target.files?.[0];
+  if (!file) return;
+  if (file.size > MAX_IMPORT_FILE_BYTES) {
+    error.textContent = 'File is too large. Select a file no larger than 10 MB.';
+    return;
+  }
+  if (!window.XLSX?.read || !window.XLSX?.utils?.sheet_to_json) {
+    error.textContent = 'Excel parser is unavailable. Reload the page and try again.';
+    return;
+  }
+  try {
+    const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+    const firstSheetName = workbook.SheetNames?.[0];
+    if (!firstSheetName || !workbook.Sheets?.[firstSheetName]) throw new Error('Workbook has no sheets.');
+    const rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheetName], { defval: '' });
+    if (!rows.length) throw new Error('The first sheet has no data rows.');
+    if (rows.length > MAX_IMPORT_ROWS) throw new Error(`The first sheet exceeds the ${MAX_IMPORT_ROWS}-row limit.`);
+    const existingIds = allWeeks.flatMap(week => (week.projects || []).map(project => project.code));
+    pendingExcelImportPlan = planImport(rows, existingIds);
+    renderExcelImportPlan(pendingExcelImportPlan);
+  } catch (parseError) {
+    pendingExcelImportPlan = null;
+    error.textContent = parseError instanceof Error ? parseError.message : 'Could not parse this workbook.';
+  }
+};
+// END EXCEL IMPORT
+
 window.closeModal = id => {
   const modal = document.getElementById(id);
+  if (id === 'excelImportOverlay') clearExcelImport();
   modal?.classList.remove('open');
   if (id === 'onePageStatusModal') restoreProjectDetailModalState();
   if (modalReturnFocus?.isConnected) modalReturnFocus.focus();
