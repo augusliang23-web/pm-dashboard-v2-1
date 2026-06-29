@@ -11,13 +11,52 @@ import {
   formatStatusDate,
   getFocusTrapIndex,
   mergeResourceEntry,
+  normalizeRiskActionRows,
   normalizeProject,
   normalizeResourceEntry,
   normalizeWorkstream,
   parseIsoDate,
+  resolveProjectStatusDate,
   validateResourceInput,
   validateWorkstreams,
 } from '../team-2/js/portfolio-core.mjs';
+
+test('normalizeRiskActionRows preserves asymmetric risk and action pairing', () => {
+  assert.deepEqual(normalizeRiskActionRows({
+    riskActions: [
+      { risk: '', action: 'Action without a risk' },
+      { risk: 'Risk without an action', action: '' },
+      { description: 'Legacy risk', mitigation: 'Legacy mitigation' },
+    ],
+  }), [
+    { risk: '', action: 'Action without a risk' },
+    { risk: 'Risk without an action', action: '' },
+    { risk: 'Legacy risk', action: 'Legacy mitigation' },
+  ]);
+  assert.deepEqual(normalizeRiskActionRows({
+    risk: 'Risk A\nRisk B',
+    next: 'Action A',
+  }), [
+    { risk: 'Risk A', action: 'Action A' },
+    { risk: 'Risk B', action: '' },
+  ]);
+});
+
+test('resolveProjectStatusDate prefers project dates then selected reporting period without using today', () => {
+  assert.equal(resolveProjectStatusDate(
+    { statusDate: '2026-06-25', updatedAt: '2026-06-24' },
+    { weekDate: '2026-06-28' },
+  ), 'Jun 25, 2026');
+  assert.equal(resolveProjectStatusDate(
+    { statusDate: 'invalid' },
+    { reportingDate: '2026-06-28' },
+  ), 'Jun 28, 2026');
+  assert.equal(resolveProjectStatusDate(
+    {},
+    { weekDate: 'Jun 22 - Jun 28', weekLabel: 'W26 2026 Prototype' },
+  ), 'Jun 28, 2026');
+  assert.equal(resolveProjectStatusDate({}, {}), 'Not available');
+});
 
 test('getFocusTrapIndex wraps Tab navigation in both directions', () => {
   assert.equal(getFocusTrapIndex(0, 3, true), 2);

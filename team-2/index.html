@@ -265,11 +265,20 @@ body {
 .one-page-status-list { margin: 0; padding-left: 20px; }
 .one-page-status-list li + li { margin-top: 6px; }
 .one-page-status-empty { color: var(--muted); font-style: italic; }
+.one-page-risk-section { grid-column: 1 / -1; }
+.one-page-risk-head, .one-page-risk-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+.one-page-risk-head { margin-bottom: 8px; color: var(--muted); font-size: 12px; font-weight: 700; text-transform: uppercase; }
+.one-page-risk-row { padding: 10px 0; border-top: 1px solid var(--border); }
+.one-page-risk-cell { min-width: 0; white-space: pre-line; overflow-wrap: anywhere; }
+.one-page-risk-placeholder { color: var(--muted); font-style: italic; }
 .one-page-status-footer { color: var(--muted); text-align: right; }
 @media (max-width: 720px) {
   .one-page-status { grid-template-columns: minmax(0, 1fr); }
   .one-page-status-header, .one-page-status-gantt, .one-page-status-footer { grid-column: 1; }
   .one-page-status-header { flex-direction: column; }
+  .one-page-risk-head { display: none; }
+  .one-page-risk-row { grid-template-columns: minmax(0, 1fr); }
+  .one-page-risk-cell::before { display: block; margin-bottom: 4px; color: var(--muted); font-size: 11px; font-weight: 700; text-transform: uppercase; content: attr(data-label); }
 }
 .fg { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; flex: 1; }
 .fl { font-size: 11px; font-weight: 700; color: var(--text-light); }
@@ -1530,8 +1539,11 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
       <section class="one-page-status-section"><h3>Accomplishments</h3><div class="one-page-status-content" id="onePageAccomplishments"></div></section>
       <section class="one-page-status-section"><h3>Future Activities</h3><div class="one-page-status-content" id="onePageFutureActivities"></div></section>
       <section class="one-page-status-section one-page-status-gantt"><h3>Workstream Schedule</h3><div id="onePageGantt"></div></section>
-      <section class="one-page-status-section"><h3>Risks</h3><div class="one-page-status-content" id="onePageRisks"></div></section>
-      <section class="one-page-status-section"><h3>Mitigations / Actions</h3><div class="one-page-status-content" id="onePageMitigations"></div></section>
+      <section class="one-page-status-section one-page-risk-section">
+        <h3>Risks and Mitigations / Actions</h3>
+        <div class="one-page-risk-head"><span>Risk</span><span>Mitigation / Action</span></div>
+        <div id="onePageRiskRows"></div>
+      </section>
       <footer class="one-page-status-footer" id="onePageStatusDate"></footer>
     </article>
   </div>
@@ -1809,7 +1821,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 </div>
 
 <script type="module">
-import { RESOURCE_DISCIPLINES, calculateDropIndex, createDefaultWorkstreams, createTimelineTicks, filterProjects, formatStatusDate, getFocusTrapIndex, mergeResourceEntry, normalizeProject, normalizeResourceEntry, normalizeWorkstream, parseIsoDate, validateResourceInput, validateWorkstreams } from "./js/portfolio-core.mjs";
+import { RESOURCE_DISCIPLINES, calculateDropIndex, createDefaultWorkstreams, createTimelineTicks, filterProjects, getFocusTrapIndex, mergeResourceEntry, normalizeProject, normalizeResourceEntry, normalizeRiskActionRows, normalizeWorkstream, parseIsoDate, resolveProjectStatusDate, validateResourceInput, validateWorkstreams } from "./js/portfolio-core.mjs";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, doc, onSnapshot, setDoc, updateDoc, query, orderBy, where, getDoc, getDocs, increment, serverTimestamp, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, updatePassword, onAuthStateChanged, signOut, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -4246,36 +4258,40 @@ function renderOnePageList(targetId, value, emptyMessage) {
   target.append(list);
 }
 
-function onePageRiskPairs(project) {
-  const stored = project.riskActions || project.riskPairs;
-  if (Array.isArray(stored) && stored.length) {
-    return stored.map(item => ({
-      risk: String(item?.risk || item?.description || '').trim(),
-      action: textLines(item?.action || item?.actions || item?.mitigation || item?.requiredAction).join('\n')
-    })).filter(item => item.risk || item.action);
-  }
-  const risks = textLines(project.risk);
-  const actions = textLines(project.next);
-  return Array.from({ length: Math.max(risks.length, actions.length) }, (_, index) => ({
-    risk: risks[index] || '',
-    action: actions[index] || ''
-  })).filter(item => item.risk || item.action);
-}
-
-function renderOnePageStatus(project) {
+function renderOnePageStatus(project, reportingPeriod = {}) {
   const normalized = normalizeProject(project);
-  const structuredRiskPairs = normalized.riskActions || normalized.riskPairs;
   document.getElementById('onePageTitle').textContent = normalized.name || normalized.code || 'Untitled project';
   document.getElementById('onePagePm').textContent = `Project Manager: ${normalized.pm || normalized.owner || 'Unassigned'}`;
   renderOnePageList('onePageAccomplishments', normalized.accomplishments || normalized.highlight, 'No accomplishments available.');
   renderOnePageList('onePageFutureActivities', normalized.futureActivities || normalized.weeklyActions || normalized.weeklyAction, 'No future activities available.');
   renderProjectGantt(normalized, 'onePageGantt');
 
-  const pairs = onePageRiskPairs({ ...normalized, riskActions: structuredRiskPairs });
-  renderOnePageList('onePageRisks', pairs.map(pair => pair.risk).filter(Boolean), 'No risks identified.');
-  renderOnePageList('onePageMitigations', pairs.map(pair => pair.action).filter(Boolean), 'No mitigations or actions available.');
+  const rows = normalizeRiskActionRows(normalized);
+  const riskRows = document.getElementById('onePageRiskRows');
+  riskRows.replaceChildren();
+  if (!rows.length) {
+    const empty = document.createElement('div');
+    empty.className = 'one-page-status-empty';
+    empty.textContent = 'No risks or mitigations available.';
+    riskRows.append(empty);
+  } else {
+    rows.forEach(row => {
+      const rowElement = document.createElement('div');
+      rowElement.className = 'one-page-risk-row';
+      const risk = document.createElement('div');
+      risk.className = `one-page-risk-cell${row.risk ? '' : ' one-page-risk-placeholder'}`;
+      risk.dataset.label = 'Risk';
+      risk.textContent = row.risk || 'No risk provided.';
+      const action = document.createElement('div');
+      action.className = `one-page-risk-cell${row.action ? '' : ' one-page-risk-placeholder'}`;
+      action.dataset.label = 'Mitigation / Action';
+      action.textContent = row.action || 'No action provided.';
+      rowElement.append(risk, action);
+      riskRows.append(rowElement);
+    });
+  }
   document.getElementById('onePageStatusDate').textContent =
-    `Status date: ${formatStatusDate(normalized.statusDate ?? normalized.updatedAt ?? normalized.lastUpdatedAt)}`;
+    `Status date: ${resolveProjectStatusDate(normalized, reportingPeriod)}`;
 }
 
 window.openOnePageStatus = code => {
@@ -4283,7 +4299,8 @@ window.openOnePageStatus = code => {
   if (!rawProject) return;
   const modal = document.getElementById('onePageStatusModal');
   modal.dataset.projectCode = code;
-  renderOnePageStatus(rawProject);
+  const reportingPeriod = allWeeks[currentIdx] || {};
+  renderOnePageStatus(rawProject, reportingPeriod);
   openAccessibleModal(modal);
 };
 

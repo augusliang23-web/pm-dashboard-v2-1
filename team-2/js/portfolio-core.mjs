@@ -46,6 +46,46 @@ export function formatStatusDate(value) {
   });
 }
 
+export function resolveProjectStatusDate(project = {}, reportingPeriod = {}) {
+  const projectCandidates = [project.statusDate, project.updatedAt, project.lastUpdatedAt];
+  const reportingCandidates = [
+    reportingPeriod.statusDate,
+    reportingPeriod.reportingDate,
+    reportingPeriod.weekEnding,
+    reportingPeriod.weekEndDate,
+    reportingPeriod.weekDate,
+  ];
+  for (const candidate of [...projectCandidates, ...reportingCandidates]) {
+    const formatted = formatStatusDate(candidate);
+    if (formatted !== 'Not available') return formatted;
+  }
+
+  const rangeEnd = String(reportingPeriod.weekDate || '').split(/\s+-\s+/).at(-1);
+  const year = String(reportingPeriod.weekLabel || '').match(/\b(20\d{2})\b/)?.[1];
+  return rangeEnd && year ? formatStatusDate(`${rangeEnd}, ${year}`) : 'Not available';
+}
+
+function contentLines(value) {
+  if (Array.isArray(value)) return value.map(item => String(item || '').trim()).filter(Boolean);
+  return String(value || '').split('\n').map(item => item.trim()).filter(Boolean);
+}
+
+export function normalizeRiskActionRows(project = {}) {
+  const stored = project.riskActions || project.riskPairs;
+  if (Array.isArray(stored) && stored.length) {
+    return stored.map(item => ({
+      risk: String(item?.risk || item?.description || '').trim(),
+      action: contentLines(item?.action || item?.actions || item?.mitigation || item?.requiredAction).join('\n'),
+    })).filter(item => item.risk || item.action);
+  }
+  const risks = contentLines(project.risk);
+  const actions = contentLines(project.next);
+  return Array.from({ length: Math.max(risks.length, actions.length) }, (_, index) => ({
+    risk: risks[index] || '',
+    action: actions[index] || '',
+  }));
+}
+
 export function getFocusTrapIndex(currentIndex, count, shiftKey) {
   if (count <= 0) return -1;
   if (currentIndex < 0) return shiftKey ? count - 1 : 0;

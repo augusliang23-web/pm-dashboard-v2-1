@@ -196,8 +196,22 @@ test('one-page project status view is present and accessible to every project ro
   assert.ok(dashboard.includes("renderProjectGantt(normalized, 'onePageGantt')"));
   assert.ok(dashboard.includes('normalized.highlight'));
   assert.ok(dashboard.includes('normalized.weeklyActions || normalized.weeklyAction'));
-  assert.ok(dashboard.includes('normalized.riskActions || normalized.riskPairs'));
-  assert.ok(dashboard.includes("formatStatusDate(normalized.statusDate ?? normalized.updatedAt ?? normalized.lastUpdatedAt)"));
+  assert.ok(dashboard.includes('normalizeRiskActionRows(normalized)'));
+  assert.ok(dashboard.includes('resolveProjectStatusDate(normalized, reportingPeriod)'));
+});
+
+test('one-page status preserves paired risk rows and has unique ordered modal wiring', () => {
+  const ids = [...dashboard.matchAll(/\sid="([^"]+)"/g)].map(match => match[1]);
+  assert.equal(ids.filter(id => id === 'onePageStatusModal').length, 1);
+  assert.equal(ids.filter(id => id === 'onePageGantt').length, 1);
+  assert.match(dashboard, /id="onePageRiskRows"/);
+  assert.ok(dashboard.includes('normalizeRiskActionRows(normalized)'));
+  assert.ok(dashboard.includes("row.risk || 'No risk provided.'"));
+  assert.ok(dashboard.includes("row.action || 'No action provided.'"));
+
+  const openStart = dashboard.indexOf('window.openOnePageStatus = code =>');
+  const openSource = dashboard.slice(openStart, dashboard.indexOf('window.render = () =>', openStart));
+  assert.ok(openSource.indexOf('renderOnePageStatus(rawProject, reportingPeriod)') < openSource.indexOf('openAccessibleModal(modal)'));
 });
 
 test('one-page status traps focus and isolates the underlying project detail', () => {
