@@ -90,8 +90,8 @@ test('exposes an Overview-only scope control with an independent persisted Syste
   assert.match(dashboard, /data-overview-scope="system"[^>]*>System Projects<\/button>/);
   assert.match(dashboard, /data-overview-scope="hardware-module"[^>]*>Hardware Modules<\/button>/);
   assert.match(dashboard, /data-overview-scope="all"[^>]*>All Projects<\/button>/);
-  assert.ok(dashboard.includes("const OVERVIEW_SCOPE_KEY = 'team2.overviewScope';"));
-  assert.ok(dashboard.includes('normalizeOverviewScope(localStorage.getItem(OVERVIEW_SCOPE_KEY))'));
+  assert.ok(dashboard.includes('getOverviewScopeStorageKey(currentUser?.uid || getEmailKey(currentUser))'));
+  assert.ok(dashboard.includes('normalizeOverviewScope(localStorage.getItem(storageKey))'));
   assert.ok(dashboard.includes("let overviewScope = 'system';"));
 });
 
@@ -109,7 +109,7 @@ test('keeps the portfolio toolbar and filters out of Overview scope calculations
   assert.ok(renderSource.includes("const critical = metricProjects.filter(p => p.status === 'red').length;"));
   assert.ok(renderSource.includes("const atRisk = metricProjects.filter(p => p.status === 'yellow').length;"));
   assert.ok(renderSource.includes('renderNormal(portfolioProjects);'));
-  assert.ok(renderSource.includes('renderExec(overviewProjects, week.summary, roleVisibleProjects);'));
+  assert.ok(renderSource.includes('renderExec(overviewProjects, week.summary, allCurrentProjects);'));
   assert.ok(!renderSource.includes('getOverviewProjects(portfolioProjects'));
 });
 
@@ -127,9 +127,123 @@ test('routes every project-based Overview render input through its scoped projec
   ];
 
   for (const call of requiredCalls) assert.ok(execSource.includes(call), `expected ${call}`);
-  assert.ok(dashboard.includes('getOverviewProjects(week.projects || [], overviewScope)'));
-  assert.ok(dashboard.includes('filterOverviewSummaryLines(sanitized, allProjects, scopedProjects)'));
+  assert.ok(dashboard.includes('getRoleVisibleProjectsForOverview(week.projects || [])'));
+  assert.ok(dashboard.includes('filterOverviewSummaryLines(raw, allProjects, scopedProjects)'));
+  assert.ok(dashboard.includes('sanitizeSummaryInput(scopedSummary)'));
   assert.ok(dashboard.includes('No summary items apply to the selected Overview scope.'));
+});
+
+test('escapes Overview card fields and binds project opening without inline project code', () => {
+  const execStart = dashboard.indexOf('function renderExec(');
+  const execEnd = dashboard.indexOf('async function saveCurrentWeekQuietly()', execStart);
+  const execSource = dashboard.slice(execStart, execEnd);
+
+  assert.ok(dashboard.includes("lines.map(l => `<li style=\"margin-bottom: 4px;\">${escHtml(l)}</li>`)"));
+  assert.ok(execSource.includes('const status = normalizeOverviewRagStatus(p.status);'));
+  assert.ok(execSource.includes('const progress = normalizeOverviewPercent(p.progress);'));
+  assert.ok(execSource.includes('data-project-code="${escHtml(p.code)}"'));
+  assert.ok(execSource.includes('${escHtml(p.name)}${overviewProjectBadge(p)}'));
+  assert.ok(execSource.includes('${escHtml(p.owner || \'-\')}'));
+  assert.ok(execSource.includes('${escHtml(p.code)}'));
+  assert.ok(!execSource.includes("ondblclick=\"openProjDetail('${p.code}')\""));
+  assert.ok(dashboard.includes("card.addEventListener('dblclick', () => openProjDetail(card.dataset.projectCode));"));
+  assert.ok(dashboard.includes("document.getElementById('pd_title').innerHTML = `${escHtml(p.name)}"));
+  assert.ok(dashboard.includes('const milestoneStatus = normalizeOverviewMilestoneStatus(m.status);'));
+  assert.ok(dashboard.includes('${escHtml(m.name)}'));
+  assert.ok(dashboard.includes("${escHtml(m.date || 'No Date')}"));
+});
+
+test('escapes standard project cards and binds stored project codes without inline handlers', () => {
+  const normalStart = dashboard.indexOf('function renderNormal(');
+  const normalEnd = dashboard.indexOf('function renderExec(', normalStart);
+  const normalSource = dashboard.slice(normalStart, normalEnd);
+
+  assert.ok(normalSource.includes('const status = normalizeOverviewRagStatus(p.status);'));
+  assert.ok(normalSource.includes('const progress = normalizeOverviewPercent(p.progress);'));
+  assert.ok(normalSource.includes('data-project-code="${escHtml(p.code)}"'));
+  assert.ok(normalSource.includes('data-project-action="edit"'));
+  assert.ok(normalSource.includes('${escHtml(p.name)}'));
+  assert.ok(normalSource.includes('${escHtml(p.code)}'));
+  assert.ok(normalSource.includes('${escHtml(p.owner || \'-\')}'));
+  assert.ok(normalSource.includes('${escHtml(highlightText)}'));
+  assert.ok(!normalSource.includes("ondblclick=\"openProjDetail('${p.code}')\""));
+  assert.ok(!normalSource.includes("openProjEdit('${p.code}')"));
+  assert.ok(normalSource.includes("card.addEventListener('dblclick', () => openProjDetail(card.dataset.projectCode));"));
+  assert.ok(normalSource.includes("button.addEventListener('click', event =>"));
+});
+
+test('gates Overview project mutations per project at render and write boundaries', () => {
+  const attentionStart = dashboard.indexOf('function renderAttentionMatrix(');
+  const attentionEnd = dashboard.indexOf('function renderRiskActionTable(', attentionStart);
+  const riskEnd = dashboard.indexOf('function projectByCode(', attentionEnd);
+  const controlsStart = dashboard.indexOf('function bindDecisionControls(');
+  const controlsEnd = dashboard.indexOf('// ── UTILS & ACTIONS ──', controlsStart);
+  const attentionSource = dashboard.slice(attentionStart, attentionEnd);
+  const riskSource = dashboard.slice(attentionEnd, riskEnd);
+  const controlsSource = dashboard.slice(controlsStart, controlsEnd);
+
+  assert.ok(attentionSource.includes('const canEdit = editable && canEditProject(p);'));
+  assert.ok(attentionSource.includes('${canEdit ? `draggable="true"'));
+  assert.ok(attentionSource.includes('${canEdit ? `<div class="attention-select-row">'));
+  assert.ok(riskSource.includes('projs.filter(p => canEditProject(p)).map(p =>'));
+  assert.ok((controlsSource.match(/if \(!p \|\| !canEditProject\(p\)\) return;/g) || []).length >= 3);
+  assert.ok(controlsSource.includes("const p = findCurrentProject(e.dataTransfer.getData('text/plain'));"));
+});
+
+test('restricts global strategy and executive timeline controls and handlers to administrators', () => {
+  assert.ok(dashboard.includes("const canManageStrategy = () => currentRole === 'admin' && !isAdminVipPreview;"));
+  assert.ok(dashboard.includes('${canManageStrategy() ? `<button class="btn btn-ghost no-print"'));
+  assert.ok(dashboard.includes('${canManageStrategy() && editableDecisionView ? `<button class="btn btn-primary no-print"'));
+  for (const handler of [
+    'window.addExecutiveTimelineRow = () =>',
+    'window.openStrategyLayerModal = () =>',
+    'window.openExecutiveTimelineEditor = () =>',
+    'window.addQuarterExecutiveGoalRow = (quarter, goal = {}, layer = getStrategyLayer()) =>',
+    'window.saveStrategyLayer = async () =>',
+  ]) {
+    const start = dashboard.indexOf(handler);
+    const end = dashboard.indexOf('\n};', start);
+    assert.ok(start >= 0, `expected ${handler}`);
+    assert.ok(dashboard.slice(start, end).includes('if (!canManageStrategy()) return;'), `expected admin guard in ${handler}`);
+  }
+});
+
+test('uses one role-visibility helper for current and historical Overview populations', () => {
+  const renderStart = dashboard.indexOf('window.render = () =>');
+  const renderEnd = dashboard.indexOf('function renderNormal(', renderStart);
+  const renderSource = dashboard.slice(renderStart, renderEnd);
+  const trendStart = dashboard.indexOf('function weeklyTrendPoints(');
+  const trendEnd = dashboard.indexOf('function renderTrendSvg(', trendStart);
+  const trendSource = dashboard.slice(trendStart, trendEnd);
+
+  assert.ok(renderSource.includes('const allCurrentProjects = enrichProjectsPrototype(week.projects || []);'));
+  assert.ok(renderSource.includes('const roleVisibleProjects = getRoleVisibleProjectsForOverview(allCurrentProjects);'));
+  assert.ok(renderSource.includes('renderExec(overviewProjects, week.summary, allCurrentProjects);'));
+  assert.ok(trendSource.includes('getRoleVisibleProjectsForOverview(week.projects || [])'));
+  assert.ok(trendSource.includes('getOverviewProjects('));
+});
+
+test('loads and stores Overview scope under the authenticated user key', () => {
+  assert.ok(dashboard.includes("let overviewScope = 'system';"));
+  assert.ok(dashboard.includes('function loadOverviewScopeForCurrentUser()'));
+  assert.ok(dashboard.includes('getOverviewScopeStorageKey(currentUser?.uid || getEmailKey(currentUser))'));
+  assert.ok(dashboard.includes('overviewScope = normalizeOverviewScope(localStorage.getItem(storageKey));'));
+  assert.ok(dashboard.includes('loadOverviewScopeForCurrentUser();'));
+  assert.ok(dashboard.includes("overviewScope = 'system';"));
+  assert.ok(dashboard.includes('localStorage.setItem(storageKey, overviewScope)'));
+  assert.ok(!dashboard.includes('localStorage.getItem(OVERVIEW_SCOPE_KEY)'));
+  assert.ok(!dashboard.includes('localStorage.setItem(OVERVIEW_SCOPE_KEY, overviewScope)'));
+});
+
+test('labels the global timeline and renders scoped empty panel states', () => {
+  assert.ok(dashboard.includes('Portfolio-wide executive timeline'));
+  for (const emptyText of [
+    'No projects in the selected Overview scope for resource or budget reporting.',
+    'No projects in the selected Overview scope for risk reporting.',
+    'No projects in the selected Overview scope for the quarterly roadmap.',
+  ]) {
+    assert.ok(dashboard.includes(emptyText), `expected ${emptyText}`);
+  }
 });
 
 test('Overview scope changes persist locally and redraw once without Firestore writes', () => {
@@ -139,7 +253,7 @@ test('Overview scope changes persist locally and redraw once without Firestore w
 
   assert.ok(handlerStart >= 0);
   assert.ok(handlerSource.includes('overviewScope = normalizeOverviewScope(scope);'));
-  assert.ok(handlerSource.includes('localStorage.setItem(OVERVIEW_SCOPE_KEY, overviewScope)'));
+  assert.ok(handlerSource.includes('localStorage.setItem(storageKey, overviewScope)'));
   assert.equal((handlerSource.match(/\brender\(\);/g) || []).length, 1);
   assert.doesNotMatch(handlerSource, /setDoc|updateDoc|runTransaction|saveCurrentWeek/);
 });
@@ -155,9 +269,7 @@ test('builds portfolio facets from role-visible projects and uses neutral execut
   const renderStart = dashboard.indexOf('window.render = () =>');
   const renderEnd = dashboard.indexOf('function renderNormal(', renderStart);
   const renderSource = dashboard.slice(renderStart, renderEnd);
-  const visibilityPosition = renderSource.indexOf(
-    "roleVisibleProjects = roleVisibleProjects.filter(p => !p.visibility || p.visibility === 'active');",
-  );
+  const visibilityPosition = renderSource.indexOf('const roleVisibleProjects = getRoleVisibleProjectsForOverview(allCurrentProjects);');
   const facetPosition = renderSource.indexOf('refreshPortfolioToolbar(roleVisibleProjects);');
 
   assert.ok(visibilityPosition >= 0);

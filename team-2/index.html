@@ -1950,7 +1950,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 </div>
 
 <script type="module">
-import { RESOURCE_DISCIPLINES, calculateDropIndex, createDefaultWorkstreams, createTimelineTicks, filterOverviewSummaryLines, filterProjects, getFocusTrapIndex, getOverviewProjectBadgeLabel, getOverviewProjects, matchOverviewSummaryProjectLine, mergeResourceEntry, normalizeOverviewScope, normalizeProject, normalizeResourceEntry, normalizeRiskActionRows, normalizeWorkstream, parseIsoDate, resolveProjectStatusDate, validateResourceInput, validateWorkstreams } from "./js/portfolio-core.mjs";
+import { RESOURCE_DISCIPLINES, calculateDropIndex, createDefaultWorkstreams, createTimelineTicks, filterOverviewSummaryLines, filterProjects, filterRoleVisibleProjects, getFocusTrapIndex, getOverviewProjectBadgeLabel, getOverviewProjects, getOverviewScopeStorageKey, matchOverviewSummaryProjectLine, mergeResourceEntry, normalizeOverviewMilestoneStatus, normalizeOverviewPercent, normalizeOverviewRagStatus, normalizeOverviewScope, normalizeOverviewSummaryHeading, normalizeProject, normalizeResourceEntry, normalizeRiskActionRows, normalizeWorkstream, parseIsoDate, resolveProjectStatusDate, validateResourceInput, validateWorkstreams } from "./js/portfolio-core.mjs";
 import { assertReasonableWeekDocument, buildImportResults, formatImportPreviewRow, importResultsToCsv, mergeReadyImportRows, planImport } from "./js/excel-import.mjs";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, doc, onSnapshot, runTransaction, setDoc, updateDoc, query, orderBy, where, getDoc, getDocs, increment, serverTimestamp, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -1981,15 +1981,12 @@ let portfolioScope = (() => {
     return 'all';
   }
 })();
-const OVERVIEW_SCOPE_KEY = 'team2.overviewScope';
 let overviewScope = 'system';
-try {
-  overviewScope = normalizeOverviewScope(localStorage.getItem(OVERVIEW_SCOPE_KEY));
-} catch {}
 let activeStrategicTrack = 'all';
 let activeRoadmapYear = null;
 let isOverview = false;
 const isVipPerspective = () => currentRole === 'vip' || (currentRole === 'admin' && isAdminVipPreview);
+const canManageStrategy = () => currentRole === 'admin' && !isAdminVipPreview;
 let editingProjCode = null;
 let isCreatingNew = false;
 let newProjectScheduleUntouched = false;
@@ -2020,6 +2017,24 @@ function getPortfolioFilters() {
     lifecycle: document.getElementById('filterLifecycle')?.value || 'all',
     productFamily: document.getElementById('filterProductFamily')?.value || 'all'
   };
+}
+
+function loadOverviewScopeForCurrentUser() {
+  overviewScope = 'system';
+  const storageKey = getOverviewScopeStorageKey(currentUser?.uid || getEmailKey(currentUser));
+  if (!storageKey) return;
+  try {
+    overviewScope = normalizeOverviewScope(localStorage.getItem(storageKey));
+  } catch {}
+}
+
+function getRoleVisibleProjectsForOverview(projects) {
+  const visibilityFilter = document.getElementById('visSelect')?.value || 'active';
+  return filterRoleVisibleProjects(projects, {
+    role: currentRole,
+    vipPerspective: isVipPerspective(),
+    visibilityFilter
+  });
 }
 
 function overviewProjectBadge(project) {
@@ -2999,6 +3014,7 @@ onAuthStateChanged(auth, async user => {
     resetPresenceSessionState();
     currentUser = null;
     currentRole = 'pm';
+    overviewScope = 'system';
     stopPresenceUsageFlushTimer();
     document.getElementById('projGrid').innerHTML = '';
     document.getElementById('execView').innerHTML = '';
@@ -3045,6 +3061,7 @@ async function fetchDynamicPMList() {
 
 function setupUI() {
   clearExcelImportForAuthTransition();
+  loadOverviewScopeForCurrentUser();
   isAdminVipPreview = false;
   document.getElementById('dashboardVersion').textContent = `${DASHBOARD_RELEASE} · base ${DASHBOARD_BASE_COMMIT}`;
   document.getElementById('displayUser').textContent = getEmailKey(currentUser).split('@')[0].toUpperCase();
@@ -3188,7 +3205,7 @@ function formatBullets(text) {
   if (!text || !text.trim()) return '-';
   const lines = text.split('\n').map(l => l.trim().replace(/^[-*•]\s*/, '')).filter(l => l);
   if (lines.length === 0) return '-';
-  return `<ul style="margin: 0; padding-left: 16px; list-style-type: disc;">` + lines.map(l => `<li style="margin-bottom: 4px;">${l}</li>`).join('') + `</ul>`;
+  return `<ul style="margin: 0; padding-left: 16px; list-style-type: disc;">` + lines.map(l => `<li style="margin-bottom: 4px;">${escHtml(l)}</li>`).join('') + `</ul>`;
 }
 
 function getStatusLabel(status) {
@@ -3662,6 +3679,9 @@ function allocationClass(pct) {
 }
 
 function renderResourceBudgetOverview(projects) {
+  if (!projects.length) {
+    return '<div class="rb-overview-grid"><section class="exec-panel"><div class="empty-state">No projects in the selected Overview scope for resource or budget reporting.</div></section></div>';
+  }
   const coverage = getResourceBudgetCoverage(projects);
   const resourceProjects = getConfirmedResourceProjects(projects);
   const planProjects = getConfirmedBudgetPlanProjects(projects);
@@ -3693,7 +3713,7 @@ function renderResourceBudgetOverview(projects) {
         return `<div class="resource-row">
           <div>
             <div class="rb-name">${escHtml(r.name)} <span class="rb-meta">${escHtml(r.roles.join(', ') || '-')}</span></div>
-            <div class="rb-meta">${r.projects.map(p => `${escHtml(p.name)}${overviewProjectBadge(p)} ${p.effort}%`).join(' · ')}</div>
+            <div class="rb-meta">${r.projects.map(p => `${escHtml(p.name)}${overviewProjectBadge(p)} ${normalizeOverviewPercent(p.effort)}%`).join(' · ')}</div>
             <div class="allocation-bar"><div class="allocation-fill ${cls}" style="--pct:${Math.min(r.total, 140)}%;"></div></div>
           </div>
           <div class="rb-number ${cls}">${r.total}%</div>
@@ -4080,7 +4100,10 @@ function weeklyTrendPoints(weeks, currentProjects = []) {
   return weeks.map((week, index) => {
     const projects = index === weeks.length - 1
       ? currentProjects
-      : getOverviewProjects(week.projects || [], overviewScope);
+      : getOverviewProjects(
+        getRoleVisibleProjectsForOverview(week.projects || []),
+        overviewScope
+      );
     const total = projects.length || 1;
     const riskPressure = projects.reduce((sum, p) => {
       const count = projectRiskEntryCount(p);
@@ -4235,18 +4258,7 @@ function stripMarkdown(v) {
 }
 
 function normalizeSummaryHeading(line) {
-  const cleaned = stripMarkdown(line)
-    .replace(/^>\s*/, '')
-    .replace(/^#{1,6}\s*/, '')
-    .replace(/^\d+[.)]\s+/, '')
-    .replace(/[:：]\s*$/, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-  const known = /^(weekly movement|weekly progress|portfolio movement|project movement|executive summary|key updates|management ask|management asks|management request|decision needed|executive ask|support needed)$/i;
-  if (known.test(cleaned)) return cleaned;
-  if (cleaned.length <= 48 && /^[A-Z][A-Za-z0-9&/() -]+$/.test(cleaned)) return cleaned;
-  if (cleaned.length <= 32 && /[\u4e00-\u9fff]/.test(cleaned) && !/[.!?。！？]$/.test(cleaned)) return cleaned;
-  return '';
+  return normalizeOverviewSummaryHeading(line);
 }
 
 function splitInlineSummaryHeading(line) {
@@ -4304,9 +4316,10 @@ function sanitizeSummaryInput(text) {
 }
 
 function renderSummaryContent(summary, allProjects = [], scopedProjects = allProjects) {
-  const sanitized = sanitizeSummaryInput(summary || '').trim();
-  if (!sanitized) return '<div class="exec-empty-summary">No weekly summary has been saved yet. Use Week Management to copy the AI prompt, paste the generated output, and save it.</div>';
-  const text = filterOverviewSummaryLines(sanitized, allProjects, scopedProjects).trim();
+  const raw = String(summary || '').trim();
+  if (!raw) return '<div class="exec-empty-summary">No weekly summary has been saved yet. Use Week Management to copy the AI prompt, paste the generated output, and save it.</div>';
+  const scopedSummary = filterOverviewSummaryLines(raw, allProjects, scopedProjects);
+  const text = sanitizeSummaryInput(scopedSummary).trim();
   if (!text) return '<div class="exec-empty-summary">No summary items apply to the selected Overview scope.</div>';
   const lines = textLines(text);
   const isBullet = line => /^[-*]\s+/.test(line) || /^\d+[.)]\s+/.test(line);
@@ -4408,12 +4421,15 @@ function formatExecProjectMilestones(milestones) {
   if (list.length === 0) return '<div class="exec-note">No milestones yet.</div>';
   return `<div class="exec-project-timeline">` + chunkTimelineMilestones(list).map(row => {
     const singleClass = row.length === 1 ? ' single-step' : '';
-    return `<div class="exec-project-timeline-track${singleClass}" style="--step-count:${row.length}; grid-template-columns: repeat(${row.length}, minmax(0, 1fr));">` + row.map(m => `
-      <div class="exec-project-step ${escHtml(m.status || 'to-do')}">
+    return `<div class="exec-project-timeline-track${singleClass}" style="--step-count:${row.length}; grid-template-columns: repeat(${row.length}, minmax(0, 1fr));">` + row.map(m => {
+      const status = normalizeOverviewMilestoneStatus(m.status);
+      return `
+      <div class="exec-project-step ${status}">
         <div class="exec-project-step-label">${escHtml(m.name || '-')}</div>
         <div class="exec-project-step-line"><span class="exec-project-step-dot"></span></div>
         <div class="exec-project-step-date">${escHtml(m.date || '')}</div>
-      </div>`).join('') + `</div>`;
+      </div>`;
+    }).join('') + `</div>`;
   }).join('') + `</div>`;
 }
 
@@ -4478,16 +4494,15 @@ function formatDetailQuarterlyMilestones(project) {
 function renderExecutiveQuarterMilestones(projs, layer = getStrategyLayer(), activeTrack = 'all', year = getDefaultRoadmapYear(projs, layer)) {
   const timeline = normalizeExecutiveMilestoneTimeline(layer.executiveMilestoneTimeline);
   const quarters = timeline.quarters || ['Q1', 'Q2', 'Q3', 'Q4'];
-  const editable = !isVipPerspective();
   return `<section class="roadmap-block executive-milestone-block">
     <div class="roadmap-block-head">
       <div>
-        <div class="roadmap-block-title">Executive milestones</div>
+        <div class="roadmap-block-title">Portfolio-wide executive timeline</div>
         <div class="roadmap-block-note">Leadership-level DCDC milestone timeline, separated from PM project milestone input.</div>
       </div>
       <div style="display:flex; align-items:center; gap:8px;">
         <span class="reason-pill">${year}</span>
-        ${editable ? `<button class="btn btn-ghost no-print" onclick="openExecutiveTimelineEditor()">Edit Timeline</button>` : ''}
+        ${canManageStrategy() ? `<button class="btn btn-ghost no-print" onclick="openExecutiveTimelineEditor()">Edit Timeline</button>` : ''}
       </div>
     </div>
     <div class="dcdc-timeline">
@@ -4510,11 +4525,14 @@ function renderExecutiveQuarterMilestones(projs, layer = getStrategyLayer(), act
 
 function renderProjectQuarterItems(items) {
   if (!items.length) return '<div class="pqm-empty">No PM milestone in this quarter.</div>';
-  return `<div class="pqm-items">${items.map(i => `<div class="pqm-item ${escHtml(i.status || '')}">
+  return `<div class="pqm-items">${items.map(i => {
+    const status = normalizeOverviewMilestoneStatus(i.status);
+    return `<div class="pqm-item ${status}">
     <div class="pqm-goal">${escHtml(i.goal || '-')}</div>
     ${i.strategy.businessObjective ? `<div class="strategic-objective">[${escHtml(i.strategy.businessObjective)}]</div>` : ''}
-    <div class="pqm-meta">${escHtml(i.window || '-')} | ${escHtml(getStatusLabel(i.status || 'planned'))}${i.strategy.checkpoint ? ` | ${escHtml(i.strategy.checkpoint)}` : ''}</div>
-  </div>`).join('')}</div>`;
+    <div class="pqm-meta">${escHtml(i.window || '-')} | ${escHtml(getStatusLabel(status))}${i.strategy.checkpoint ? ` | ${escHtml(i.strategy.checkpoint)}` : ''}</div>
+  </div>`;
+  }).join('')}</div>`;
 }
 
 function renderProjectQuarterMatrix(projs, layer = getStrategyLayer(), activeTrack = 'all', year = getDefaultRoadmapYear(projs, layer)) {
@@ -4522,6 +4540,9 @@ function renderProjectQuarterMatrix(projs, layer = getStrategyLayer(), activeTra
   const quarters = getQuarterLabelsForYear(year);
   const rows = visibleProjects.filter(p => getQuarterlyMilestones(p).some(m => parseQuarterLabel(m.quarter)?.year === year));
   const projects = rows.length ? rows : visibleProjects;
+  if (!visibleProjects.length) {
+    return '<section class="roadmap-block project-milestone-block"><div class="empty-state">No projects in the selected Overview scope for the quarterly roadmap.</div></section>';
+  }
   return `<section class="roadmap-block project-milestone-block">
     <div class="roadmap-block-head">
       <div>
@@ -4573,15 +4594,22 @@ function renderAttentionMatrix(projs, editable) {
     const items = projs.filter(p => getProjectAttention(p) === key);
     return `<section class="attention-quad ${key}" ${editable ? `data-attention="${key}"` : ''}>
       <div class="attention-head"><div><div class="attention-title">${title}</div><div class="attention-meta">${meta}</div></div><span class="reason-pill">${items.length}</span></div>
-      ${items.map(p => `<div class="attention-item" ${editable ? `draggable="true" data-code="${escHtml(p.code)}"` : ''}>
-        <div class="attention-item-top"><div><div class="attention-name">${escHtml(p.name)}${overviewProjectBadge(p)}</div><div class="proj-code">${escHtml(p.code)} | ${escHtml(p.owner || '-')}</div></div><span class="exec-status-chip ${p.status}">${getStatusLabel(p.status)}</span></div>
+      ${items.map(p => {
+        const canEdit = editable && canEditProject(p);
+        const status = normalizeOverviewRagStatus(p.status);
+        return `<div class="attention-item" ${canEdit ? `draggable="true" data-code="${escHtml(p.code)}"` : ''}>
+        <div class="attention-item-top"><div><div class="attention-name">${escHtml(p.name)}${overviewProjectBadge(p)}</div><div class="proj-code">${escHtml(p.code)} | ${escHtml(p.owner || '-')}</div></div><span class="exec-status-chip ${status}">${escHtml(getStatusLabel(status))}</span></div>
         <div class="attention-risk">${escHtml(riskItems(p)[0] || '-')}</div>
-        ${editable ? `<div class="attention-select-row"><span class="reason-pill">${p.attentionManual ? 'Manual' : 'Suggested'}</span><select class="attention-select" data-code="${escHtml(p.code)}">${Object.entries(ATTENTION_MAP).map(([v,l]) => `<option value="${v}" ${getProjectAttention(p) === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>` : ''}
-      </div>`).join('')}</section>`;
+        ${canEdit ? `<div class="attention-select-row"><span class="reason-pill">${p.attentionManual ? 'Manual' : 'Suggested'}</span><select class="attention-select" data-code="${escHtml(p.code)}">${Object.entries(ATTENTION_MAP).map(([v,l]) => `<option value="${v}" ${getProjectAttention(p) === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>` : ''}
+      </div>`;
+      }).join('')}</section>`;
   }).join('')}</div>`;
 }
 
 function renderRiskActionTable(projs, editable) {
+  if (!projs.length) {
+    return '<div class="empty-state">No projects in the selected Overview scope for risk reporting.</div>';
+  }
   const rows = projs.filter(shouldIncludeRisk);
   return `<div class="risk-rule"><b>Rule:</b> projects are included when they are At Risk/Critical, need executive action or close monitoring, contain blocker text, or have a milestone marked at risk. Only the Primary risk/action pair is shown in this executive list.</div>
   <table class="risk-action-table"><thead><tr><th>Project</th><th>Risk / Blockers</th><th>Why Escalated</th><th>Owner</th><th>Required Action</th><th>Checkpoint</th></tr></thead><tbody>
@@ -4593,7 +4621,7 @@ function renderRiskActionTable(projs, editable) {
       <td>${escHtml(p.owner || '-')}</td><td>${primary ? escHtml(primary.action || '-') : '-'}</td><td>${escHtml((p.milestones || []).find(m => m.status === 'at-risk')?.date || p.milestones?.[0]?.date || '-')}</td></tr>`;
     }).join('')}
   </tbody></table>
-  ${editable ? `<div class="risk-controls">${projs.map(p => `<label class="risk-control"><input class="risk-toggle" type="checkbox" data-code="${escHtml(p.code)}" ${shouldIncludeRisk(p) ? 'checked' : ''}><span><b>${escHtml(p.name)}${overviewProjectBadge(p)}</b><span class="proj-code">${escHtml(p.code)} | ${p.riskManual ? 'Manual' : 'Suggested'} | ${escHtml(riskReasons(p).join(' / '))}</span></span></label>`).join('')}</div>` : ''}`;
+  ${editable ? `<div class="risk-controls">${projs.filter(p => canEditProject(p)).map(p => `<label class="risk-control"><input class="risk-toggle" type="checkbox" data-code="${escHtml(p.code)}" ${shouldIncludeRisk(p) ? 'checked' : ''}><span><b>${escHtml(p.name)}${overviewProjectBadge(p)}</b><span class="proj-code">${escHtml(p.code)} | ${p.riskManual ? 'Manual' : 'Suggested'} | ${escHtml(riskReasons(p).join(' / '))}</span></span></label>`).join('')}</div>` : ''}`;
 }
 
 function projectByCode(list) {
@@ -4784,7 +4812,7 @@ window.openProjDetail = (code) => {
   const p = enrichProjectPrototype(rawProject, week.projects.findIndex(x => x.code === code));
   document.getElementById('projDetailOverlay').dataset.projectCode = code;
   
-  document.getElementById('pd_title').innerHTML = `${p.name} <span class="proj-code" style="margin-left:8px; font-size:13px;">${p.code}</span>`;
+  document.getElementById('pd_title').innerHTML = `${escHtml(p.name)} <span class="proj-code" style="margin-left:8px; font-size:13px;">${escHtml(p.code)}</span>`;
   document.getElementById('pd_owner').textContent = p.owner || '-';
   document.getElementById('pd_deputy').textContent = p.deputy || '-';
   document.getElementById('pd_customer').textContent = p.customer || '-';
@@ -4796,23 +4824,27 @@ window.openProjDetail = (code) => {
   document.getElementById('pd_next').innerHTML = formatBullets(p.next);
   
   const smap = {'green':'ON TRACK', 'yellow':'AT RISK', 'red':'CRITICAL'};
+  const projectStatus = normalizeOverviewRagStatus(p.status);
   const badge = document.getElementById('pd_status_badge');
-  badge.textContent = smap[p.status] || p.status.toUpperCase();
-  badge.style.background = `var(--${p.status})`;
+  badge.textContent = smap[projectStatus];
+  badge.style.background = `var(--${projectStatus})`;
   badge.style.color = '#fff';
   
-  document.getElementById('pd_progress').textContent = (p.progress || 0) + '%';
+  document.getElementById('pd_progress').textContent = normalizeOverviewPercent(p.progress) + '%';
   
-  document.getElementById('pd_milestones').innerHTML = (p.milestones || []).map(m => `
-    <div class="ms-node ${m.status || 'to-do'}">
+  document.getElementById('pd_milestones').innerHTML = (p.milestones || []).map(m => {
+    const milestoneStatus = normalizeOverviewMilestoneStatus(m.status);
+    return `
+    <div class="ms-node ${milestoneStatus}">
       <div class="ms-dot"></div>
       <div style="display:flex; flex-direction:column; flex: 1; min-width: 0; margin-right: 12px;">
-        <div style="font-size:13px; font-weight:600; word-break: break-word;">${m.name}</div>
-        <div style="font-size:10px; color:var(--muted); margin-top:2px;">${m.date || 'No Date'}</div>
+        <div style="font-size:13px; font-weight:600; word-break: break-word;">${escHtml(m.name)}</div>
+        <div style="font-size:10px; color:var(--muted); margin-top:2px;">${escHtml(m.date || 'No Date')}</div>
       </div>
-      <div class="ms-status ${m.status || 'to-do'}" style="flex-shrink: 0; white-space: nowrap;">${m.status || 'to-do'}</div>
+      <div class="ms-status ${milestoneStatus}" style="flex-shrink: 0; white-space: nowrap;">${escHtml(getStatusLabel(milestoneStatus))}</div>
     </div>
-  `).join('');
+  `;
+  }).join('');
   document.getElementById('pd_quarterly_milestones').innerHTML = formatDetailQuarterlyMilestones(p);
   renderProjectResources(normalizeProject(p));
   renderProjectGantt(normalizeProject(p));
@@ -4943,12 +4975,8 @@ window.render = () => {
     }
   }
 
-  let roleVisibleProjects = enrichProjectsPrototype(week.projects || []);
-  
-  const visFilter = document.getElementById('visSelect') ? document.getElementById('visSelect').value : 'active';
-  if (isVipPerspective() || currentRole !== 'admin' || visFilter === 'active') {
-     roleVisibleProjects = roleVisibleProjects.filter(p => !p.visibility || p.visibility === 'active');
-  }
+  const allCurrentProjects = enrichProjectsPrototype(week.projects || []);
+  const roleVisibleProjects = getRoleVisibleProjectsForOverview(allCurrentProjects);
   refreshPortfolioToolbar(roleVisibleProjects);
   const portfolioToolbar = document.getElementById('portfolioToolbar');
   portfolioToolbar.style.display = isOverview ? 'none' : 'flex';
@@ -4974,7 +5002,7 @@ window.render = () => {
   document.getElementById('topMetricsGrid').style.display = showTopMetrics ? 'grid' : 'none';
 
   renderNormal(portfolioProjects);
-  renderExec(overviewProjects, week.summary, roleVisibleProjects);
+  renderExec(overviewProjects, week.summary, allCurrentProjects);
   
   if (isVipPerspective()) {
     document.getElementById('normalView').style.display = 'none';
@@ -5006,40 +5034,43 @@ function renderNormal(projs) {
 
   grid.innerHTML = projs.map(p => {
     const ms = getCardMilestones(p.milestones || []);
-    const statusLabel = getStatusLabel(p.status).toUpperCase();
+    const status = normalizeOverviewRagStatus(p.status);
+    const progress = normalizeOverviewPercent(p.progress);
+    const visibility = ['hidden', 'archived'].includes(p.visibility) ? p.visibility : '';
+    const statusLabel = getStatusLabel(status).toUpperCase();
     const highlightText = p.highlight || 'No updates.';
     const teamTotal = (p.teamMembers || []).reduce((sum, m) => sum + Number(m.effortPct || m.effort || 0), 0);
     const budgetTotals = projectBudgetTotals(p, overviewCurrency);
 
     return `
-    <div class="proj-card" ondblclick="openProjDetail('${p.code}')" title="Double click for details">
-      <div class="card-stripe ${p.status}"></div>
+    <div class="proj-card" data-project-code="${escHtml(p.code)}" title="Double click for details">
+      <div class="card-stripe ${status}"></div>
       ${canEditProject(p) ? `
         <div class="card-actions">
-          <button class="action-icon" title="Project edit" onclick="event.stopPropagation(); openProjEdit('${p.code}')">
+          <button class="action-icon" data-project-action="edit" data-project-code="${escHtml(p.code)}" title="Project edit">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </button>
         </div>` : ''}
       <div class="card-body">
         <div class="card-summary">
           <div class="card-summary-left">
-            <div class="proj-name">${p.name}<span class="project-level-badge">${p.projectLevel === 'hardware-module' ? 'Module' : 'System'}</span>${p.visibility && p.visibility !== 'active' ? `<span class="muted-badge">[${p.visibility.toUpperCase()}]</span>` : ''}</div>
-            <div class="proj-code">${p.code}</div>
+            <div class="proj-name">${escHtml(p.name)}<span class="project-level-badge">${p.projectLevel === 'hardware-module' ? 'Module' : 'System'}</span>${visibility ? `<span class="muted-badge">[${visibility.toUpperCase()}]</span>` : ''}</div>
+            <div class="proj-code">${escHtml(p.code)}</div>
           </div>
           <div class="card-summary-right">
-            <span class="card-status ${p.status}">${statusLabel}</span>
+            <span class="card-status ${status}">${escHtml(statusLabel)}</span>
             <div>
               <div class="card-progress-label">Progress</div>
-              <div class="card-progress-val">${p.progress || 0}%</div>
+              <div class="card-progress-val">${progress}%</div>
             </div>
           </div>
         </div>
 
         <div class="card-meta-grid">
-          <div><div class="info-lbl">Owner</div><div class="info-val owner">${p.owner || '-'}</div></div>
-          <div><div class="info-lbl">Deputy</div><div class="info-val">${p.deputy || '-'}</div></div>
-          <div><div class="info-lbl">Customer</div><div class="info-val">${p.customer || '-'}</div></div>
-          <div><div class="info-lbl">Location</div><div class="info-val">${p.location || '-'}</div></div>
+          <div><div class="info-lbl">Owner</div><div class="info-val owner">${escHtml(p.owner || '-')}</div></div>
+          <div><div class="info-lbl">Deputy</div><div class="info-val">${escHtml(p.deputy || '-')}</div></div>
+          <div><div class="info-lbl">Customer</div><div class="info-val">${escHtml(p.customer || '-')}</div></div>
+          <div><div class="info-lbl">Location</div><div class="info-val">${escHtml(p.location || '-')}</div></div>
         </div>
 
         <div class="card-extra-signals">
@@ -5059,16 +5090,19 @@ function renderNormal(projs) {
             <div class="card-section-note">${(p.milestones || []).length} item${(p.milestones || []).length === 1 ? '' : 's'}</div>
           </div>
           <div class="ms-container card-compact">
-            ${ms.visible.length > 0 ? ms.visible.map(m => `
-              <div class="ms-node ${m.status || 'to-do'}">
+            ${ms.visible.length > 0 ? ms.visible.map(m => {
+              const milestoneStatus = normalizeOverviewMilestoneStatus(m.status);
+              return `
+              <div class="ms-node ${milestoneStatus}">
                 <div class="ms-dot"></div>
                 <div style="display:flex; flex-direction:column; flex:1; min-width:0; margin-right: 10px;">
-                  <div style="font-size:12px; font-weight:700; word-break:break-word; color:var(--text);">${m.name}</div>
-                  <div style="font-size:10px; color:var(--muted); margin-top:3px;">${m.date || 'No Date'}</div>
+                  <div style="font-size:12px; font-weight:700; word-break:break-word; color:var(--text);">${escHtml(m.name || '-')}</div>
+                  <div style="font-size:10px; color:var(--muted); margin-top:3px;">${escHtml(m.date || 'No Date')}</div>
                 </div>
-                <div class="ms-status ${m.status || 'to-do'}">${getStatusLabel(m.status || 'to-do')}</div>
+                <div class="ms-status ${milestoneStatus}">${escHtml(getStatusLabel(milestoneStatus))}</div>
               </div>
-            `).join('') : `<div class="stext empty" style="margin-left:2px; margin-bottom:0;">No milestones yet.</div>`}
+            `;
+            }).join('') : `<div class="stext empty" style="margin-left:2px; margin-bottom:0;">No milestones yet.</div>`}
           </div>
           ${ms.hiddenCount > 0 ? `<div class="ms-more">+ ${ms.hiddenCount} more milestone${ms.hiddenCount > 1 ? 's' : ''}…</div>` : ''}
         </div>
@@ -5076,21 +5110,30 @@ function renderNormal(projs) {
         <div class="prog-section">
           <div class="prog-head">
             <span class="prog-label">Delivery Progress</span>
-            <span class="prog-value">${p.progress || 0}%</span>
+            <span class="prog-value">${progress}%</span>
           </div>
-          <div class="prog-bar-bg"><div class="prog-fill ${p.status}" style="width:${p.progress || 0}%"></div></div>
+          <div class="prog-bar-bg"><div class="prog-fill ${status}" style="width:${progress}%"></div></div>
 
           <div class="update-box">
             <div class="card-section-head" style="margin-bottom:8px;">
               <div class="card-section-title">Latest Highlight</div>
               <div class="card-section-note">Double click for full details</div>
             </div>
-            <div class="stext ${!p.highlight ? 'empty' : ''} clamp-2">${highlightText}</div>
+            <div class="stext ${!p.highlight ? 'empty' : ''} clamp-2">${escHtml(highlightText)}</div>
           </div>
         </div>
       </div>
     </div>`;
   }).join('');
+  grid.querySelectorAll('.proj-card[data-project-code]').forEach(card => {
+    card.addEventListener('dblclick', () => openProjDetail(card.dataset.projectCode));
+  });
+  grid.querySelectorAll('[data-project-action="edit"][data-project-code]').forEach(button => {
+    button.addEventListener('click', event => {
+      event.stopPropagation();
+      openProjEdit(button.dataset.projectCode);
+    });
+  });
 }
 
 function renderExec(projs, summary, allProjects = projs) {
@@ -5227,7 +5270,7 @@ function renderExec(projs, summary, allProjects = projs) {
         </div>
         <div class="exec-panel-note">Executive view of what each project is targeting by quarter</div>
         ${renderRoadmapYearSelector(projs, strategyLayer)}
-        ${editableDecisionView ? `<button class="btn btn-primary no-print" onclick="openStrategyLayerModal()">Manage Strategy</button>` : ''}
+        ${canManageStrategy() && editableDecisionView ? `<button class="btn btn-primary no-print" onclick="openStrategyLayerModal()">Manage Strategy</button>` : ''}
       </div>
       ${renderQuarterlyBoard(projs, strategyLayer, activeTrack, roadmapYear)}
     </div>
@@ -5246,25 +5289,29 @@ function renderExec(projs, summary, allProjects = projs) {
       </div>
 
       <div class="exec-projects project-portfolio-grid">
-        ${projs.length ? projs.map(p => `
-          <article class="exec-project-card ${p.status}" ondblclick="openProjDetail('${p.code}')" title="Double click for details">
+        ${projs.length ? projs.map(p => {
+          const status = normalizeOverviewRagStatus(p.status);
+          const progress = normalizeOverviewPercent(p.progress);
+          const visibility = ['hidden', 'archived'].includes(p.visibility) ? p.visibility : '';
+          return `
+          <article class="exec-project-card ${status}" data-project-code="${escHtml(p.code)}" title="Double click for details">
             <div class="exec-project-top">
               <div class="exec-project-identity">
-                <div class="exec-project-name">${p.name}${overviewProjectBadge(p)}${p.visibility && p.visibility !== 'active' ? ` <span style="color:var(--red); font-size:10px; font-weight:700;">[${p.visibility.toUpperCase()}]</span>` : ''}</div>
+                <div class="exec-project-name">${escHtml(p.name)}${overviewProjectBadge(p)}${visibility ? ` <span style="color:var(--red); font-size:10px; font-weight:700;">[${visibility.toUpperCase()}]</span>` : ''}</div>
                 <div class="exec-project-meta">
-                  <span class="exec-status-chip ${p.status}">${statusMap[p.status] || p.status}</span>
-                  <span class="exec-owner-chip">${p.owner || '-'}</span>
-                  <span class="exec-code-chip">${p.code}</span>
+                  <span class="exec-status-chip ${status}">${escHtml(statusMap[status])}</span>
+                  <span class="exec-owner-chip">${escHtml(p.owner || '-')}</span>
+                  <span class="exec-code-chip">${escHtml(p.code)}</span>
                 </div>
               </div>
 
               <div class="exec-progress-block">
                 <div class="exec-progress-head">
                   <span class="exec-progress-label">Progress</span>
-                  <span class="exec-progress-number">${p.progress || 0}%</span>
+                  <span class="exec-progress-number">${progress}%</span>
                 </div>
                 <div class="exec-progress-track">
-                  <div class="exec-progress-fill ${p.status}" style="width:${p.progress || 0}%"></div>
+                  <div class="exec-progress-fill ${status}" style="width:${progress}%"></div>
                 </div>
               </div>
 
@@ -5289,10 +5336,14 @@ function renderExec(projs, summary, allProjects = projs) {
               ${formatExecProjectMilestones(p.milestones)}
             </div>
           </article>
-        `).join('') : '<div class="empty-state">No projects in the selected Overview scope.</div>'}
+        `;
+        }).join('') : '<div class="empty-state">No projects in the selected Overview scope.</div>'}
       </div>
     </section>
   `;
+  view.querySelectorAll('.exec-project-card[data-project-code]').forEach(card => {
+    card.addEventListener('dblclick', () => openProjDetail(card.dataset.projectCode));
+  });
   bindDecisionControls(editableDecisionView);
 }
 
@@ -5340,6 +5391,7 @@ function renderExecutiveMilestoneEditor(timeline) {
 }
 
 window.addExecutiveTimelineRow = () => {
+  if (!canManageStrategy()) return;
   const rows = document.getElementById('execTimelineRows');
   if (!rows) return;
   const row = document.createElement('div');
@@ -5365,6 +5417,7 @@ function collectExecutiveMilestoneTimeline() {
 }
 
 window.openStrategyLayerModal = () => {
+  if (!canManageStrategy()) return;
   const week = allWeeks[currentIdx];
   if (!week) return;
   const layer = getStrategyLayer(week);
@@ -5391,6 +5444,7 @@ window.openStrategyLayerModal = () => {
 };
 
 window.openExecutiveTimelineEditor = () => {
+  if (!canManageStrategy()) return;
   openStrategyLayerModal();
   requestAnimationFrame(() => {
     const editor = document.getElementById('quarterGoalEditor');
@@ -5400,6 +5454,7 @@ window.openExecutiveTimelineEditor = () => {
 };
 
 window.addQuarterExecutiveGoalRow = (quarter, goal = {}, layer = getStrategyLayer()) => {
+  if (!canManageStrategy()) return;
   const group = Array.from(document.querySelectorAll('.quarter-goal-group')).find(el => el.dataset.quarter === quarter);
   if (!group) return;
   const normalized = normalizeQuarterGoalEntry(goal);
@@ -5418,6 +5473,7 @@ window.addQuarterExecutiveGoalRow = (quarter, goal = {}, layer = getStrategyLaye
 };
 
 window.saveStrategyLayer = async () => {
+  if (!canManageStrategy()) return;
   const week = allWeeks[currentIdx];
   if (!week || !currentUser) return;
   showLoader("Saving Strategy Layer...");
@@ -5464,7 +5520,7 @@ function bindDecisionControls(editable) {
   document.querySelectorAll('.attention-select').forEach(sel => {
     sel.onchange = async () => {
       const p = findCurrentProject(sel.dataset.code);
-      if (!p) return;
+      if (!p || !canEditProject(p)) return;
       p.attention = sel.value;
       p.attentionManual = true;
       await saveCurrentWeekQuietly();
@@ -5474,7 +5530,7 @@ function bindDecisionControls(editable) {
   document.querySelectorAll('.risk-toggle').forEach(chk => {
     chk.onchange = async () => {
       const p = findCurrentProject(chk.dataset.code);
-      if (!p) return;
+      if (!p || !canEditProject(p)) return;
       p.riskList = chk.checked;
       p.riskManual = true;
       await saveCurrentWeekQuietly();
@@ -5484,6 +5540,11 @@ function bindDecisionControls(editable) {
   });
   document.querySelectorAll(".attention-item[draggable='true']").forEach(item => {
     item.addEventListener('dragstart', e => {
+      const p = findCurrentProject(item.dataset.code);
+      if (!p || !canEditProject(p)) {
+        e.preventDefault();
+        return;
+      }
       e.dataTransfer.setData('text/plain', item.dataset.code);
       item.classList.add('dragging');
     });
@@ -5499,7 +5560,7 @@ function bindDecisionControls(editable) {
       e.preventDefault();
       quad.classList.remove('drag-over');
       const p = findCurrentProject(e.dataTransfer.getData('text/plain'));
-      if (!p) return;
+      if (!p || !canEditProject(p)) return;
       p.attention = quad.dataset.attention;
       p.attentionManual = true;
       await saveCurrentWeekQuietly();
@@ -5521,7 +5582,10 @@ window.toggleOverview = () => {
 };
 window.setOverviewScope = scope => {
   overviewScope = normalizeOverviewScope(scope);
-  try { localStorage.setItem(OVERVIEW_SCOPE_KEY, overviewScope); } catch {}
+  const storageKey = getOverviewScopeStorageKey(currentUser?.uid || getEmailKey(currentUser));
+  if (storageKey) {
+    try { localStorage.setItem(storageKey, overviewScope); } catch {}
+  }
   render();
 };
 window.toggleVipPreview = () => {

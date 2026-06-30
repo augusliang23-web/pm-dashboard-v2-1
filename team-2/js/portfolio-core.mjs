@@ -26,6 +26,8 @@ export const RESOURCE_DISCIPLINES = Object.freeze([
 const PROJECT_LEVELS = new Set(Object.values(PROJECT_LEVEL));
 const OVERVIEW_SCOPES = new Set(Object.values(OVERVIEW_SCOPE));
 const PROJECT_LIFECYCLES = new Set(Object.values(PROJECT_LIFECYCLE));
+const OVERVIEW_RAG_STATUSES = new Set(['green', 'yellow', 'red']);
+const OVERVIEW_MILESTONE_STATUSES = new Set(['planned', 'to-do', 'in-progress', 'done', 'at-risk']);
 const RESOURCE_DISCIPLINE_SET = new Set(RESOURCE_DISCIPLINES);
 const WORKSTREAM_STATUSES = new Set(['not-started', 'on-track', 'at-risk', 'delayed', 'completed']);
 const WORKSTREAM_TEMPLATES = Object.freeze({
@@ -291,10 +293,40 @@ export function getOverviewProjectBadgeLabel(project = {}, scope = OVERVIEW_SCOP
   return normalizeProject(project).projectLevel === PROJECT_LEVEL.HARDWARE_MODULE ? 'Module' : 'System';
 }
 
+export function normalizeOverviewRagStatus(value) {
+  return OVERVIEW_RAG_STATUSES.has(value) ? value : 'green';
+}
+
+export function normalizeOverviewMilestoneStatus(value) {
+  return OVERVIEW_MILESTONE_STATUSES.has(value) ? value : 'to-do';
+}
+
+export function normalizeOverviewPercent(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.min(100, Math.max(0, number)) : 0;
+}
+
+export function filterRoleVisibleProjects(source = [], options = {}) {
+  const projects = Array.isArray(source) ? source : [];
+  const role = stringValue(options.role).toLocaleLowerCase() || 'pm';
+  const restrictToActive = options.vipPerspective === true
+    || role !== 'admin'
+    || options.visibilityFilter === 'active';
+  return restrictToActive
+    ? projects.filter(project => !project?.visibility || project.visibility === 'active')
+    : [...projects];
+}
+
+export function getOverviewScopeStorageKey(identity) {
+  const normalized = stringValue(identity);
+  return normalized ? `team2.overviewScope.${encodeURIComponent(normalized)}` : '';
+}
+
 export function matchOverviewSummaryProjectLine(line, projects = []) {
-  const content = String(line || '')
+  const unwrapped = String(line || '')
     .trim()
     .replace(/^(?:[-*+]|\d+[.)])\s+/, '');
+  const content = stripSummaryMarkdown(unwrapped).trim();
   const normalizedContent = content.toLocaleLowerCase();
   const identities = (Array.isArray(projects) ? projects : [])
     .flatMap(project => [project?.name, project?.code]
@@ -314,6 +346,7 @@ export function matchOverviewSummaryProjectLine(line, projects = []) {
         body: remainder.slice(delimiter[0].length).trim(),
       };
     }
+    if (!/^\s+/.test(remainder)) continue;
     const labeledBody = remainder.trim();
     if (!/^[^:\r\n]{1,48}:\s*\S/.test(labeledBody)) continue;
     return {
@@ -329,13 +362,26 @@ export function filterOverviewSummaryLines(summary, allProjects = [], scopedProj
   const included = new Set((Array.isArray(scopedProjects) ? scopedProjects : [])
     .map(projectMembershipKey)
     .filter(Boolean));
-  const lines = String(summary || '')
-    .replace(/\r\n?/g, '\n')
-    .split('\n')
-    .filter(line => {
-      const match = matchOverviewSummaryProjectLine(line, allProjects);
-      return !match || included.has(projectMembershipKey(match.project));
-    });
+  const lines = [];
+  let excludedBlockIndent = null;
+  String(summary || '').replace(/\r\n?/g, '\n').split('\n').forEach(line => {
+    const heading = isOverviewSummaryHeading(line);
+    const indent = summaryLineIndent(line);
+    const blockStart = summaryBlockStart(line);
+    if (excludedBlockIndent !== null) {
+      const isBoundary = heading
+        || (line.trim() && indent <= excludedBlockIndent && (!blockStart || blockStart.indent <= excludedBlockIndent));
+      if (!isBoundary) return;
+      excludedBlockIndent = null;
+    }
+
+    const match = matchOverviewSummaryProjectLine(line, allProjects);
+    if (match && !included.has(projectMembershipKey(match.project))) {
+      excludedBlockIndent = blockStart?.indent ?? indent;
+      return;
+    }
+    lines.push(line);
+  });
   const withoutOrphanHeadings = lines.filter((line, index) => {
     if (!isOverviewSummaryHeading(line)) return true;
     const sectionEnd = lines.findIndex((candidate, candidateIndex) => (
@@ -349,10 +395,50 @@ export function filterOverviewSummaryLines(summary, allProjects = [], scopedProj
   return withoutOrphanHeadings.join('\n');
 }
 
+export function normalizeOverviewSummaryHeading(line) {
+  const cleaned = stripSummaryMarkdown(line)
+    .replace(/^>\s*/, '')
+    .replace(/^#{1,6}\s*/, '')
+    .replace(/^\d+[.)]\s+/, '')
+    .replace(/[:：]\s*$/, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const known = /^(weekly movement|weekly progress|portfolio movement|project movement|executive summary|key updates|management ask|management asks|management request|decision needed|executive ask|support needed)$/i;
+  if (known.test(cleaned)) return cleaned;
+  if (cleaned.length <= 48 && /^[A-Z][A-Za-z0-9&/() -]+$/.test(cleaned)) return cleaned;
+  if (cleaned.length <= 32 && /[\u4e00-\u9fff]/.test(cleaned) && !/[.!?。！？]$/.test(cleaned)) return cleaned;
+  return '';
+}
+
 function isOverviewSummaryHeading(line) {
   const value = String(line || '').trim();
-  if (/^#{1,3}\s+\S/.test(value)) return true;
-  return /^(weekly movement|management ask|executive summary|key updates|portfolio movement|decision needed|management request):?$/i.test(value);
+  if (/^#{1,6}\s+\S/.test(value)) return true;
+  return Boolean(normalizeOverviewSummaryHeading(value));
+}
+
+function summaryLineIndent(line) {
+  const whitespace = String(line || '').match(/^[\t ]*/)?.[0] || '';
+  return [...whitespace].reduce((sum, char) => sum + (char === '\t' ? 2 : 1), 0);
+}
+
+function summaryBlockStart(line) {
+  const match = String(line || '').match(/^([\t ]*)(?:[-*+]|\d+[.)])\s+/);
+  return match ? { indent: summaryLineIndent(match[1]) } : null;
+}
+
+function stripSummaryMarkdown(value) {
+  return String(value || '')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>\s*<p>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/\*\*\*([^*]+)\*\*\*/g, '$1')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/___([^_]+)___/g, '$1')
+    .replace(/__([^_]+)__/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1')
+    .replace(/_([^_]+)_/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\*+/g, '');
 }
 
 function projectMembershipKey(project = {}) {

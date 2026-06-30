@@ -9,12 +9,18 @@ import {
   createDefaultWorkstreams,
   filterOverviewSummaryLines,
   filterProjects,
+  filterRoleVisibleProjects,
   formatStatusDate,
   getOverviewProjectBadgeLabel,
   getOverviewProjects,
+  getOverviewScopeStorageKey,
   getFocusTrapIndex,
   mergeResourceEntry,
+  normalizeOverviewMilestoneStatus,
+  normalizeOverviewPercent,
+  normalizeOverviewRagStatus,
   normalizeRiskActionRows,
+  normalizeOverviewSummaryHeading,
   normalizeOverviewScope,
   normalizeProject,
   normalizeResourceEntry,
@@ -307,6 +313,51 @@ test('Overview project badges are emitted only for the mixed All Projects scope'
   );
 });
 
+test('Overview display enums and progress are normalized before HTML rendering', () => {
+  assert.equal(normalizeOverviewRagStatus('red'), 'red');
+  assert.equal(normalizeOverviewRagStatus('red" onmouseover="alert(1)'), 'green');
+  assert.equal(normalizeOverviewMilestoneStatus('at-risk'), 'at-risk');
+  assert.equal(normalizeOverviewMilestoneStatus('done onclick=alert(1)'), 'to-do');
+  assert.equal(normalizeOverviewPercent('42.5'), 42.5);
+  assert.equal(normalizeOverviewPercent(-5), 0);
+  assert.equal(normalizeOverviewPercent(500), 100);
+  assert.equal(normalizeOverviewPercent('not-a-number'), 0);
+});
+
+test('role-visible project filtering consistently enforces active-only access', () => {
+  const projects = [
+    { code: 'ACTIVE', visibility: 'active' },
+    { code: 'LEGACY' },
+    { code: 'HIDDEN', visibility: 'hidden' },
+    { code: 'ARCHIVED', visibility: 'archived' },
+  ];
+
+  assert.deepEqual(
+    filterRoleVisibleProjects(projects, { role: 'pm' }).map(project => project.code),
+    ['ACTIVE', 'LEGACY'],
+  );
+  assert.deepEqual(
+    filterRoleVisibleProjects(projects, { role: 'vip' }).map(project => project.code),
+    ['ACTIVE', 'LEGACY'],
+  );
+  assert.deepEqual(
+    filterRoleVisibleProjects(projects, { role: 'admin', visibilityFilter: 'all' }).map(project => project.code),
+    ['ACTIVE', 'LEGACY', 'HIDDEN', 'ARCHIVED'],
+  );
+  assert.deepEqual(
+    filterRoleVisibleProjects(projects, { role: 'admin', visibilityFilter: 'all', vipPerspective: true }).map(project => project.code),
+    ['ACTIVE', 'LEGACY'],
+  );
+});
+
+test('Overview scope storage keys are isolated per authenticated identity', () => {
+  assert.equal(getOverviewScopeStorageKey('User.One@example.com'), 'team2.overviewScope.User.One%40example.com');
+  assert.equal(getOverviewScopeStorageKey('uid/123'), 'team2.overviewScope.uid%2F123');
+  assert.notEqual(getOverviewScopeStorageKey('user-a'), getOverviewScopeStorageKey('user-b'));
+  assert.notEqual(getOverviewScopeStorageKey('UserA'), getOverviewScopeStorageKey('usera'));
+  assert.equal(getOverviewScopeStorageKey(''), '');
+});
+
 const summaryProjects = [
   { code: 'SYS-A', name: 'Alpha', projectLevel: PROJECT_LEVEL.SYSTEM },
   { code: 'MOD-A', name: 'Alpha Module', projectLevel: PROJECT_LEVEL.HARDWARE_MODULE },
@@ -397,6 +448,88 @@ test('Overview summary filtering removes section headings orphaned by project ex
     filterOverviewSummaryLines(summary, summaryProjects, getOverviewProjects(summaryProjects, PROJECT_LEVEL.SYSTEM)),
     ['## WEEKLY MOVEMENT', '- Alpha weekly status: System-specific update.'].join('\n'),
   );
+});
+
+test('Overview summary matching requires a strict identity delimiter boundary', () => {
+  const projects = [
+    { code: 'MOD', name: 'Alpha', projectLevel: PROJECT_LEVEL.SYSTEM },
+  ];
+  const summary = [
+    '- MODERN weekly status: Generic MODERN narrative.',
+    '- Alphabet weekly status: Generic Alphabet narrative.',
+    '- MOD weekly status: Known project narrative.',
+    '- Alpha weekly status: Known project narrative.',
+  ].join('\n');
+
+  assert.equal(
+    filterOverviewSummaryLines(summary, projects, []),
+    [
+      '- MODERN weekly status: Generic MODERN narrative.',
+      '- Alphabet weekly status: Generic Alphabet narrative.',
+    ].join('\n'),
+  );
+});
+
+test('Overview summary filtering removes nested content owned by an excluded project block', () => {
+  const summary = [
+    '## Weekly Progress',
+    '- Alpha Module weekly status: Module parent.',
+    '  - Nested module detail.',
+    '    Continuation owned by module.',
+    '- Portfolio: Generic sibling remains.',
+    '## Support Needed',
+    '- Alpha: System parent.',
+    '  System continuation.',
+  ].join('\n');
+
+  assert.equal(
+    filterOverviewSummaryLines(summary, summaryProjects, getOverviewProjects(summaryProjects, PROJECT_LEVEL.SYSTEM)),
+    [
+      '## Weekly Progress',
+      '- Portfolio: Generic sibling remains.',
+      '## Support Needed',
+      '- Alpha: System parent.',
+      '  System continuation.',
+    ].join('\n'),
+  );
+  assert.equal(filterOverviewSummaryLines(summary, summaryProjects, []), [
+    '## Weekly Progress',
+    '- Portfolio: Generic sibling remains.',
+  ].join('\n'));
+});
+
+test('Overview summary filtering recognizes Markdown-wrapped project identities before sanitizing', () => {
+  const summary = [
+    '## Weekly Progress',
+    '- **Alpha Module:** Hidden module update.',
+    '  - Hidden nested detail.',
+    '- Portfolio: Generic sibling.',
+  ].join('\n');
+
+  assert.equal(
+    filterOverviewSummaryLines(summary, summaryProjects, getOverviewProjects(summaryProjects, PROJECT_LEVEL.SYSTEM)),
+    ['## Weekly Progress', '- Portfolio: Generic sibling.'].join('\n'),
+  );
+});
+
+test('Overview summary heading recognition matches every sanitizer heading variant', () => {
+  for (const heading of [
+    'Weekly Movement',
+    'Weekly Progress',
+    'Portfolio Movement',
+    'Project Movement',
+    'Executive Summary',
+    'Key Updates',
+    'Management Ask',
+    'Management Asks',
+    'Management Request',
+    'Decision Needed',
+    'Executive Ask',
+    'Support Needed',
+  ]) {
+    assert.equal(normalizeOverviewSummaryHeading(`## ${heading}:`), heading);
+  }
+  assert.equal(normalizeOverviewSummaryHeading('This is a sentence.'), '');
 });
 
 test('createDefaultWorkstreams returns independent templates for each project level', () => {
