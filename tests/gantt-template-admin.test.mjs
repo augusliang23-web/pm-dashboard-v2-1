@@ -36,7 +36,7 @@ test('template handlers recheck Admin role and auth-owned session', () => {
 
 test('template config loads with fallback and saves through a revision-checked transaction', () => {
   assert.ok(dashboard.includes("doc(db, 'dashboardSettings', 'team-2-portfolio')"));
-  assert.ok(dashboard.includes('await loadGanttTemplateConfig();'));
+  assert.ok(dashboard.includes('await loadGanttTemplateConfig(authGeneration, user)'));
   assert.ok(dashboard.includes('resolveWorkstreamTemplateConfig('));
   assert.ok(dashboard.includes('catch (error)'));
   assert.ok(dashboard.includes('await runTransaction(db, async transaction =>'));
@@ -63,9 +63,9 @@ test('authenticated setup subscribes to multi-session template updates before en
   const setupStart = dashboard.indexOf('function setupUI()', authStart);
   const authSource = dashboard.slice(authStart, setupStart);
   assert.ok(authSource.includes('stopGanttTemplateConfigSubscription();'));
-  assert.ok(authSource.includes('await loadGanttTemplateConfig();'));
+  assert.ok(authSource.includes('await loadGanttTemplateConfig(authGeneration, user)'));
   assert.ok(
-    authSource.indexOf('await loadGanttTemplateConfig();')
+    authSource.indexOf('await loadGanttTemplateConfig(authGeneration, user)')
       < authSource.indexOf('setupUI();'),
   );
 });
@@ -75,7 +75,7 @@ test('subscription teardown resets defaults and cannot leak callbacks across aut
   const end = dashboard.indexOf('// END GANTT TEMPLATE SETTINGS', start);
   const source = dashboard.slice(start, end);
   const stopStart = source.indexOf('function stopGanttTemplateConfigSubscription()');
-  const stopEnd = source.indexOf('async function loadGanttTemplateConfig()', stopStart);
+  const stopEnd = source.indexOf('async function loadGanttTemplateConfig(', stopStart);
   const stopSource = source.slice(stopStart, stopEnd);
   assert.ok(stopStart >= 0 && stopEnd > stopStart);
   assert.ok(stopSource.includes('ganttTemplateSubscriptionGeneration += 1;'));
@@ -84,8 +84,8 @@ test('subscription teardown resets defaults and cannot leak callbacks across aut
   assert.ok(stopSource.includes('currentGanttTemplateConfig = resolveWorkstreamTemplateConfig();'));
   assert.ok(stopSource.includes('currentGanttTemplateRevision = 0;'));
   assert.ok(source.includes('generation === ganttTemplateSubscriptionGeneration'));
-  assert.ok(source.includes("ownerUid === (currentUser?.uid || '')"));
-  assert.ok(source.includes('ownerEmail === getEmailKey(currentUser)'));
+  assert.ok(source.includes('authGeneration === authSessionGeneration'));
+  assert.ok(source.includes('isAuthInitializationCurrent('));
 
   const logoutStart = dashboard.indexOf('window.handleLogout = async () =>');
   const authStart = dashboard.indexOf('onAuthStateChanged(auth, async user =>', logoutStart);

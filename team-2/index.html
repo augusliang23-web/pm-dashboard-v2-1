@@ -1995,6 +1995,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 </div>
 
 <script type="module">
+import { isAuthInitializationCurrent } from "./js/auth-session.mjs";
 import { RESOURCE_DISCIPLINES, calculateDropIndex, createDefaultWorkstreams, createTimelineTicks, filterOverviewSummaryLines, filterProjects, filterRoleVisibleProjects, getFocusTrapIndex, getOverviewProjectBadgeLabel, getOverviewProjects, getOverviewScopeStorageKey, matchOverviewSummaryProjectLine, mergeResourceEntry, normalizeOverviewMilestoneStatus, normalizeOverviewPercent, normalizeOverviewRagStatus, normalizeOverviewScope, normalizeOverviewSummaryHeading, normalizeProject, normalizeResourceEntry, normalizeRiskActionRows, normalizeWorkstream, parseIsoDate, projectOwnershipMatchesIdentity, resolveProjectStatusDate, resolveWorkstreamTemplateConfig, validateResourceInput, validateWorkstreamTemplateConfig, validateWorkstreams } from "./js/portfolio-core.mjs";
 import { assertReasonableWeekDocument, buildImportResults, formatImportPreviewRow, importResultsToCsv, mergeReadyImportRows, planImport } from "./js/excel-import.mjs";
 import { applyProjectDelete, applyProjectSave, ensureStableEditorRowId, projectRevisionFingerprint, withProjectEditorRowIds } from "./js/project-mutations.mjs";
@@ -2011,6 +2012,7 @@ let allWeeks = [];
 let currentIdx = -1;
 let currentUser = null;
 let currentRole = 'pm';
+let authSessionGeneration = 0;
 let pendingExcelImportPlan = null;
 let lastExcelImportResults = null;
 let lastExcelImportTargetWeekId = '';
@@ -2109,11 +2111,18 @@ function stopGanttTemplateConfigSubscription() {
   currentGanttTemplateRevision = 0;
 }
 
-async function loadGanttTemplateConfig() {
+async function loadGanttTemplateConfig(authGeneration, authUser) {
+  const ownerUid = authUser?.uid || '';
+  const ownerEmail = getEmailKey(authUser);
+  if (!isAuthInitializationCurrent(
+    authSessionGeneration,
+    authGeneration,
+    currentUser,
+    ownerUid,
+    ownerEmail,
+  )) return false;
   stopGanttTemplateConfigSubscription();
   const generation = ganttTemplateSubscriptionGeneration;
-  const ownerUid = currentUser?.uid || '';
-  const ownerEmail = getEmailKey(currentUser);
   return new Promise(resolve => {
     let settled = false;
     const settle = ready => {
@@ -2126,9 +2135,15 @@ async function loadGanttTemplateConfig() {
     };
     resolvePendingGanttTemplateSubscription = settle;
     const isCurrentSubscription = () => (
-      generation === ganttTemplateSubscriptionGeneration
-      && ownerUid === (currentUser?.uid || '')
-      && ownerEmail === getEmailKey(currentUser)
+      authGeneration === authSessionGeneration
+      && generation === ganttTemplateSubscriptionGeneration
+      && isAuthInitializationCurrent(
+        authSessionGeneration,
+        authGeneration,
+        currentUser,
+        ownerUid,
+        ownerEmail,
+      )
     );
     try {
       ganttTemplateConfigUnsub = onSnapshot(
@@ -3316,6 +3331,7 @@ window.saveNewPassword = async () => {
 };
 
 window.handleLogout = async () => {
+  const logoutGeneration = ++authSessionGeneration;
   clearExcelImportForAuthTransition();
   invalidateProjectEditorSession();
   invalidateGanttTemplateSession();
@@ -3334,10 +3350,21 @@ window.handleLogout = async () => {
   allWeeks = [];
   currentIdx = -1;
   await signOut(auth);
+  if (logoutGeneration !== authSessionGeneration) return;
   hideLoader();
 };
 
 onAuthStateChanged(auth, async user => {
+  const authGeneration = ++authSessionGeneration;
+  const authUid = user?.uid || '';
+  const authEmail = getEmailKey(user);
+  const isCurrentAuthInitialization = () => isAuthInitializationCurrent(
+    authSessionGeneration,
+    authGeneration,
+    currentUser,
+    authUid,
+    authEmail,
+  );
   clearExcelImportForAuthTransition();
   invalidateProjectEditorSession();
   invalidateGanttTemplateSession();
@@ -3350,16 +3377,20 @@ onAuthStateChanged(auth, async user => {
       dot.classList.add('ok');
       dot.title = "Connected as " + user.email;
 
-      const userDoc = await getDoc(doc(db, "users", getEmailKey(user)));
+      const userDoc = await getDoc(doc(db, "users", authEmail));
+      if (!isCurrentAuthInitialization()) return;
       currentRole = getDashboardRole(userDoc);
 
-      const ganttTemplatesReady = await loadGanttTemplateConfig();
-      if (!ganttTemplatesReady || currentUser !== user) return;
-      await fetchDynamicPMList();
+      const ganttTemplatesReady = await loadGanttTemplateConfig(authGeneration, user);
+      if (!isCurrentAuthInitialization() || !ganttTemplatesReady) return;
+      const nextPMList = await fetchDynamicPMList();
+      if (!isCurrentAuthInitialization()) return;
+      PM_LIST = nextPMList;
       setupUI();
       initData();
       startPresenceSystem();
     } catch (e) {
+      if (!isCurrentAuthInitialization()) return;
       console.error("Login initialization failed:", e);
       hideLoader();
       dot.classList.remove('ok');
@@ -3417,11 +3448,11 @@ async function fetchDynamicPMList() {
         pmSet.add(getUserDisplayName(d.id)); 
       }
     });
-    PM_LIST = Array.from(pmSet).sort();
+    return Array.from(pmSet).sort();
   } catch(e) {
     console.warn("Could not load users list, falling back.", e);
     // Fallback list for network issues. Replace with real PM names.
-    PM_LIST = ["Augus", "Bonnie", "Josiah", "Huichong"]; 
+    return ["Augus", "Bonnie", "Josiah", "Huichong"];
   }
 }
 
