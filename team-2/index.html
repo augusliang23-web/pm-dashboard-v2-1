@@ -282,6 +282,7 @@ body {
 #onePageStatusModal .modal { width: min(1120px, 94vw); padding: 24px; overflow-x: hidden; }
 .one-page-status { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
 .one-page-status-header, .one-page-status-gantt, .one-page-status-footer { grid-column: 1 / -1; }
+.one-page-status-gantt { min-width: 0; overflow: hidden; }
 .one-page-status-header { display: flex; justify-content: space-between; gap: 20px; align-items: flex-start; }
 .one-page-status-header h2 { margin: 0 0 6px; overflow-wrap: anywhere; }
 .one-page-status-section { min-width: 0; padding: 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--s2); }
@@ -311,9 +312,13 @@ body {
 .fi:focus { border-color: var(--accent); }
 
 /* Read-Only Project Detail Layout */
-#projDetailOverlay .modal { width: 950px; }
-.detail-grid { display: grid; grid-template-columns: 2fr 1.2fr; gap: 32px; }
+#projDetailOverlay .modal { width: min(1180px, 94vw); }
+.detail-grid { display: grid; grid-template-columns: minmax(260px, .75fr) minmax(0, 1.4fr); gap: 32px; }
+.detail-left, .detail-right { min-width: 0; }
 .detail-right { background: var(--s2); padding: 24px; border-radius: 8px; border: 1px solid var(--border); height: fit-content; }
+@media (max-width: 1100px) {
+  .detail-grid { grid-template-columns: minmax(0, 1fr); }
+}
 
 /* Settings Collapsible Style */
 details > summary { list-style: none; }
