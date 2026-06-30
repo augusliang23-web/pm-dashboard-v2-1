@@ -2066,24 +2066,106 @@ const DEFAULT_TEAM_ROLES = ['PM', 'Technical Lead', 'Firmware Engineer', 'Hardwa
 const DEFAULT_BUDGET_CATEGORIES = ['NRE', 'Sample fee', 'Travel fee', 'Tooling', 'Certification', 'Lab test', 'Component', 'Other'];
 
 // GANTT TEMPLATE SETTINGS
+let ganttTemplateConfigUnsub = null;
+let ganttTemplateSubscriptionGeneration = 0;
+let ganttTemplateSubscriptionReady = false;
+let resolvePendingGanttTemplateSubscription = null;
+let ganttTemplateSessionConflicted = false;
+
 function ganttTemplateSettingsRef() {
   return doc(db, 'dashboardSettings', 'team-2-portfolio');
 }
 
-async function loadGanttTemplateConfig() {
+function applyGanttTemplateSnapshot(snapshot) {
+  const data = snapshot.exists() ? snapshot.data() : {};
+  const nextRevision = Number.isSafeInteger(data.revision) && data.revision >= 0
+    ? data.revision
+    : 0;
+  const nextConfig = resolveWorkstreamTemplateConfig(snapshot.exists() ? snapshot.data() : undefined);
+  const remoteConflict = Boolean(
+    ganttTemplateSession
+    && ganttTemplateSession.revision !== nextRevision
+    && !ganttTemplateSaveInFlight
+    && document.getElementById('ganttTemplateOverlay').classList.contains('open')
+  );
+  currentGanttTemplateConfig = nextConfig;
+  currentGanttTemplateRevision = nextRevision;
+  ganttTemplateSubscriptionReady = true;
+  if (remoteConflict) {
+    ganttTemplateSessionConflicted = true;
+    document.getElementById('ganttTemplateError').textContent =
+      'The defaults changed in another Admin session. Your draft is preserved; close and reopen settings to review the latest version.';
+  }
+}
+
+function stopGanttTemplateConfigSubscription() {
+  ganttTemplateSubscriptionGeneration += 1;
+  if (ganttTemplateConfigUnsub) ganttTemplateConfigUnsub();
+  ganttTemplateConfigUnsub = null;
+  if (resolvePendingGanttTemplateSubscription) resolvePendingGanttTemplateSubscription(false);
+  resolvePendingGanttTemplateSubscription = null;
+  ganttTemplateSubscriptionReady = false;
   currentGanttTemplateConfig = resolveWorkstreamTemplateConfig();
   currentGanttTemplateRevision = 0;
-  try {
-    const snapshot = await getDoc(ganttTemplateSettingsRef());
-    if (!snapshot.exists()) return;
-    const data = snapshot.data();
-    currentGanttTemplateConfig = resolveWorkstreamTemplateConfig(data);
-    currentGanttTemplateRevision = Number.isSafeInteger(data.revision) && data.revision >= 0
-      ? data.revision
-      : 0;
-  } catch (error) {
-    console.warn('Default Gantt template config is unavailable; using built-in defaults.', error);
-  }
+}
+
+async function loadGanttTemplateConfig() {
+  stopGanttTemplateConfigSubscription();
+  const generation = ganttTemplateSubscriptionGeneration;
+  const ownerUid = currentUser?.uid || '';
+  const ownerEmail = getEmailKey(currentUser);
+  return new Promise(resolve => {
+    let settled = false;
+    const settle = ready => {
+      if (settled) return;
+      settled = true;
+      if (resolvePendingGanttTemplateSubscription === settle) {
+        resolvePendingGanttTemplateSubscription = null;
+      }
+      resolve(ready);
+    };
+    resolvePendingGanttTemplateSubscription = settle;
+    const isCurrentSubscription = () => (
+      generation === ganttTemplateSubscriptionGeneration
+      && ownerUid === (currentUser?.uid || '')
+      && ownerEmail === getEmailKey(currentUser)
+    );
+    try {
+      ganttTemplateConfigUnsub = onSnapshot(
+        ganttTemplateSettingsRef(),
+        snapshot => {
+          if (!isCurrentSubscription()) {
+            settle(false);
+            return;
+          }
+          applyGanttTemplateSnapshot(snapshot);
+          settle(true);
+        },
+        error => {
+          if (!isCurrentSubscription()) {
+            settle(false);
+            return;
+          }
+          currentGanttTemplateConfig = resolveWorkstreamTemplateConfig();
+          currentGanttTemplateRevision = 0;
+          ganttTemplateSubscriptionReady = true;
+          if (ganttTemplateSession && !ganttTemplateSaveInFlight) {
+            ganttTemplateSessionConflicted = true;
+            document.getElementById('ganttTemplateError').textContent =
+              'Live defaults are unavailable. Your draft is preserved; close and reopen settings after access is restored.';
+          }
+          console.warn('Default Gantt template config is unavailable; using built-in defaults.', error);
+          settle(true);
+        },
+      );
+    } catch (error) {
+      currentGanttTemplateConfig = resolveWorkstreamTemplateConfig();
+      currentGanttTemplateRevision = 0;
+      ganttTemplateSubscriptionReady = true;
+      console.warn('Default Gantt template subscription could not start; using built-in defaults.', error);
+      settle(true);
+    }
+  });
 }
 
 function ganttTemplateListId(level) {
@@ -2106,6 +2188,7 @@ function isGanttTemplateSessionCurrent(session) {
 
 function invalidateGanttTemplateSession() {
   ganttTemplateSession = null;
+  ganttTemplateSessionConflicted = false;
   ganttTemplateSaveInFlight = false;
   const overlay = document.getElementById('ganttTemplateOverlay');
   if (overlay?.classList.contains('open')) modalReturnFocus = null;
@@ -2160,7 +2243,7 @@ function renderGanttTemplateDraft(config) {
 }
 
 window.openGanttTemplateSettings = () => {
-  if (currentRole !== 'admin' || isAdminVipPreview || ganttTemplateSaveInFlight) return;
+  if (currentRole !== 'admin' || isAdminVipPreview || ganttTemplateSaveInFlight || !ganttTemplateSubscriptionReady) return;
   ganttTemplateSession = Object.freeze({
     token: `gantt-template-${++ganttTemplateSessionSequence}`,
     authUid: currentUser?.uid || '',
@@ -2168,6 +2251,7 @@ window.openGanttTemplateSettings = () => {
     role: currentRole,
     revision: currentGanttTemplateRevision,
   });
+  ganttTemplateSessionConflicted = false;
   renderGanttTemplateDraft(currentGanttTemplateConfig);
   document.getElementById('ganttTemplateError').textContent = '';
   openAccessibleModal(document.getElementById('ganttTemplateOverlay'));
@@ -2205,6 +2289,11 @@ window.deleteGanttTemplateRow = button => {
 window.saveGanttTemplateSettings = async () => {
   const session = ganttTemplateSession;
   if (currentRole !== 'admin' || !isGanttTemplateSessionCurrent(session) || ganttTemplateSaveInFlight) return;
+  if (ganttTemplateSessionConflicted) {
+    document.getElementById('ganttTemplateError').textContent =
+      'The live defaults changed. Close and reopen settings before saving a new draft.';
+    return;
+  }
   const validation = validateWorkstreamTemplateConfig(collectGanttTemplateDraft());
   if (!validation.valid) {
     const labels = { system: 'System', 'hardware-module': 'Hardware Module' };
@@ -3230,6 +3319,7 @@ window.handleLogout = async () => {
   clearExcelImportForAuthTransition();
   invalidateProjectEditorSession();
   invalidateGanttTemplateSession();
+  stopGanttTemplateConfigSubscription();
   showLoader("Logging out...");
   stopPresenceSystem();
   if (weeksUnsub) {
@@ -3251,6 +3341,7 @@ onAuthStateChanged(auth, async user => {
   clearExcelImportForAuthTransition();
   invalidateProjectEditorSession();
   invalidateGanttTemplateSession();
+  stopGanttTemplateConfigSubscription();
   const dot = document.getElementById('syncDot');
   if (user) {
     try {
@@ -3262,7 +3353,8 @@ onAuthStateChanged(auth, async user => {
       const userDoc = await getDoc(doc(db, "users", getEmailKey(user)));
       currentRole = getDashboardRole(userDoc);
 
-      await loadGanttTemplateConfig();
+      const ganttTemplatesReady = await loadGanttTemplateConfig();
+      if (!ganttTemplatesReady || currentUser !== user) return;
       await fetchDynamicPMList();
       setupUI();
       initData();
@@ -6227,6 +6319,10 @@ function showExcelImportResults(results, message, targetWeekId) {
 }
 window.executeConfirmedExcelImport = async () => {
   if (excelImportInFlight) return;
+  if (!ganttTemplateSubscriptionReady) {
+    document.getElementById('excelImportError').textContent = 'Default Gantt templates are still loading. Try again.';
+    return;
+  }
   const plan = pendingExcelImportPlan;
   const acknowledged = document.getElementById('importConfirmationAcknowledged').checked;
   if (!acknowledged || !isPendingExcelImportCurrent(plan)) {
@@ -6938,6 +7034,7 @@ function invalidateProjectEditorSession() {
 window.openProjEdit = (code, isNew = false) => {
   const existingProject = allWeeks[currentIdx]?.projects.find(project => project.code === code);
   if (!isNew && !existingProject) return;
+  if (isNew && !ganttTemplateSubscriptionReady) return;
   if (isNew ? currentRole !== 'admin' : !canEditProject(existingProject)) return;
   isCreatingNew = isNew;
   editingProjCode = code;

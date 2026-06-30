@@ -48,6 +48,68 @@ test('template config loads with fallback and saves through a revision-checked t
   assert.ok(dashboard.includes('revision: liveRevision + 1'));
 });
 
+test('authenticated setup subscribes to multi-session template updates before enabling the dashboard', () => {
+  const start = dashboard.indexOf('// GANTT TEMPLATE SETTINGS');
+  const end = dashboard.indexOf('// END GANTT TEMPLATE SETTINGS', start);
+  const source = dashboard.slice(start, end);
+  assert.ok(source.includes('let ganttTemplateConfigUnsub = null;'));
+  assert.ok(source.includes('let ganttTemplateSubscriptionGeneration = 0;'));
+  assert.ok(source.includes('ganttTemplateConfigUnsub = onSnapshot('));
+  assert.ok(source.includes('applyGanttTemplateSnapshot(snapshot)'));
+  assert.ok(source.includes('resolveWorkstreamTemplateConfig(snapshot.exists() ? snapshot.data() : undefined)'));
+  assert.ok(source.includes('ganttTemplateSubscriptionReady = true;'));
+
+  const authStart = dashboard.indexOf('onAuthStateChanged(auth, async user =>');
+  const setupStart = dashboard.indexOf('function setupUI()', authStart);
+  const authSource = dashboard.slice(authStart, setupStart);
+  assert.ok(authSource.includes('stopGanttTemplateConfigSubscription();'));
+  assert.ok(authSource.includes('await loadGanttTemplateConfig();'));
+  assert.ok(
+    authSource.indexOf('await loadGanttTemplateConfig();')
+      < authSource.indexOf('setupUI();'),
+  );
+});
+
+test('subscription teardown resets defaults and cannot leak callbacks across auth sessions', () => {
+  const start = dashboard.indexOf('// GANTT TEMPLATE SETTINGS');
+  const end = dashboard.indexOf('// END GANTT TEMPLATE SETTINGS', start);
+  const source = dashboard.slice(start, end);
+  const stopStart = source.indexOf('function stopGanttTemplateConfigSubscription()');
+  const stopEnd = source.indexOf('async function loadGanttTemplateConfig()', stopStart);
+  const stopSource = source.slice(stopStart, stopEnd);
+  assert.ok(stopStart >= 0 && stopEnd > stopStart);
+  assert.ok(stopSource.includes('ganttTemplateSubscriptionGeneration += 1;'));
+  assert.ok(stopSource.includes('ganttTemplateConfigUnsub();'));
+  assert.ok(stopSource.includes('ganttTemplateConfigUnsub = null;'));
+  assert.ok(stopSource.includes('currentGanttTemplateConfig = resolveWorkstreamTemplateConfig();'));
+  assert.ok(stopSource.includes('currentGanttTemplateRevision = 0;'));
+  assert.ok(source.includes('generation === ganttTemplateSubscriptionGeneration'));
+  assert.ok(source.includes("ownerUid === (currentUser?.uid || '')"));
+  assert.ok(source.includes('ownerEmail === getEmailKey(currentUser)'));
+
+  const logoutStart = dashboard.indexOf('window.handleLogout = async () =>');
+  const authStart = dashboard.indexOf('onAuthStateChanged(auth, async user =>', logoutStart);
+  assert.ok(dashboard.slice(logoutStart, authStart).includes('stopGanttTemplateConfigSubscription();'));
+});
+
+test('remote template revisions preserve an open draft and require reopening it', () => {
+  const start = dashboard.indexOf('// GANTT TEMPLATE SETTINGS');
+  const end = dashboard.indexOf('// END GANTT TEMPLATE SETTINGS', start);
+  const source = dashboard.slice(start, end);
+  const applyStart = source.indexOf('function applyGanttTemplateSnapshot(');
+  const applyEnd = source.indexOf('function stopGanttTemplateConfigSubscription()', applyStart);
+  const applySource = source.slice(applyStart, applyEnd);
+  assert.ok(applyStart >= 0 && applyEnd > applyStart);
+  assert.ok(applySource.includes('ganttTemplateSession.revision !== nextRevision'));
+  assert.ok(applySource.includes('ganttTemplateSessionConflicted = true;'));
+  assert.match(applySource, /another Admin session[\s\S]+close and reopen/i);
+  assert.doesNotMatch(applySource, /renderGanttTemplateDraft/);
+
+  const saveStart = source.indexOf('window.saveGanttTemplateSettings');
+  const saveSource = source.slice(saveStart);
+  assert.ok(saveSource.includes('if (ganttTemplateSessionConflicted)'));
+});
+
 test('failed template saves keep the draft modal open and surface an error', () => {
   const start = dashboard.indexOf('window.saveGanttTemplateSettings');
   const end = dashboard.indexOf('// END GANTT TEMPLATE SETTINGS', start);
@@ -64,6 +126,10 @@ test('manual creation, untouched level changes, and confirmed imports use loaded
   assert.ok(dashboard.includes('if (newProjectScheduleUntouched'));
   assert.ok(dashboard.includes('templateConfig,'));
   assert.ok(dashboard.includes('const templateConfig = currentGanttTemplateConfig;'));
+  assert.ok(dashboard.includes('if (isNew && !ganttTemplateSubscriptionReady) return;'));
+  const importStart = dashboard.indexOf('window.executeConfirmedExcelImport');
+  const importEnd = dashboard.indexOf('// END EXCEL IMPORT', importStart);
+  assert.ok(dashboard.slice(importStart, importEnd).includes('if (!ganttTemplateSubscriptionReady)'));
 });
 
 test('saving new defaults never rewrites existing project schedules', () => {
