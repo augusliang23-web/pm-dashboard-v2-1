@@ -1563,6 +1563,7 @@ let isOverview = false;
 const isVipPerspective = () => currentRole === 'vip' || (currentRole === 'admin' && isAdminVipPreview);
 let editingProjCode = null;
 let isCreatingNew = false;
+const PROJECT_MEMBER_TBD = 'TBD';
 let PM_LIST = []; 
 let jumpToLatestOnNextRender = false;
 let releaseWriteInProgress = false;
@@ -2673,9 +2674,11 @@ function canEditProject(proj) {
   
   const owner = (proj.owner || "").toLowerCase();
   const deputy = (proj.deputy || "").toLowerCase();
+  const assignedOwner = owner === PROJECT_MEMBER_TBD.toLowerCase() ? "" : owner;
+  const assignedDeputy = deputy === PROJECT_MEMBER_TBD.toLowerCase() ? "" : deputy;
   const userAlias = aliasMap[userPrefix] || userPrefix;
   
-  return owner.includes(userPrefix) || owner.includes(userAlias) || deputy.includes(userPrefix) || deputy.includes(userAlias);
+  return assignedOwner.includes(userPrefix) || assignedOwner.includes(userAlias) || assignedDeputy.includes(userPrefix) || assignedDeputy.includes(userAlias);
 }
 
 function formatBullets(text) {
@@ -4429,8 +4432,8 @@ window.openProjEdit = (code, isNew = false) => {
   document.getElementById('pe_name').value = p.name || '';
   document.getElementById('pe_code').value = p.code || '';
   
-  const safeOwners = [...new Set([...PM_LIST, p.owner])].filter(Boolean);
-  const safeDeputys = [...new Set([...PM_LIST, p.deputy])].filter(Boolean);
+  const safeOwners = [...new Set([PROJECT_MEMBER_TBD, ...PM_LIST, p.owner])].filter(Boolean);
+  const safeDeputys = [...new Set([PROJECT_MEMBER_TBD, ...PM_LIST, p.deputy])].filter(Boolean);
   
   document.getElementById('pe_owner').innerHTML = safeOwners.map(m => `<option ${p.owner===m?'selected':''}>${m}</option>`).join('');
   document.getElementById('pe_deputy').innerHTML = safeDeputys.map(m => `<option ${p.deputy===m?'selected':''}>${m}</option>`).join('');
