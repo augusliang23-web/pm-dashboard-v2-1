@@ -387,6 +387,46 @@ test('imported projects receive stable level-specific default Gantt schedules', 
   );
 });
 
+test('confirmed imports use the current injected Gantt templates without changing existing projects', () => {
+  const timestamp = '2026-06-29T12:00:00.000Z';
+  const existing = {
+    code: 'EXISTING',
+    name: 'Existing project',
+    projectLevel: 'system',
+    ganttWorkstreams: [{ id: 'existing-phase', name: 'Do not replace' }],
+  };
+  const before = structuredClone(existing);
+  const rows = [
+    normalizeImportRow({
+      'Project ID/Code': 'NEW-SYSTEM',
+      'Project Name': 'New system',
+      'Project Level': 'system',
+    }),
+    normalizeImportRow({
+      'Project ID/Code': 'NEW-MODULE',
+      'Project Name': 'New module',
+      'Project Level': 'hardware-module',
+    }),
+  ];
+  const templateConfig = {
+    system: ['Architecture', 'Release'],
+    'hardware-module': ['Layout', 'EVT', 'DVT'],
+  };
+
+  const merged = mergeReadyImportRows([existing], rows, { timestamp, templateConfig });
+
+  assert.equal(merged.projects[0], existing);
+  assert.deepEqual(existing, before);
+  assert.deepEqual(
+    merged.projects[1].ganttWorkstreams.map(workstream => workstream.name),
+    ['Architecture', 'Release'],
+  );
+  assert.deepEqual(
+    merged.projects[2].ganttWorkstreams.map(workstream => workstream.name),
+    ['Layout', 'EVT', 'DVT'],
+  );
+});
+
 test('imported projects preserve explicit Gantt schedule data', () => {
   const row = normalizeImportRow({
     'Project ID/Code': 'EXPLICIT-SCHEDULE',

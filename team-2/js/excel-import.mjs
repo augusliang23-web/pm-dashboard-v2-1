@@ -219,11 +219,11 @@ function warningText(row) {
   return Array.isArray(row?.warnings) ? row.warnings.join(' | ') : '';
 }
 
-function prepareImportedProject(row, timestamp, confirmPmoCompleted) {
+function prepareImportedProject(row, timestamp, confirmPmoCompleted, templateConfig) {
   const hasImportedSchedule = Array.isArray(row?.project?.ganttWorkstreams);
   const project = normalizeProject(row.project);
   if (!hasImportedSchedule) {
-    project.ganttWorkstreams = createDefaultWorkstreams(project.projectLevel);
+    project.ganttWorkstreams = createDefaultWorkstreams(project.projectLevel, templateConfig);
   }
   const pmoCompleted = row.pmoCompletedHoursPending;
   if (confirmPmoCompleted && Number.isFinite(pmoCompleted)) {
@@ -268,6 +268,7 @@ export function mergeReadyImportRows(currentProjects = [], readyRows = [], optio
     maxBytes = MAX_IMPORT_WEEK_BYTES,
     maxProjects = MAX_IMPORT_WEEK_PROJECTS,
     timestamp,
+    templateConfig,
   } = options;
   if (!timestamp || Number.isNaN(Date.parse(timestamp))) {
     throw new Error('A valid ISO import timestamp is required.');
@@ -293,7 +294,7 @@ export function mergeReadyImportRows(currentProjects = [], readyRows = [], optio
       });
       continue;
     }
-    projects.push(prepareImportedProject(row, timestamp, confirmPmoCompleted));
+    projects.push(prepareImportedProject(row, timestamp, confirmPmoCompleted, templateConfig));
     liveCodes.add(normalizedId);
     results.push({
       rowNumber: row?.rowNumber ?? '',

@@ -30,7 +30,7 @@ const OVERVIEW_RAG_STATUSES = new Set(['green', 'yellow', 'red']);
 const OVERVIEW_MILESTONE_STATUSES = new Set(['planned', 'to-do', 'in-progress', 'done', 'at-risk']);
 const RESOURCE_DISCIPLINE_SET = new Set(RESOURCE_DISCIPLINES);
 const WORKSTREAM_STATUSES = new Set(['not-started', 'on-track', 'at-risk', 'delayed', 'completed']);
-const WORKSTREAM_TEMPLATES = Object.freeze({
+export const BUILT_IN_WORKSTREAM_TEMPLATES = Object.freeze({
   [PROJECT_LEVEL.SYSTEM]: Object.freeze(['Design', 'Integration', 'Validation', 'Certification', 'Launch']),
   [PROJECT_LEVEL.HARDWARE_MODULE]: Object.freeze(['Documentation', 'BOM Verification', 'Procurement', 'Assembly/Test', 'Certification']),
 });
@@ -170,9 +170,53 @@ export function mergeResourceEntry(previousSource, estimated, actual, changedAt)
   };
 }
 
-export function createDefaultWorkstreams(projectLevel) {
+function validateWorkstreamTemplateNames(source) {
+  const names = Array.isArray(source) ? source.map(name => String(name ?? '').trim()) : [];
+  const errors = [];
+  if (names.length < 1) errors.push('Add at least 1 workstream.');
+  if (names.length > 20) errors.push('Use no more than 20 workstreams.');
+  if (names.some(name => !name)) errors.push('Workstream names cannot be blank.');
+  const comparable = names.filter(Boolean).map(name => name.toLocaleLowerCase());
+  if (new Set(comparable).size !== comparable.length) {
+    errors.push('Workstream names must be unique within this template (case-insensitive).');
+  }
+  return { names, errors };
+}
+
+export function validateWorkstreamTemplateConfig(source = {}) {
+  const config = {};
+  const errors = {};
+  for (const level of Object.values(PROJECT_LEVEL)) {
+    const result = validateWorkstreamTemplateNames(source?.[level]);
+    config[level] = result.names;
+    if (result.errors.length) errors[level] = result.errors;
+  }
+  return {
+    valid: Object.keys(errors).length === 0,
+    errors,
+    config,
+  };
+}
+
+export function resolveWorkstreamTemplateConfig(source) {
+  const result = validateWorkstreamTemplateConfig(source);
+  const selected = result.valid ? result.config : BUILT_IN_WORKSTREAM_TEMPLATES;
+  return {
+    [PROJECT_LEVEL.SYSTEM]: [...selected[PROJECT_LEVEL.SYSTEM]],
+    [PROJECT_LEVEL.HARDWARE_MODULE]: [...selected[PROJECT_LEVEL.HARDWARE_MODULE]],
+  };
+}
+
+export function createDefaultWorkstreams(projectLevel, templateConfigOrNames) {
   const level = PROJECT_LEVELS.has(projectLevel) ? projectLevel : PROJECT_LEVEL.SYSTEM;
-  return WORKSTREAM_TEMPLATES[level].map((name, index) => normalizeWorkstream({ name }, index));
+  let names;
+  if (Array.isArray(templateConfigOrNames)) {
+    const direct = validateWorkstreamTemplateNames(templateConfigOrNames);
+    names = direct.errors.length ? BUILT_IN_WORKSTREAM_TEMPLATES[level] : direct.names;
+  } else {
+    names = resolveWorkstreamTemplateConfig(templateConfigOrNames)[level];
+  }
+  return names.map((name, index) => normalizeWorkstream({ name }, index));
 }
 
 export function normalizeWorkstream(source = {}, index = 0) {

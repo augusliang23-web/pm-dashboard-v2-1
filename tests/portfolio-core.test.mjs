@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  BUILT_IN_WORKSTREAM_TEMPLATES,
   PROJECT_LEVEL,
   PROJECT_LIFECYCLE,
   calculateDropIndex,
@@ -29,6 +30,7 @@ import {
   projectOwnershipMatchesIdentity,
   resolveProjectStatusDate,
   validateResourceInput,
+  validateWorkstreamTemplateConfig,
   validateWorkstreams,
 } from '../team-2/js/portfolio-core.mjs';
 
@@ -638,6 +640,73 @@ test('createDefaultWorkstreams returns independent templates for each project le
   systems[0].name = 'Changed';
   assert.equal(secondSystems[0].name, 'Design');
   assert.notStrictEqual(systems, secondSystems);
+});
+
+test('workstream template validation trims names and rejects blank, duplicate, and out-of-range lists', () => {
+  const valid = validateWorkstreamTemplateConfig({
+    system: [' Discovery ', 'Build'],
+    'hardware-module': ['Schematic', 'Prototype'],
+  });
+  assert.deepEqual(valid, {
+    valid: true,
+    errors: {},
+    config: {
+      system: ['Discovery', 'Build'],
+      'hardware-module': ['Schematic', 'Prototype'],
+    },
+  });
+
+  const invalid = validateWorkstreamTemplateConfig({
+    system: ['Design', ' design ', ''],
+    'hardware-module': Array.from({ length: 21 }, (_, index) => `Phase ${index + 1}`),
+  });
+  assert.equal(invalid.valid, false);
+  assert.match(invalid.errors.system.join(' '), /blank/i);
+  assert.match(invalid.errors.system.join(' '), /unique/i);
+  assert.match(invalid.errors['hardware-module'].join(' '), /20/);
+
+  const empty = validateWorkstreamTemplateConfig({
+    system: [],
+    'hardware-module': ['Assembly'],
+  });
+  assert.match(empty.errors.system.join(' '), /at least 1/i);
+});
+
+test('createDefaultWorkstreams accepts validated config or names and falls back safely', () => {
+  const config = {
+    system: ['Discover', 'Deliver'],
+    'hardware-module': ['Schematic', 'Prototype'],
+  };
+  const configured = createDefaultWorkstreams(PROJECT_LEVEL.SYSTEM, config);
+  const configuredAgain = createDefaultWorkstreams(PROJECT_LEVEL.SYSTEM, config);
+  const directNames = createDefaultWorkstreams(PROJECT_LEVEL.HARDWARE_MODULE, ['Layout', 'EVT']);
+  assert.deepEqual(configured.map(row => row.name), ['Discover', 'Deliver']);
+  assert.deepEqual(directNames.map(row => row.name), ['Layout', 'EVT']);
+  assert.deepEqual(configured.map(row => row.id), ['workstream-1', 'workstream-2']);
+  assert.notStrictEqual(configured, configuredAgain);
+
+  configured[0].name = 'Changed';
+  assert.equal(configuredAgain[0].name, 'Discover');
+  config.system[0] = 'Mutated';
+  assert.equal(configuredAgain[0].name, 'Discover');
+  assert.deepEqual(
+    createDefaultWorkstreams(PROJECT_LEVEL.SYSTEM, {
+      system: ['Discover', 'Deliver'],
+      'hardware-module': ['Schematic', 'Prototype'],
+    }).map(row => row.name),
+    ['Discover', 'Deliver'],
+  );
+  assert.deepEqual(
+    createDefaultWorkstreams(PROJECT_LEVEL.SYSTEM, {
+      system: ['Same', ' same '],
+      'hardware-module': ['Valid'],
+    }).map(row => row.name),
+    BUILT_IN_WORKSTREAM_TEMPLATES.system,
+  );
+  assert.notStrictEqual(
+    createDefaultWorkstreams(PROJECT_LEVEL.SYSTEM),
+    createDefaultWorkstreams(PROJECT_LEVEL.SYSTEM),
+  );
 });
 
 test('normalizeWorkstream supplies safe defaults and preserves a stable identity', () => {

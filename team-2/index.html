@@ -158,6 +158,16 @@ body {
 .import-confirmation label { display:flex; align-items:flex-start; gap:8px; margin-top:10px; }
 .import-confirmation input { margin-top:3px; flex:0 0 auto; }
 .import-result { min-height:18px; margin-top:12px; font-size:12px; font-weight:600; }
+.gantt-template-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+.gantt-template-panel { padding:14px; border:1px solid var(--border); border-radius:9px; background:var(--s2); }
+.gantt-template-panel h4 { margin:0 0 5px; font-size:13px; }
+.gantt-template-note { margin:0 0 12px; color:var(--muted); font-size:11px; line-height:1.45; }
+.gantt-template-list { display:flex; flex-direction:column; gap:7px; }
+.gantt-template-row { display:grid; grid-template-columns:minmax(0,1fr) 32px 32px 34px; gap:6px; align-items:center; }
+.gantt-template-row .fi { min-width:0; }
+.gantt-template-row button { min-height:32px; border:1px solid var(--border2); border-radius:6px; background:#fff; color:var(--text-light); cursor:pointer; }
+.gantt-template-row button:hover { background:var(--s3); color:var(--text); }
+@media (max-width: 720px) { .gantt-template-grid { grid-template-columns:1fr; } }
 
 /* Compact Icons */
 .btn-icon {
@@ -1461,6 +1471,9 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
       <button id="importExcelBtn" class="btn-icon admin-only" style="display:none;" onclick="openExcelImport()" title="Import Excel" aria-label="Import Excel">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
       </button>
+      <button id="ganttTemplateSettingsBtn" class="btn-icon admin-only" style="display:none;" onclick="openGanttTemplateSettings()" title="Default Gantt Templates" aria-label="Manage default Gantt templates">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.6v-.2h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1z"/></svg>
+      </button>
     </div>
     
     <div class="user-block">
@@ -1952,8 +1965,37 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
   </div>
 </div>
 
+<div class="overlay" id="ganttTemplateOverlay" role="dialog" aria-modal="true" aria-labelledby="ganttTemplateTitle">
+  <div class="modal" style="width:820px">
+    <div class="modal-hdr">
+      <h3 id="ganttTemplateTitle">Default Gantt Templates</h3>
+      <button id="closeGanttTemplateXBtn" class="modal-x" onclick="closeModal('ganttTemplateOverlay')" aria-label="Close default Gantt templates">×</button>
+    </div>
+    <p class="gantt-template-note">These defaults apply only when a new project or confirmed import receives a schedule. Existing project schedules are never changed.</p>
+    <div class="gantt-template-grid">
+      <section class="gantt-template-panel" aria-labelledby="systemTemplateHeading">
+        <h4 id="systemTemplateHeading">System</h4>
+        <p class="gantt-template-note">Between 1 and 20 unique names.</p>
+        <div id="systemTemplateList" class="gantt-template-list"></div>
+        <button class="btn btn-ghost" type="button" onclick="addGanttTemplateRow('system')" style="width:100%; margin-top:10px;">+ Add workstream</button>
+      </section>
+      <section class="gantt-template-panel" aria-labelledby="hardwareModuleTemplateHeading">
+        <h4 id="hardwareModuleTemplateHeading">Hardware Module</h4>
+        <p class="gantt-template-note">Between 1 and 20 unique names.</p>
+        <div id="hardwareModuleTemplateList" class="gantt-template-list"></div>
+        <button class="btn btn-ghost" type="button" onclick="addGanttTemplateRow('hardware-module')" style="width:100%; margin-top:10px;">+ Add workstream</button>
+      </section>
+    </div>
+    <div id="ganttTemplateError" class="import-error" role="alert" aria-live="assertive"></div>
+    <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px;">
+      <button id="cancelGanttTemplateBtn" class="btn btn-ghost" type="button" onclick="closeModal('ganttTemplateOverlay')">Cancel</button>
+      <button id="saveGanttTemplateBtn" class="btn btn-primary" type="button" onclick="saveGanttTemplateSettings()">Save Defaults</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
-import { RESOURCE_DISCIPLINES, calculateDropIndex, createDefaultWorkstreams, createTimelineTicks, filterOverviewSummaryLines, filterProjects, filterRoleVisibleProjects, getFocusTrapIndex, getOverviewProjectBadgeLabel, getOverviewProjects, getOverviewScopeStorageKey, matchOverviewSummaryProjectLine, mergeResourceEntry, normalizeOverviewMilestoneStatus, normalizeOverviewPercent, normalizeOverviewRagStatus, normalizeOverviewScope, normalizeOverviewSummaryHeading, normalizeProject, normalizeResourceEntry, normalizeRiskActionRows, normalizeWorkstream, parseIsoDate, projectOwnershipMatchesIdentity, resolveProjectStatusDate, validateResourceInput, validateWorkstreams } from "./js/portfolio-core.mjs";
+import { RESOURCE_DISCIPLINES, calculateDropIndex, createDefaultWorkstreams, createTimelineTicks, filterOverviewSummaryLines, filterProjects, filterRoleVisibleProjects, getFocusTrapIndex, getOverviewProjectBadgeLabel, getOverviewProjects, getOverviewScopeStorageKey, matchOverviewSummaryProjectLine, mergeResourceEntry, normalizeOverviewMilestoneStatus, normalizeOverviewPercent, normalizeOverviewRagStatus, normalizeOverviewScope, normalizeOverviewSummaryHeading, normalizeProject, normalizeResourceEntry, normalizeRiskActionRows, normalizeWorkstream, parseIsoDate, projectOwnershipMatchesIdentity, resolveProjectStatusDate, resolveWorkstreamTemplateConfig, validateResourceInput, validateWorkstreamTemplateConfig, validateWorkstreams } from "./js/portfolio-core.mjs";
 import { assertReasonableWeekDocument, buildImportResults, formatImportPreviewRow, importResultsToCsv, mergeReadyImportRows, planImport } from "./js/excel-import.mjs";
 import { applyProjectDelete, applyProjectSave, ensureStableEditorRowId, projectRevisionFingerprint, withProjectEditorRowIds } from "./js/project-mutations.mjs";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -1999,6 +2041,12 @@ let projectEditorSession = null;
 let projectEditorSessionSequence = 0;
 let projectEditorRowSequence = 0;
 let newProjectScheduleUntouched = false;
+let currentGanttTemplateConfig = resolveWorkstreamTemplateConfig();
+let currentGanttTemplateRevision = 0;
+let ganttTemplateSession = null;
+let ganttTemplateSessionSequence = 0;
+let ganttTemplateSaveInFlight = false;
+let modalReturnFocus = null;
 let ganttScale = 'month';
 let editorResourceStatus = normalizeResourceBudgetStatus({});
 let resourceEditorHydrating = false;
@@ -2016,6 +2064,198 @@ let fxRates = {
 const SUPPORTED_CURRENCIES = ['USD', 'TWD', 'SGD'];
 const DEFAULT_TEAM_ROLES = ['PM', 'Technical Lead', 'Firmware Engineer', 'Hardware Engineer', 'Mechanical Engineer', 'QA / Validation', 'Sourcing', 'Manufacturing Engineer'];
 const DEFAULT_BUDGET_CATEGORIES = ['NRE', 'Sample fee', 'Travel fee', 'Tooling', 'Certification', 'Lab test', 'Component', 'Other'];
+
+// GANTT TEMPLATE SETTINGS
+function ganttTemplateSettingsRef() {
+  return doc(db, 'dashboardSettings', 'team-2-portfolio');
+}
+
+async function loadGanttTemplateConfig() {
+  currentGanttTemplateConfig = resolveWorkstreamTemplateConfig();
+  currentGanttTemplateRevision = 0;
+  try {
+    const snapshot = await getDoc(ganttTemplateSettingsRef());
+    if (!snapshot.exists()) return;
+    const data = snapshot.data();
+    currentGanttTemplateConfig = resolveWorkstreamTemplateConfig(data);
+    currentGanttTemplateRevision = Number.isSafeInteger(data.revision) && data.revision >= 0
+      ? data.revision
+      : 0;
+  } catch (error) {
+    console.warn('Default Gantt template config is unavailable; using built-in defaults.', error);
+  }
+}
+
+function ganttTemplateListId(level) {
+  return level === 'hardware-module' ? 'hardwareModuleTemplateList' : 'systemTemplateList';
+}
+
+function isGanttTemplateSessionCurrent(session) {
+  return Boolean(
+    session
+    && ganttTemplateSession === session
+    && session.token === ganttTemplateSession.token
+    && session.authUid === (currentUser?.uid || '')
+    && session.authEmail === getEmailKey(currentUser)
+    && session.role === currentRole
+    && currentRole === 'admin'
+    && !isAdminVipPreview
+    && document.getElementById('ganttTemplateOverlay').classList.contains('open')
+  );
+}
+
+function invalidateGanttTemplateSession() {
+  ganttTemplateSession = null;
+  ganttTemplateSaveInFlight = false;
+  const overlay = document.getElementById('ganttTemplateOverlay');
+  if (overlay?.classList.contains('open')) modalReturnFocus = null;
+  overlay?.classList.remove('open');
+  document.getElementById('systemTemplateList')?.replaceChildren();
+  document.getElementById('hardwareModuleTemplateList')?.replaceChildren();
+  const error = document.getElementById('ganttTemplateError');
+  if (error) error.textContent = '';
+  setGanttTemplateControlsDisabled(false);
+}
+
+function setGanttTemplateControlsDisabled(disabled) {
+  document.getElementById('ganttTemplateOverlay')
+    ?.querySelectorAll('button, input')
+    .forEach(control => { control.disabled = disabled; });
+}
+
+function renderGanttTemplateRow(level, name = '') {
+  const container = document.getElementById(ganttTemplateListId(level));
+  if (!container) return;
+  const row = document.createElement('div');
+  row.className = 'gantt-template-row';
+  row.dataset.templateLevel = level;
+  row.innerHTML = `
+    <input class="fi gantt-template-name" value="${escHtml(name)}" aria-label="${level === 'system' ? 'System' : 'Hardware Module'} workstream name">
+    <button type="button" aria-label="Move workstream up" title="Move up" onclick="moveGanttTemplateRow(this, -1)">↑</button>
+    <button type="button" aria-label="Move workstream down" title="Move down" onclick="moveGanttTemplateRow(this, 1)">↓</button>
+    <button type="button" aria-label="Delete workstream" title="Delete" onclick="deleteGanttTemplateRow(this)">×</button>`;
+  row.querySelector('input').addEventListener('input', () => {
+    document.getElementById('ganttTemplateError').textContent = '';
+  });
+  container.appendChild(row);
+}
+
+function collectGanttTemplateDraft() {
+  const names = level => Array.from(
+    document.getElementById(ganttTemplateListId(level)).querySelectorAll('.gantt-template-name'),
+    input => input.value,
+  );
+  return {
+    system: names('system'),
+    'hardware-module': names('hardware-module'),
+  };
+}
+
+function renderGanttTemplateDraft(config) {
+  document.getElementById('systemTemplateList').replaceChildren();
+  document.getElementById('hardwareModuleTemplateList').replaceChildren();
+  for (const level of ['system', 'hardware-module']) {
+    config[level].forEach(name => renderGanttTemplateRow(level, name));
+  }
+}
+
+window.openGanttTemplateSettings = () => {
+  if (currentRole !== 'admin' || isAdminVipPreview || ganttTemplateSaveInFlight) return;
+  ganttTemplateSession = Object.freeze({
+    token: `gantt-template-${++ganttTemplateSessionSequence}`,
+    authUid: currentUser?.uid || '',
+    authEmail: getEmailKey(currentUser),
+    role: currentRole,
+    revision: currentGanttTemplateRevision,
+  });
+  renderGanttTemplateDraft(currentGanttTemplateConfig);
+  document.getElementById('ganttTemplateError').textContent = '';
+  openAccessibleModal(document.getElementById('ganttTemplateOverlay'));
+};
+
+window.addGanttTemplateRow = level => {
+  const session = ganttTemplateSession;
+  if (currentRole !== 'admin' || !isGanttTemplateSessionCurrent(session)) return;
+  const container = document.getElementById(ganttTemplateListId(level));
+  if (!container || container.children.length >= 20) {
+    document.getElementById('ganttTemplateError').textContent = 'Each template can contain no more than 20 workstreams.';
+    return;
+  }
+  renderGanttTemplateRow(level);
+  container.lastElementChild?.querySelector('input')?.focus();
+};
+
+window.moveGanttTemplateRow = (button, direction) => {
+  const session = ganttTemplateSession;
+  if (currentRole !== 'admin' || !isGanttTemplateSessionCurrent(session)) return;
+  const row = button.closest('.gantt-template-row');
+  const sibling = direction < 0 ? row?.previousElementSibling : row?.nextElementSibling;
+  if (!row || !sibling) return;
+  if (direction < 0) row.parentElement.insertBefore(row, sibling);
+  else row.parentElement.insertBefore(sibling, row);
+  button.focus();
+};
+
+window.deleteGanttTemplateRow = button => {
+  const session = ganttTemplateSession;
+  if (currentRole !== 'admin' || !isGanttTemplateSessionCurrent(session)) return;
+  button.closest('.gantt-template-row')?.remove();
+};
+
+window.saveGanttTemplateSettings = async () => {
+  const session = ganttTemplateSession;
+  if (currentRole !== 'admin' || !isGanttTemplateSessionCurrent(session) || ganttTemplateSaveInFlight) return;
+  const validation = validateWorkstreamTemplateConfig(collectGanttTemplateDraft());
+  if (!validation.valid) {
+    const labels = { system: 'System', 'hardware-module': 'Hardware Module' };
+    document.getElementById('ganttTemplateError').textContent = Object.entries(validation.errors)
+      .flatMap(([level, errors]) => errors.map(error => `${labels[level]}: ${error}`))
+      .join(' ');
+    return;
+  }
+
+  ganttTemplateSaveInFlight = true;
+  setGanttTemplateControlsDisabled(true);
+  document.getElementById('ganttTemplateError').textContent = '';
+  try {
+    const settingsRef = doc(db, 'dashboardSettings', 'team-2-portfolio');
+    const savedRevision = await runTransaction(db, async transaction => {
+      const snapshot = await transaction.get(settingsRef);
+      const liveData = snapshot.exists() ? snapshot.data() : {};
+      const liveRevision = Number.isSafeInteger(liveData.revision) && liveData.revision >= 0
+        ? liveData.revision
+        : 0;
+      if (liveRevision !== session.revision) {
+        throw new Error('These defaults changed in another Admin session. Reload the dashboard to review the latest version.');
+      }
+      if (currentRole !== 'admin' || !isGanttTemplateSessionCurrent(session)) {
+        throw new Error('Authorization changed. Reopen settings as an Admin.');
+      }
+      transaction.set(settingsRef, {
+        ...validation.config,
+        revision: liveRevision + 1,
+        updatedBy: getEmailKey(currentUser),
+        updatedAt: serverTimestamp(),
+      }, { merge: true });
+      return liveRevision + 1;
+    }, { maxAttempts: 1 });
+
+    if (!isGanttTemplateSessionCurrent(session)) return;
+    currentGanttTemplateConfig = resolveWorkstreamTemplateConfig(validation.config);
+    currentGanttTemplateRevision = savedRevision;
+    ganttTemplateSaveInFlight = false;
+    ganttTemplateSession = null;
+    closeModal('ganttTemplateOverlay');
+    showSaveToast('Default Gantt templates updated');
+  } catch (error) {
+    if (!isGanttTemplateSessionCurrent(session)) return;
+    const message = error instanceof Error ? error.message : 'The default templates could not be saved.';
+    document.getElementById('ganttTemplateError').textContent = `${message} Your draft is still open.`;
+    ganttTemplateSaveInFlight = false;
+    setGanttTemplateControlsDisabled(false);
+  }
+};
+// END GANTT TEMPLATE SETTINGS
 
 function getPortfolioFilters() {
   return {
@@ -2989,6 +3229,7 @@ window.saveNewPassword = async () => {
 window.handleLogout = async () => {
   clearExcelImportForAuthTransition();
   invalidateProjectEditorSession();
+  invalidateGanttTemplateSession();
   showLoader("Logging out...");
   stopPresenceSystem();
   if (weeksUnsub) {
@@ -3009,6 +3250,7 @@ window.handleLogout = async () => {
 onAuthStateChanged(auth, async user => {
   clearExcelImportForAuthTransition();
   invalidateProjectEditorSession();
+  invalidateGanttTemplateSession();
   const dot = document.getElementById('syncDot');
   if (user) {
     try {
@@ -3020,6 +3262,7 @@ onAuthStateChanged(auth, async user => {
       const userDoc = await getDoc(doc(db, "users", getEmailKey(user)));
       currentRole = getDashboardRole(userDoc);
 
+      await loadGanttTemplateConfig();
       await fetchDynamicPMList();
       setupUI();
       initData();
@@ -3043,6 +3286,8 @@ onAuthStateChanged(auth, async user => {
     resetPresenceSessionState();
     currentUser = null;
     currentRole = 'pm';
+    currentGanttTemplateConfig = resolveWorkstreamTemplateConfig();
+    currentGanttTemplateRevision = 0;
     overviewScope = 'system';
     stopPresenceUsageFlushTimer();
     document.getElementById('projGrid').innerHTML = '';
@@ -3091,6 +3336,7 @@ async function fetchDynamicPMList() {
 function setupUI() {
   clearExcelImportForAuthTransition();
   invalidateProjectEditorSession();
+  invalidateGanttTemplateSession();
   loadOverviewScopeForCurrentUser();
   isAdminVipPreview = false;
   document.getElementById('dashboardVersion').textContent = `${DASHBOARD_RELEASE} · base ${DASHBOARD_BASE_COMMIT}`;
@@ -3116,6 +3362,7 @@ function setupUI() {
     document.getElementById('vipPreviewBtn').style.display = 'inline-flex';
     document.getElementById('addProjectBtn').style.display = 'inline-flex';
     document.getElementById('importExcelBtn').style.display = 'inline-flex';
+    document.getElementById('ganttTemplateSettingsBtn').style.display = 'inline-flex';
   } 
   else if (currentRole === 'pm') {
     document.getElementById('onlineUsersContainer').style.display = 'flex';
@@ -5619,6 +5866,7 @@ window.toggleVipPreview = () => {
   if (currentRole !== 'admin') return;
   isAdminVipPreview = !isAdminVipPreview;
   isOverview = isAdminVipPreview;
+  if (isAdminVipPreview) invalidateGanttTemplateSession();
 
   document.querySelectorAll('.vip-hidden').forEach(el => {
     el.style.display = isAdminVipPreview ? 'none' : '';
@@ -5626,6 +5874,7 @@ window.toggleVipPreview = () => {
   document.getElementById('onlineUsersContainer').style.display = isAdminVipPreview ? 'none' : 'flex';
   document.getElementById('visSelect').style.display = isAdminVipPreview ? 'none' : 'inline-block';
   document.getElementById('presenceUsageBtn').style.display = isAdminVipPreview ? 'none' : 'inline-flex';
+  document.getElementById('ganttTemplateSettingsBtn').style.display = isAdminVipPreview ? 'none' : 'inline-flex';
 
   const button = document.getElementById('vipPreviewBtn');
   button.classList.toggle('active', isAdminVipPreview);
@@ -5649,7 +5898,6 @@ window.navWeek = (dir) => {
   }
   render();
 };
-let modalReturnFocus = null;
 let projectDetailModalState = null;
 function isolateProjectDetailModal() {
   const projectDetail = document.getElementById('projDetailOverlay');
@@ -6000,6 +6248,7 @@ window.executeConfirmedExcelImport = async () => {
   const targetWeekId = plan.targetWeekId;
   const targetWeekLabel = plan.targetWeekLabel;
   const timestamp = new Date().toISOString();
+  const templateConfig = currentGanttTemplateConfig;
   let transactionResults = [];
 
   try {
@@ -6021,6 +6270,7 @@ window.executeConfirmedExcelImport = async () => {
       const merged = mergeReadyImportRows(liveWeek.projects, plan.ready, {
         confirmPmoCompleted,
         timestamp,
+        templateConfig,
       });
       transactionResults = merged.results;
       const updatedWeek = {
@@ -6098,6 +6348,7 @@ window.downloadExcelImportResults = () => {
 window.closeModal = id => {
   if (id === 'excelImportOverlay' && excelImportInFlight) return;
   if (id === 'projEditOverlay' && projectMutationInFlight) return;
+  if (id === 'ganttTemplateOverlay' && ganttTemplateSaveInFlight) return;
   const modal = document.getElementById(id);
   if (id === 'excelImportOverlay') clearExcelImport();
   if (id === 'projEditOverlay') {
@@ -6106,6 +6357,7 @@ window.closeModal = id => {
     isCreatingNew = false;
     clearProjectMutationError();
   }
+  if (id === 'ganttTemplateOverlay') ganttTemplateSession = null;
   modal?.classList.remove('open');
   if (id === 'onePageStatusModal') restoreProjectDetailModalState();
   if (modalReturnFocus?.isConnected) modalReturnFocus.focus();
@@ -6569,7 +6821,7 @@ window.moveWorkstreamRow = (button, direction) => {
 function replaceWorkstreamTemplate(level) {
   const container = document.getElementById('workstreamListContainer');
   container.innerHTML = '';
-  createDefaultWorkstreams(level).forEach(({ id, ...row }) => addWorkstreamRow(row, true));
+  createDefaultWorkstreams(level, currentGanttTemplateConfig).forEach(({ id, ...row }) => addWorkstreamRow(row, true));
   newProjectScheduleUntouched = true;
 }
 

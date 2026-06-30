@@ -20,6 +20,10 @@ Record these values before starting:
 
 Do not run the import from a production URL until UAT approval and Firestore Rules verification are documented.
 
+## Default Gantt template security
+
+The shared System and Hardware Module defaults are stored in `dashboardSettings/team-2-portfolio`. Firestore Rules must enforce an Admin-only write boundary for this document; hiding the settings button from PM and VIP users is not an authorization control. Authorized dashboard users may be granted read access so new projects and confirmed imports can use the current defaults. If the document cannot be read, the dashboard intentionally uses its built-in defaults without blocking login.
+
 ## Before preview
 
 1. Verify the header shows the approved UAT URL/version and the operator is signed in as Admin.
