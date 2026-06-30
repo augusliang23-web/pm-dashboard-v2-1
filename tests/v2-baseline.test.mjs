@@ -442,13 +442,13 @@ test('one-page status traps focus and isolates the underlying project detail', (
 });
 
 test('project writes re-authorize at the mutation boundary', () => {
-  assert.ok(dashboard.includes("if (isCreatingNew && currentRole !== 'admin') {"));
-  assert.ok(dashboard.includes('const targetProject = week.projects.find(project => project.code === editingProjCode);'));
-  assert.ok(dashboard.includes('if (!targetProject || !canEditProject(targetProject)) {'));
-  assert.ok(dashboard.includes('if (targetIndex < 0) {'));
+  assert.ok(dashboard.includes('applyProjectSave(liveSnapshot.data(), {'));
+  assert.ok(dashboard.includes('applyProjectDelete(liveSnapshot.data(), {'));
+  assert.ok(dashboard.includes('role: currentRole'));
+  assert.ok(dashboard.includes('canEdit: project => canEditProject(project)'));
+  assert.ok(dashboard.includes('await transaction.get(targetWeekRef)'));
   assert.ok(dashboard.includes("if (currentRole !== 'admin') return;"));
-  assert.ok(dashboard.includes('const deleteIndex = week.projects.findIndex(project => project.code === editingProjCode);'));
-  assert.ok(dashboard.includes('if (deleteIndex < 0) {'));
+  assert.ok(dashboard.includes('transaction.update(targetWeekRef'));
 });
 
 test('UAT handoff identifies Firestore rules as the production authorization boundary', () => {
