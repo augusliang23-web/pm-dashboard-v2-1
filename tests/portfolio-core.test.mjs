@@ -26,10 +26,29 @@ import {
   normalizeResourceEntry,
   normalizeWorkstream,
   parseIsoDate,
+  projectOwnershipMatchesIdentity,
   resolveProjectStatusDate,
   validateResourceInput,
   validateWorkstreams,
 } from '../team-2/js/portfolio-core.mjs';
+
+test('project ownership uses exact canonical identity tokens', () => {
+  const ann = { displayName: 'Ann', email: 'ann.smith@example.com' };
+
+  assert.equal(projectOwnershipMatchesIdentity({ owner: 'Joann' }, ann), false);
+  assert.equal(projectOwnershipMatchesIdentity({ owner: 'Ann' }, ann), true);
+  assert.equal(projectOwnershipMatchesIdentity({ owner: 'ann.smith@example.com' }, ann), true);
+  assert.equal(projectOwnershipMatchesIdentity({ deputy: 'ann.smith' }, ann), true);
+  assert.equal(
+    projectOwnershipMatchesIdentity(
+      { owner: 'Bob, Carol; Dan / Ann | Erin\nFrank' },
+      ann,
+    ),
+    true,
+  );
+  assert.equal(projectOwnershipMatchesIdentity({ owner: '', deputy: '   ' }, ann), false);
+  assert.equal(projectOwnershipMatchesIdentity({ owner: 'Ann Smith' }, ann), false);
+});
 
 test('normalizeRiskActionRows preserves asymmetric risk and action pairing', () => {
   assert.deepEqual(normalizeRiskActionRows({
@@ -401,12 +420,13 @@ test('Overview summary filtering preserves generic non-project narrative', () =>
   const summary = [
     'Portfolio delivery remains stable.',
     '- Alpha Module: Module action.',
+    '',
     'No management decision required.',
   ].join('\n');
 
   assert.equal(
     filterOverviewSummaryLines(summary, summaryProjects, getOverviewProjects(summaryProjects, PROJECT_LEVEL.SYSTEM)),
-    ['Portfolio delivery remains stable.', 'No management decision required.'].join('\n'),
+    ['Portfolio delivery remains stable.', '', 'No management decision required.'].join('\n'),
   );
 });
 
@@ -496,6 +516,25 @@ test('Overview summary filtering removes nested content owned by an excluded pro
     '## Weekly Progress',
     '- Portfolio: Generic sibling remains.',
   ].join('\n'));
+});
+
+test('Overview summary filtering keeps unindented continuation text in an excluded project block', () => {
+  const summary = [
+    '## Weekly Progress',
+    '- Alpha Module weekly status: Module parent.',
+    'This unindented sentence still belongs to the excluded module update.',
+    '',
+    'Portfolio delivery remains stable.',
+  ].join('\n');
+
+  assert.equal(
+    filterOverviewSummaryLines(summary, summaryProjects, getOverviewProjects(summaryProjects, PROJECT_LEVEL.SYSTEM)),
+    [
+      '## Weekly Progress',
+      '',
+      'Portfolio delivery remains stable.',
+    ].join('\n'),
+  );
 });
 
 test('Overview summary filtering recognizes Markdown-wrapped project identities before sanitizing', () => {

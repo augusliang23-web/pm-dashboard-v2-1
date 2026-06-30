@@ -317,6 +317,27 @@ export function filterRoleVisibleProjects(source = [], options = {}) {
     : [...projects];
 }
 
+export function parseProjectOwnershipTokens(value) {
+  return String(value ?? '')
+    .split(/[,;|/\r\n]+/)
+    .map(token => token.trim().toLocaleLowerCase())
+    .filter(Boolean);
+}
+
+export function projectOwnershipMatchesIdentity(project = {}, identity = {}) {
+  const email = stringValue(identity.email).toLocaleLowerCase();
+  const identityTokens = new Set([
+    stringValue(identity.displayName).toLocaleLowerCase(),
+    email,
+    email.split('@')[0],
+  ].filter(Boolean));
+  if (!identityTokens.size) return false;
+
+  return [project?.owner, project?.deputy]
+    .flatMap(parseProjectOwnershipTokens)
+    .some(token => identityTokens.has(token));
+}
+
 export function getOverviewScopeStorageKey(identity) {
   const normalized = stringValue(identity);
   return normalized ? `team2.overviewScope.${encodeURIComponent(normalized)}` : '';
@@ -369,8 +390,9 @@ export function filterOverviewSummaryLines(summary, allProjects = [], scopedProj
     const indent = summaryLineIndent(line);
     const blockStart = summaryBlockStart(line);
     if (excludedBlockIndent !== null) {
-      const isBoundary = heading
-        || (line.trim() && indent <= excludedBlockIndent && (!blockStart || blockStart.indent <= excludedBlockIndent));
+      const isBoundary = !line.trim()
+        || heading
+        || (blockStart && blockStart.indent <= excludedBlockIndent);
       if (!isBoundary) return;
       excludedBlockIndent = null;
     }

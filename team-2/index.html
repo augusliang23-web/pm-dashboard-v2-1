@@ -1950,7 +1950,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 </div>
 
 <script type="module">
-import { RESOURCE_DISCIPLINES, calculateDropIndex, createDefaultWorkstreams, createTimelineTicks, filterOverviewSummaryLines, filterProjects, filterRoleVisibleProjects, getFocusTrapIndex, getOverviewProjectBadgeLabel, getOverviewProjects, getOverviewScopeStorageKey, matchOverviewSummaryProjectLine, mergeResourceEntry, normalizeOverviewMilestoneStatus, normalizeOverviewPercent, normalizeOverviewRagStatus, normalizeOverviewScope, normalizeOverviewSummaryHeading, normalizeProject, normalizeResourceEntry, normalizeRiskActionRows, normalizeWorkstream, parseIsoDate, resolveProjectStatusDate, validateResourceInput, validateWorkstreams } from "./js/portfolio-core.mjs";
+import { RESOURCE_DISCIPLINES, calculateDropIndex, createDefaultWorkstreams, createTimelineTicks, filterOverviewSummaryLines, filterProjects, filterRoleVisibleProjects, getFocusTrapIndex, getOverviewProjectBadgeLabel, getOverviewProjects, getOverviewScopeStorageKey, matchOverviewSummaryProjectLine, mergeResourceEntry, normalizeOverviewMilestoneStatus, normalizeOverviewPercent, normalizeOverviewRagStatus, normalizeOverviewScope, normalizeOverviewSummaryHeading, normalizeProject, normalizeResourceEntry, normalizeRiskActionRows, normalizeWorkstream, parseIsoDate, projectOwnershipMatchesIdentity, resolveProjectStatusDate, validateResourceInput, validateWorkstreams } from "./js/portfolio-core.mjs";
 import { assertReasonableWeekDocument, buildImportResults, formatImportPreviewRow, importResultsToCsv, mergeReadyImportRows, planImport } from "./js/excel-import.mjs";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, doc, onSnapshot, runTransaction, setDoc, updateDoc, query, orderBy, where, getDoc, getDocs, increment, serverTimestamp, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -2065,6 +2065,20 @@ function replacePortfolioOptions(selectId, values, allLabel) {
     select.appendChild(option);
   });
   select.value = uniqueValues.includes(selected) ? selected : 'all';
+}
+
+function replaceProjectEditorOptions(selectId, values, selectedValue) {
+  const select = document.getElementById(selectId);
+  if (!select) return;
+  select.replaceChildren();
+  values.forEach(value => {
+    const label = String(value ?? '');
+    const option = document.createElement('option');
+    option.value = label;
+    option.textContent = label;
+    option.selected = label === selectedValue;
+    select.appendChild(option);
+  });
 }
 
 function refreshPortfolioToolbar(projects) {
@@ -3182,23 +3196,12 @@ function canEditProject(proj) {
   if (currentRole === 'admin') return true;
   if (currentRole === 'vip') return false; 
   if (!currentUser) return false;
-  
+
   const userEmail = getEmailKey(currentUser);
-  const userPrefix = userEmail.split('@')[0]; 
-  
-  // Include the huichong.kong alias so the system can match Huichong correctly.
-  const aliasMap = { 
-    "augus.liang": "augus", 
-    "josiah.winkler": "josiah", 
-    "qianyun.zhu": "bonnie",
-    "huichong.kong": "huichong"
-  };
-  
-  const owner = (proj.owner || "").toLowerCase();
-  const deputy = (proj.deputy || "").toLowerCase();
-  const userAlias = aliasMap[userPrefix] || userPrefix;
-  
-  return owner.includes(userPrefix) || owner.includes(userAlias) || deputy.includes(userPrefix) || deputy.includes(userAlias);
+  return projectOwnershipMatchesIdentity(proj, {
+    displayName: getUserDisplayName(userEmail),
+    email: userEmail,
+  });
 }
 
 function formatBullets(text) {
@@ -6595,8 +6598,8 @@ window.openProjEdit = (code, isNew = false) => {
   const safeOwners = [...new Set([...PM_LIST, p.owner])].filter(Boolean);
   const safeDeputys = [...new Set([...PM_LIST, p.deputy])].filter(Boolean);
   
-  document.getElementById('pe_owner').innerHTML = safeOwners.map(m => `<option ${p.owner===m?'selected':''}>${m}</option>`).join('');
-  document.getElementById('pe_deputy').innerHTML = safeDeputys.map(m => `<option ${p.deputy===m?'selected':''}>${m}</option>`).join('');
+  replaceProjectEditorOptions('pe_owner', safeOwners, p.owner);
+  replaceProjectEditorOptions('pe_deputy', safeDeputys, p.deputy);
   
   document.getElementById('pe_customer').value = p.customer || '';
   document.getElementById('pe_location').value = p.location || '';

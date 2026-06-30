@@ -341,6 +341,46 @@ test('resource editor retains existing project authorization for admin, PM, and 
   assert.ok(dashboard.includes("if (isNew ? currentRole !== 'admin' : !canEditProject(existingProject)) return;"));
   assert.ok(dashboard.includes("if (currentRole === 'admin') return true;"));
   assert.ok(dashboard.includes("if (currentRole === 'vip') return false;"));
+  const guardStart = dashboard.indexOf('function canEditProject(');
+  const guardEnd = dashboard.indexOf('\n}', guardStart);
+  const guardSource = dashboard.slice(guardStart, guardEnd);
+  assert.ok(guardSource.includes('projectOwnershipMatchesIdentity(proj'));
+  assert.doesNotMatch(guardSource, /\.includes\(/);
+});
+
+test('project editor inserts hostile owner labels as option text instead of innerHTML', () => {
+  const helperStart = dashboard.indexOf('function replaceProjectEditorOptions(');
+  const helperEnd = dashboard.indexOf('\n}', helperStart) + 2;
+  assert.ok(helperStart >= 0);
+  const helperSource = dashboard.slice(helperStart, helperEnd);
+  assert.doesNotMatch(helperSource, /innerHTML/);
+
+  const select = {
+    children: [],
+    innerHTML: '',
+    replaceChildren() {
+      this.children = [];
+      this.innerHTML = '';
+    },
+    appendChild(option) {
+      this.children.push(option);
+    },
+  };
+  const document = {
+    getElementById: () => select,
+    createElement: () => ({ value: '', textContent: '', selected: false }),
+  };
+  const replaceProjectEditorOptions = Function(
+    'document',
+    `${helperSource}; return replaceProjectEditorOptions;`,
+  )(document);
+  const hostile = '<img onerror=alert(1)>';
+
+  replaceProjectEditorOptions('pe_owner', [hostile], hostile);
+
+  assert.equal(select.innerHTML, '');
+  assert.equal(select.children[0].textContent, hostile);
+  assert.equal(select.children[0].selected, true);
 });
 
 test('admin role setup reveals the admin-only new project control', () => {
