@@ -389,15 +389,16 @@ export function filterOverviewSummaryLines(summary, allProjects = [], scopedProj
     const heading = isOverviewSummaryHeading(line);
     const indent = summaryLineIndent(line);
     const blockStart = summaryBlockStart(line);
+    const match = matchOverviewSummaryProjectLine(line, allProjects);
     if (excludedBlockIndent !== null) {
       const isBoundary = !line.trim()
         || heading
+        || Boolean(match)
         || (blockStart && blockStart.indent <= excludedBlockIndent);
       if (!isBoundary) return;
       excludedBlockIndent = null;
     }
 
-    const match = matchOverviewSummaryProjectLine(line, allProjects);
     if (match && !included.has(projectMembershipKey(match.project))) {
       excludedBlockIndent = blockStart?.indent ?? indent;
       return;

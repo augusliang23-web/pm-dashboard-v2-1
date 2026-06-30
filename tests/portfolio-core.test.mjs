@@ -537,6 +537,22 @@ test('Overview summary filtering keeps unindented continuation text in an exclud
   );
 });
 
+test('Overview summary filtering reprocesses an unbulleted known project after an excluded project', () => {
+  const summary = [
+    '## Weekly Progress',
+    '- Alpha Module: Hidden module update.',
+    'Alpha: Visible system update.',
+  ].join('\n');
+
+  assert.equal(
+    filterOverviewSummaryLines(summary, summaryProjects, getOverviewProjects(summaryProjects, PROJECT_LEVEL.SYSTEM)),
+    [
+      '## Weekly Progress',
+      'Alpha: Visible system update.',
+    ].join('\n'),
+  );
+});
+
 test('Overview summary filtering recognizes Markdown-wrapped project identities before sanitizing', () => {
   const summary = [
     '## Weekly Progress',
