@@ -35,12 +35,12 @@ Run:
 
 ```powershell
 git fetch uat
-git switch -c codex/v2.0t-multi-project ddc0e5f
+git switch -c codex/v2.0t-multi-project 6d9f7bd
 git rev-parse HEAD
-git diff --exit-code ddc0e5f -- team-2/index.html
+git diff --exit-code 6d9f7bd -- team-2/index.html
 ```
 
-Expected: `HEAD` is `ddc0e5f00e859edaf9355fcb77a694b95718fb26` and the diff command exits `0`.
+Expected: `HEAD` is `6d9f7bd3e58cbe25f8fd3603c11c9b8a983c3dd1` and the diff command exits `0`.
 
 - [ ] **Step 2: Write the baseline test**
 
@@ -90,7 +90,7 @@ In the inline application module near existing constants in `team-2/index.html`,
 
 ```js
 const DASHBOARD_RELEASE = 'v2.0T-portfolio';
-const DASHBOARD_BASE_COMMIT = 'ddc0e5f';
+const DASHBOARD_BASE_COMMIT = '6d9f7bd';
 ```
 
 Set the existing footer/version element, or add a muted footer element if none exists:

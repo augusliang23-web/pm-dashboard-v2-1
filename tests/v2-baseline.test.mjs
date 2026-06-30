@@ -34,7 +34,7 @@ test('locks the Team 2 production dashboard baseline', () => {
 
 test('exposes the v2.0T release and base commit in the UI', () => {
   assert.ok(dashboard.includes("const DASHBOARD_RELEASE = 'v2.0T-portfolio';"));
-  assert.ok(dashboard.includes("const DASHBOARD_BASE_COMMIT = 'ddc0e5f';"));
+  assert.ok(dashboard.includes("const DASHBOARD_BASE_COMMIT = '6d9f7bd';"));
   assert.match(dashboard, /id="dashboardVersion"/);
   assert.ok(
     dashboard.includes(

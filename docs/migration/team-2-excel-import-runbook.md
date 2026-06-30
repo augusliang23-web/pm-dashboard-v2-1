@@ -7,7 +7,7 @@ Use this runbook only for the one-time Team 2 migration. The dashboard becomes t
 Record these values before starting:
 
 - UAT URL (must end in `/team-2/`):
-- Expected dashboard version: `v2.0T-portfolio · base ddc0e5f`
+- Expected dashboard version: `v2.0T-portfolio · base 6d9f7bd`
 - Dashboard version actually shown in the header:
 - Date and time:
 - Operator name and email:

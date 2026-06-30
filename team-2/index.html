@@ -19,7 +19,7 @@ const FIREBASE_CONFIG = {
   measurementId: "G-TW9FW819EY"
 };
 const DASHBOARD_RELEASE = 'v2.0T-portfolio';
-const DASHBOARD_BASE_COMMIT = 'ddc0e5f';
+const DASHBOARD_BASE_COMMIT = '6d9f7bd';
 </script>
 
 <style>
@@ -319,8 +319,8 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 .usage-card-note { font-size:10px; color:var(--muted); margin-top:4px; line-height:1.35; }
 .usage-section-title { font-size:11px; font-weight:800; color:var(--text); margin:2px 0 10px; }
 .usage-history-note { font-size:10px; color:var(--muted); line-height:1.5; margin:-8px 0 18px; }
-.usage-chart { position:relative; height:250px; margin:0 0 18px; padding:12px; background:var(--s2); border:1px solid var(--border); border-radius:8px; overflow-x:auto; overflow-y:hidden; }
-.usage-chart svg { display:block; height:210px; max-width:none; }
+.usage-chart { position:relative; min-height:250px; margin:0 0 18px; padding:12px; background:var(--s2); border:1px solid var(--border); border-radius:8px; overflow:auto; }
+.usage-chart svg { display:block; max-width:none; }
 .usage-chart-empty { height:100%; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:11px; }
 .usage-chart-toolbar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin:-8px 0 12px; }
 .usage-chart-legend { display:flex; align-items:center; gap:14px; font-size:10px; color:var(--muted); }
@@ -334,6 +334,13 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 .usage-table td { padding:9px 8px; border-bottom:1px solid var(--border); color:var(--text-light); }
 .usage-table td.num { font-family:'IBM Plex Mono', monospace; color:var(--text); text-align:right; }
 .usage-empty { padding:18px; text-align:center; color:var(--muted); background:var(--s2); border:1px dashed var(--border2); border-radius:8px; }
+.session-history-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:2px 0 10px; }
+.session-range-select { min-width:92px; border:1px solid var(--border2); border-radius:6px; background:#fff; color:var(--text); padding:6px 9px; font-size:11px; font-weight:700; }
+.session-table-wrap { max-height:280px; overflow:auto; margin-bottom:18px; border:1px solid var(--border); border-radius:8px; }
+.session-table-wrap .usage-table th { position:sticky; top:0; z-index:1; }
+.session-role { display:inline-flex; padding:2px 6px; border-radius:4px; background:var(--s3); color:var(--text-light); font-size:9px; font-weight:800; text-transform:uppercase; }
+.session-state { font-size:10px; font-weight:800; color:var(--green); }
+.session-state.timed-out { color:var(--muted); }
 
 /* Milestone Drag CSS */
 .ms-row { padding: 4px; border-radius: 4px; transition: 0.2s; background: var(--s1); }
@@ -530,6 +537,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 .exec-summary-project-item + .exec-summary-project-item { margin-top:0; }
 .exec-summary-project-name { display:block; padding-left:10px; border-left:3px solid var(--accent); font-size:14px; font-weight:800; line-height:1.4; color:var(--text); }
 .exec-summary-project-body { display:block; line-height:1.72; color:var(--text-light); }
+.exec-summary-portfolio-lead { margin:2px 0 12px !important; padding:11px 13px; border-left:4px solid var(--blue); background:#F1F7FB; color:var(--text) !important; font-size:15px; font-weight:800; line-height:1.55; }
 @media (max-width: 760px) {
   .exec-summary-project-item { grid-template-columns:1fr; gap:6px; }
 }
@@ -699,7 +707,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 .weekly-trend-line.risk { stroke:#C9AB5F; }
 .weekly-trend-dot { fill:#fff; stroke:var(--blue); stroke-width:2; }
 .weekly-trend-dot.risk { stroke:#C9AB5F; }
-.weekly-trend-labels { display:flex; justify-content:space-between; gap:8px; margin-top:5px; font-family:'IBM Plex Mono', monospace; font-size:9px; color:var(--muted); }
+.weekly-trend-axis-label { fill:var(--muted); font-family:'IBM Plex Mono', monospace; font-size:8px; text-anchor:middle; }
 .strategy-modal-grid { display:grid; gap:18px; }
 .strategy-section { border:1px solid var(--border); border-radius:10px; background:var(--s2); padding:16px; }
 .strategy-section-title { font-size:13px; font-weight:800; color:var(--text); margin-bottom:10px; }
@@ -754,7 +762,31 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 .proto-section-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
 .proto-section-title { font-size:13px; font-weight:800; color:var(--text); }
 .proto-section-note { font-size:11px; color:var(--muted); line-height:1.45; }
+.resource-budget-editor { margin-top:20px; border-top:1px solid var(--border); border-bottom:1px solid var(--border); background:#fff; }
+.resource-budget-editor-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px 0 12px; }
+.resource-draft-pill { flex:0 0 auto; min-width:74px; padding:5px 8px; border:1px solid var(--border2); border-radius:6px; color:var(--text-light); background:var(--s2); font-size:10px; font-weight:800; text-align:center; }
+.resource-trust-banner { padding:11px 13px; border-left:3px solid var(--yellow); background:#FFF9E9; color:var(--text-light); font-size:11px; line-height:1.5; }
+.resource-editor-panel { border-top:1px solid var(--border); background:#fff; }
+.resource-editor-panel summary { display:grid; grid-template-columns:28px minmax(0,1fr) 108px; align-items:center; gap:10px; padding:14px 2px; cursor:pointer; list-style:none; }
+.resource-editor-panel summary::-webkit-details-marker { display:none; }
+.resource-panel-index { width:24px; height:24px; border-radius:50%; display:grid; place-items:center; background:var(--s3); color:var(--text-light); font:800 10px 'IBM Plex Mono', monospace; }
+.resource-panel-heading { min-width:0; display:flex; flex-direction:column; gap:2px; }
+.resource-panel-heading strong { font-size:12px; color:var(--text); }
+.resource-panel-heading small { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:10px; color:var(--muted); }
+.resource-state-badge { min-width:108px; padding:5px 7px; border:1px solid var(--border); border-radius:6px; text-align:center; font-size:9px; font-weight:800; text-transform:uppercase; }
+.resource-state-badge.confirmed { color:var(--green); border-color:#B9DDCD; background:#F0F8F4; }
+.resource-state-badge.unconfirmed, .resource-state-badge.draft { color:#9A7429; border-color:#E7D49B; background:#FFF9E9; }
+.resource-state-badge.unavailable { color:var(--muted); background:var(--s2); }
+.resource-panel-body { padding:4px 0 18px 38px; }
+.resource-list-head { min-height:40px; display:flex; align-items:center; justify-content:space-between; gap:12px; margin:12px 0 8px; }
+.resource-check { display:flex; align-items:center; gap:7px; margin:10px 0; color:var(--text-light); font-size:11px; }
+.resource-check input { accent-color:var(--accent); }
+.resource-validation { display:none; margin-top:10px; padding:10px 12px; border-left:3px solid var(--yellow); background:#FFF9E9; color:var(--text-light); font-size:11px; line-height:1.5; }
+.resource-validation.show { display:block; }
+.resource-validation.error { border-color:var(--red); background:#FFF2F2; color:#8A4848; }
+.resource-panel-actions { display:flex; justify-content:flex-end; margin-top:12px; }
 .team-row, .budget-plan-row, .budget-actual-row { display:grid; gap:8px; align-items:center; margin-bottom:8px; }
+.team-row > *, .budget-plan-row > *, .budget-actual-row > * { min-width:0; }
 .team-row { grid-template-columns:1.2fr 1fr .55fr 32px; }
 .budget-plan-row { grid-template-columns:.8fr 1fr .8fr .8fr 32px; }
 .budget-actual-row { grid-template-columns:.8fr 1fr .8fr .8fr 1.1fr 32px; }
@@ -836,6 +868,12 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
   .budget-tabs { align-items:stretch; flex-direction:column; }
   .resource-row, .budget-row { grid-template-columns:1fr; }
   .rb-number { text-align:left; }
+  .resource-editor-panel summary { grid-template-columns:28px minmax(0,1fr); }
+  .resource-state-badge { grid-column:2; justify-self:start; }
+  .resource-panel-body { padding-left:0; }
+  .resource-list-head, .resource-budget-editor-head { align-items:flex-start; flex-direction:column; }
+  .resource-panel-body .proto-section-head { align-items:flex-start; flex-direction:column; }
+  .resource-panel-actions .btn { width:100%; }
 }
 .copilot-prompt-box { font-family:'IBM Plex Mono', monospace; font-size:11px; line-height:1.55; min-height:220px; background:#FBFDFF; }
 .ai-assist-box { background:var(--s2); border:1px solid var(--border); border-radius:8px; padding:18px; margin-bottom:18px; }
@@ -1223,7 +1261,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
   .weekly-trend-sub { font-size:8px !important; }
   .weekly-trend-value { font-size:16px !important; }
   .weekly-trend-svg { height:72px !important; }
-  .weekly-trend-labels { font-size:6.8px !important; }
+  .weekly-trend-axis-label { font-size:6.8px !important; }
 
   .roadmap-layout { gap:4mm !important; }
   .roadmap-block { border-radius:8px !important; overflow:visible !important; }
@@ -1581,7 +1619,15 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 
 <div class="overlay" id="projEditOverlay">
 <div class="modal" style="width:850px">
-  <div class="modal-hdr"><h3 id="peTitle">Edit Project</h3><button class="modal-x" onclick="closeModal('projEditOverlay')">×</button></div>
+  <div class="modal-hdr">
+    <h3 id="peTitle">Edit Project</h3>
+    <div style="display:flex; align-items:center; gap:6px;">
+      <button class="btn-icon" onclick="saveProjEdit()" title="Save Project" aria-label="Save Project">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      </button>
+      <button class="modal-x" onclick="closeModal('projEditOverlay')" title="Close without saving" aria-label="Close without saving">×</button>
+    </div>
+  </div>
   
   <div style="display:flex; gap:16px;">
     <div class="fg"><label class="fl">RAG Status</label><select class="fs" id="pe_status"><option value="green">🟢 On Track</option><option value="yellow">🟡 At Risk</option><option value="red">🔴 Critical</option></select></div>
@@ -1649,19 +1695,96 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
         <div id="workstreamAnnouncements" class="sr-only" aria-live="polite"></div>
         <div id="workstreamErrors" class="schedule-error-summary" role="alert"></div>
       </section>
-      <section class="proto-editor-section">
-        <div class="proto-section-head">
+      <section class="resource-budget-editor">
+        <div class="resource-budget-editor-head">
           <div>
-            <div class="proto-section-title">Team & Effort</div>
-            <div class="proto-section-note">Role can be selected from saved roles or typed as a new role.</div>
+            <div class="proto-section-title">Resource & Budget</div>
+            <div class="proto-section-note">Update what is known now. Missing information never blocks project saving.</div>
           </div>
-          <button class="btn btn-ghost" onclick="addTeamMemberRow()">+ Add Member</button>
+          <span class="resource-draft-pill">Draft-safe</span>
         </div>
-        <div id="teamMemberContainer"></div>
+        <div class="resource-trust-banner">
+          <strong>Draft data is saved but excluded from Overview KPIs.</strong>
+          Confirm each section independently when its information is reliable.
+        </div>
+
+        <details class="resource-editor-panel" id="teamEditorPanel" open>
+          <summary>
+            <span class="resource-panel-index">1</span>
+            <span class="resource-panel-heading"><strong>Team allocation</strong><small id="teamSectionSummary">No confirmed allocation</small></span>
+            <span class="resource-state-badge unconfirmed" id="teamStateBadge">Not confirmed</span>
+          </summary>
+          <div class="resource-panel-body">
+            <div class="proto-section-head">
+              <div class="proto-section-note">Role can be selected from saved roles or typed as a new role.</div>
+              <button class="btn btn-ghost" onclick="addTeamMemberRow()">+ Add Member</button>
+            </div>
+            <div id="teamMemberContainer"></div>
+            <label class="resource-check"><input type="checkbox" id="pe_team_not_required" onchange="markResourceSectionDirty('team')"> No allocation information required for this project</label>
+            <div class="resource-validation" id="teamValidation"></div>
+            <div class="resource-panel-actions"><button class="btn btn-primary" type="button" onclick="confirmResourceSection('team')">Confirm team allocation</button></div>
+          </div>
+        </details>
+
+        <details class="resource-editor-panel" id="budgetPlanEditorPanel">
+          <summary>
+            <span class="resource-panel-index">2</span>
+            <span class="resource-panel-heading"><strong>Budget planning</strong><small id="budgetPlanSectionSummary">No confirmed plan</small></span>
+            <span class="resource-state-badge unconfirmed" id="budgetPlanStateBadge">Not confirmed</span>
+          </summary>
+          <div class="resource-panel-body">
+            <div class="budget-control-top">
+              <div class="budget-control-settings">
+                <div class="proto-section-title">Budget rule</div>
+                <div class="budget-mode-control">
+                  <label class="budget-mode-option"><input type="radio" name="budgetMode" value="manual" onchange="markResourceSectionDirty('budgetPlan'); updateBudgetLinkSummary()"> Manual budget ceiling</label>
+                  <label class="budget-mode-option"><input type="radio" name="budgetMode" value="auto" onchange="markResourceSectionDirty('budgetPlan'); updateBudgetLinkSummary()"> Auto from monthly plan</label>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                  <div class="fg"><label class="fl">Budget Currency</label><select class="fs" id="pe_budget_currency"></select></div>
+                  <div class="fg"><label class="fl">Total Estimated Budget</label><input class="fi" type="number" id="pe_budget_total" min="0" step="1000"></div>
+                </div>
+                <label class="resource-check" id="overBudgetAckWrap" style="display:none;"><input type="checkbox" id="pe_over_budget_ack" onchange="markResourceSectionDirty('budgetPlan')"> Over budget plan acknowledged</label>
+              </div>
+              <div class="budget-control-summary">
+                <div class="proto-section-title">Budget linkage</div>
+                <div class="budget-link-summary">
+                  <div class="budget-link-tile"><div class="budget-link-label">Monthly Plan Sum</div><div class="budget-link-value" id="pe_plan_sum">-</div></div>
+                  <div class="budget-link-tile"><div class="budget-link-label">Unallocated / Over</div><div class="budget-link-value" id="pe_budget_gap">-</div></div>
+                  <div class="budget-link-tile"><div class="budget-link-label">Coverage</div><div class="budget-link-value" id="pe_budget_coverage">-</div></div>
+                </div>
+                <div class="budget-link-message" id="pe_budget_message">Monthly plan will be compared with total budget.</div>
+              </div>
+            </div>
+            <div class="resource-list-head"><strong>Monthly plan</strong><button class="btn btn-ghost" onclick="addBudgetPlanRow()">+ Add Plan</button></div>
+            <div class="budget-table-head plan"><span>Month</span><span>Category</span><span>Currency</span><span>Planned Amount</span><span></span></div>
+            <div id="budgetPlanContainer"></div>
+            <div class="resource-validation" id="budgetPlanValidation"></div>
+            <div class="resource-panel-actions"><button class="btn btn-primary" type="button" onclick="confirmResourceSection('budgetPlan')">Confirm budget plan</button></div>
+          </div>
+        </details>
+
+        <details class="resource-editor-panel" id="budgetActualEditorPanel">
+          <summary>
+            <span class="resource-panel-index">3</span>
+            <span class="resource-panel-heading"><strong>Actual spend</strong><small id="budgetActualSectionSummary">No actual spend available</small></span>
+            <span class="resource-state-badge unavailable" id="budgetActualStateBadge">Not available</span>
+          </summary>
+          <div class="resource-panel-body">
+            <div class="resource-list-head">
+              <div class="proto-section-note">Leave this section as Not available until actual spend is received.</div>
+              <button class="btn btn-ghost" onclick="addBudgetActualRow()">+ Add Actual</button>
+            </div>
+            <div class="budget-table-head actual"><span>Month</span><span>Category</span><span>Currency</span><span>Actual Amount</span><span>Note</span><span></span></div>
+            <div id="budgetActualContainer"></div>
+            <div class="resource-validation" id="budgetActualValidation"></div>
+            <div class="resource-panel-actions"><button class="btn btn-primary" type="button" onclick="confirmResourceSection('budgetActual')">Confirm actual spend</button></div>
+          </div>
+        </details>
       </section>
       <section class="proto-editor-section">
-        <div class="proto-section-title">Resources</div>
-        <div class="proto-section-note">Estimated staffing and optional actual staffing by discipline.</div>
+        <div class="proto-section-title">Discipline Hours</div>
+        <div class="proto-section-note">Estimated hours are required; actual hours remain optional.</div>
         <div class="resource-editor-grid">
           <div class="resource-editor-row" data-resource-discipline="hardware"><div class="resource-discipline">Hardware</div><div class="fg"><label class="fl">Estimated</label><input class="fi resource-estimated" type="number" min="0" step="any" required></div><div class="fg"><label class="fl">Actual (optional)</label><input class="fi resource-actual" type="number" min="0" step="any"></div></div>
           <div class="resource-editor-row" data-resource-discipline="firmware"><div class="resource-discipline">Firmware</div><div class="fg"><label class="fl">Estimated</label><input class="fi resource-estimated" type="number" min="0" step="any" required></div><div class="fg"><label class="fl">Actual (optional)</label><input class="fi resource-actual" type="number" min="0" step="any"></div></div>
@@ -1669,63 +1792,6 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
           <div class="resource-editor-row" data-resource-discipline="mechanical"><div class="resource-discipline">Mechanical</div><div class="fg"><label class="fl">Estimated</label><input class="fi resource-estimated" type="number" min="0" step="any" required></div><div class="fg"><label class="fl">Actual (optional)</label><input class="fi resource-actual" type="number" min="0" step="any"></div></div>
           <div class="resource-editor-row" data-resource-discipline="pmo"><div class="resource-discipline">PMO</div><div class="fg"><label class="fl">Estimated</label><input class="fi resource-estimated" type="number" min="0" step="any" required></div><div class="fg"><label class="fl">Actual (optional)</label><input class="fi resource-actual" type="number" min="0" step="any"></div></div>
         </div>
-      </section>
-
-      <section class="proto-editor-section budget-control-panel">
-        <div class="budget-control-top">
-          <div class="budget-control-settings">
-            <div class="proto-section-title">Budget Control</div>
-            <div class="proto-section-note">Set the budget rule once, then manage monthly plan and actual spend below.</div>
-            <div class="budget-mode-control">
-              <label class="budget-mode-option"><input type="radio" name="budgetMode" value="manual" onchange="updateBudgetLinkSummary()"> Manual budget ceiling</label>
-              <label class="budget-mode-option"><input type="radio" name="budgetMode" value="auto" onchange="updateBudgetLinkSummary()"> Auto from monthly plan</label>
-            </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-              <div class="fg"><label class="fl">Budget Currency</label><select class="fs" id="pe_budget_currency"></select></div>
-              <div class="fg"><label class="fl">Total Estimated Budget</label><input class="fi" type="number" id="pe_budget_total" min="0" step="1000"></div>
-            </div>
-          </div>
-          <div class="budget-control-summary">
-            <div class="proto-section-title">Budget Linkage</div>
-            <div class="proto-section-note">Shows whether the monthly plan is fully allocated against the total budget.</div>
-            <div class="budget-link-summary">
-              <div class="budget-link-tile">
-                <div class="budget-link-label">Monthly Plan Sum</div>
-                <div class="budget-link-value" id="pe_plan_sum">-</div>
-              </div>
-              <div class="budget-link-tile">
-                <div class="budget-link-label">Unallocated / Over</div>
-                <div class="budget-link-value" id="pe_budget_gap">-</div>
-              </div>
-              <div class="budget-link-tile">
-                <div class="budget-link-label">Coverage</div>
-                <div class="budget-link-value" id="pe_budget_coverage">-</div>
-              </div>
-            </div>
-            <div class="budget-link-message" id="pe_budget_message">Monthly plan will be compared with total budget.</div>
-          </div>
-        </div>
-        <div class="budget-tabs">
-          <div class="budget-tab-buttons">
-            <button type="button" class="budget-tab-btn active" id="budgetPlanTabBtn" onclick="setBudgetTab('plan')">Monthly Plan</button>
-            <button type="button" class="budget-tab-btn" id="budgetActualTabBtn" onclick="setBudgetTab('actual')">Actual Spend</button>
-          </div>
-          <button class="btn btn-ghost budget-tab-action" id="budgetPlanAddBtn" onclick="addBudgetPlanRow()">+ Add Plan</button>
-          <button class="btn btn-ghost budget-tab-action" id="budgetActualAddBtn" onclick="addBudgetActualRow()" style="display:none;">+ Add Actual</button>
-        </div>
-        <div class="budget-tab-pane active" id="budgetPlanPane">
-          <div class="budget-table-head plan"><span>Month</span><span>Category</span><span>Currency</span><span>Planned Amount</span><span></span></div>
-          <div id="budgetPlanContainer"></div>
-        </div>
-        <div class="budget-tab-pane" id="budgetActualPane">
-          <div class="budget-table-head actual"><span>Month</span><span>Category</span><span>Currency</span><span>Actual Amount</span><span>Note</span><span></span></div>
-          <div id="budgetActualContainer"></div>
-        </div>
-      </section>
-          </div>
-          <button class="btn btn-ghost" onclick="addBudgetActualRow()">+ Add Actual</button>
-        </div>
-        <div id="budgetActualContainer"></div>
       </section>
       
       <div style="margin-top:24px; padding-top:16px; border-top:1px dashed var(--border);" id="adminProjActions">
@@ -1742,10 +1808,6 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
     </div>
   </details>
 
-  <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:32px;">
-    <button class="btn btn-ghost" onclick="closeModal('projEditOverlay')">Cancel</button>
-    <button class="btn btn-primary" onclick="saveProjEdit()">Save Project</button>
-  </div>
 </div>
 </div>
 
@@ -1798,11 +1860,22 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
   <div class="usage-history-note" id="firestoreHistoricalNote"></div>
   <div class="usage-section-title">Presence writes recorded after counter activation</div>
   <div class="usage-summary-grid" id="presenceUsageSummary"></div>
-  <div class="usage-section-title">12-hour presence writes · Up to 56 days</div>
+  <div class="session-history-head">
+    <div class="usage-section-title" style="margin:0;">Firestore writes and user access timeline</div>
+    <select class="session-range-select" id="presenceRangeDays" onchange="loadPresenceUsageStats()">
+      <option value="7">Last 7 days</option>
+      <option value="30">Last 30 days</option>
+      <option value="56" selected>Last 56 days</option>
+    </select>
+  </div>
+  <div class="usage-summary-grid" id="presenceSessionSummary"></div>
   <div class="usage-chart-toolbar">
     <div class="usage-chart-legend">
       <span class="usage-chart-key"><span class="usage-chart-swatch"></span>12-hour writes</span>
       <span class="usage-chart-key"><span class="usage-chart-swatch warning"></span>80% warning line · 8,000 writes</span>
+      <span class="usage-chart-key"><span class="usage-chart-swatch" style="height:8px; background:#78B395;"></span>Online session</span>
+      <span class="usage-chart-key"><span class="usage-chart-swatch" style="height:8px; background:#AAB7C4;"></span>Timed out</span>
+      <span class="usage-chart-key"><span class="usage-chart-swatch" style="height:8px; background:#D8B76A; opacity:.65;"></span>Estimated activity</span>
     </div>
     <div class="usage-chart-nav">
       <button class="btn btn-ghost" title="View older usage" onclick="scrollPresenceChart(-1)" aria-label="View older usage">←</button>
@@ -1811,9 +1884,12 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
   </div>
   <div class="usage-chart" id="presenceDailyChart"></div>
   <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px;">
-    <div style="font-size:11px; color:var(--muted); line-height:1.45;">12-hour aggregates from user presence records. Quota distance uses 10,000 free writes per 12-hour bucket.</div>
+    <div style="font-size:11px; color:var(--muted); line-height:1.45;">The upper chart shows 12-hour writes. Green and gray blocks are recorded sessions. Gold blocks are historical activity estimates from 12-hour write buckets and do not represent exact login time or duration.</div>
     <button class="btn btn-ghost" onclick="loadPresenceUsageStats()">Refresh</button>
   </div>
+  <div class="usage-section-title">Session history</div>
+  <div id="presenceSessionTable"></div>
+  <div class="usage-section-title">12-hour write details</div>
   <div id="presenceUsageTable"></div>
 </div>
 </div>
@@ -1918,6 +1994,8 @@ let editingProjCode = null;
 let isCreatingNew = false;
 let newProjectScheduleUntouched = false;
 let ganttScale = 'month';
+let editorResourceStatus = normalizeResourceBudgetStatus({});
+let resourceEditorHydrating = false;
 let PM_LIST = []; 
 let jumpToLatestOnNextRender = false;
 let overviewCurrency = 'USD';
@@ -2007,6 +2085,9 @@ const PRESENCE_HEARTBEAT_MS = 5 * 60 * 1000;
 const ACTIVE_PRESENCE_WINDOW_MS = 12 * 60 * 1000;
 const PRESENCE_USAGE_FLUSH_MS = 12 * 60 * 60 * 1000;
 const PRESENCE_USAGE_LOOKBACK_BUCKETS = 112;
+const PRESENCE_SESSION_COLLECTION = 'presenceSessions';
+const PRESENCE_ROLLUP_COLLECTION = 'presenceDailyRollups';
+const PRESENCE_SESSION_RETENTION_DAYS = 90;
 const FIRESTORE_FREE_WRITES_PER_DAY = 20000;
 const FIRESTORE_FREE_WRITES_PER_12H = FIRESTORE_FREE_WRITES_PER_DAY / 2;
 const FIRESTORE_SIX_WEEK_BASELINE = {
@@ -2018,6 +2099,13 @@ const FIRESTORE_SIX_WEEK_BASELINE = {
 };
 let weeksUnsub = null;
 let presenceUsageFlushTimer = null;
+let presenceSessionId = null;
+let presenceSessionStartedAt = 0;
+let presenceSessionLastEventAt = 0;
+let presenceSessionState = 'active';
+let presenceSessionClosed = false;
+let presenceSessionWriteChain = Promise.resolve();
+let presenceSessionHeartbeatInterval = null;
 
 let activityThrottle = null;
 const handleUserActivity = () => {
@@ -2035,6 +2123,7 @@ const handleUserActivity = () => {
       status: 'active',
       lastActive: Date.now()
     }, { merge: true }).then(() => queuePresenceUsage('active')).catch(()=>{});
+    trackPresenceSession('active');
   }
   
   clearTimeout(idleTimer);
@@ -2045,6 +2134,7 @@ const handleUserActivity = () => {
       status: 'idle',
       lastActive: Date.now()
     }, { merge: true }).then(() => queuePresenceUsage('idle')).catch(()=>{});
+    trackPresenceSession('idle');
   }, IDLE_TIMEOUT);
 };
 
@@ -2220,6 +2310,84 @@ function stopPresenceUsageFlushTimer() {
   presenceUsageFlushTimer = null;
 }
 
+function makePresenceSessionId() {
+  const userKey = getEmailKey(currentUser).replace(/[^a-z0-9]+/g, '-');
+  const random = Math.random().toString(36).slice(2, 8);
+  return `${userKey}-${Date.now()}-${random}`;
+}
+
+function startPresenceSession() {
+  if (!currentUser || presenceSessionId) return;
+  const now = Date.now();
+  presenceSessionId = makePresenceSessionId();
+  presenceSessionStartedAt = now;
+  presenceSessionLastEventAt = now;
+  presenceSessionState = 'active';
+  presenceSessionClosed = false;
+  const expiresAt = new Date(now + PRESENCE_SESSION_RETENTION_DAYS * 24 * 60 * 60 * 1000);
+  presenceSessionWriteChain = setDoc(doc(db, PRESENCE_SESSION_COLLECTION, presenceSessionId), {
+    sessionId: presenceSessionId,
+    userKey: getEmailKey(currentUser),
+    displayName: getUserDisplayName(currentUser.email),
+    role: currentRole,
+    environment: 'v2.0T',
+    startedAt: now,
+    lastSeenAt: now,
+    endedAt: null,
+    activeMs: 0,
+    idleMs: 0,
+    state: 'active',
+    endReason: null,
+    aggregatedAt: null,
+    expiresAt,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  }).catch(error => {
+    console.warn('Presence session start skipped:', error);
+  });
+}
+
+function trackPresenceSession(nextState = 'active', options = {}) {
+  if (!currentUser || !presenceSessionId || presenceSessionClosed) return presenceSessionWriteChain;
+  const now = Date.now();
+  const close = options.close === true;
+  const rawElapsed = Math.max(0, now - presenceSessionLastEventAt);
+  const elapsed = presenceSessionState === 'idle'
+    ? rawElapsed
+    : Math.min(rawElapsed, ACTIVE_PRESENCE_WINDOW_MS);
+  const durationField = presenceSessionState === 'idle' ? 'idleMs' : 'activeMs';
+  const patch = {
+    [durationField]: increment(elapsed),
+    lastSeenAt: now,
+    state: close ? 'closed' : nextState,
+    updatedAt: serverTimestamp()
+  };
+  if (close) {
+    patch.endedAt = now;
+    patch.endReason = options.reason || 'logout';
+    presenceSessionClosed = true;
+  }
+  presenceSessionLastEventAt = now;
+  presenceSessionState = nextState;
+  presenceSessionWriteChain = presenceSessionWriteChain
+    .then(() => updateDoc(doc(db, PRESENCE_SESSION_COLLECTION, presenceSessionId), patch))
+    .catch(error => console.warn('Presence session update skipped:', error));
+  return presenceSessionWriteChain;
+}
+
+function closePresenceSession(reason = 'logout') {
+  return trackPresenceSession(presenceSessionState, { close: true, reason });
+}
+
+function resetPresenceSessionState() {
+  presenceSessionId = null;
+  presenceSessionStartedAt = 0;
+  presenceSessionLastEventAt = 0;
+  presenceSessionState = 'active';
+  presenceSessionClosed = false;
+  presenceSessionWriteChain = Promise.resolve();
+}
+
 function fmtUsageNumber(value) {
   return Math.round(Number(value || 0)).toLocaleString();
 }
@@ -2245,8 +2413,65 @@ window.scrollPresenceChart = direction => {
   chart.scrollBy({ left: direction * chart.clientWidth * 0.8, behavior: 'smooth' });
 };
 
-function renderPresenceUsageChart(rows) {
+function fmtSessionDuration(ms) {
+  const totalMinutes = Math.max(0, Math.round(Number(ms || 0) / 60000));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return hours ? `${hours}h ${minutes}m` : `${minutes}m`;
+}
+
+function normalizePresenceSession(data, now = Date.now()) {
+  const startedAt = Number(data.startedAt || 0);
+  const lastSeenAt = Number(data.lastSeenAt || startedAt);
+  const explicitEnd = Number(data.endedAt || 0);
+  const inferredEnd = Math.min(now, lastSeenAt + ACTIVE_PRESENCE_WINDOW_MS);
+  const endedAt = explicitEnd || inferredEnd;
+  const timedOut = !explicitEnd && now - lastSeenAt >= ACTIVE_PRESENCE_WINDOW_MS;
+  return {
+    ...data,
+    startedAt,
+    lastSeenAt,
+    endedAt: Math.max(startedAt, endedAt),
+    timedOut,
+    onlineMs: Math.max(0, Math.max(startedAt, endedAt) - startedAt)
+  };
+}
+
+/* presence-estimate:start */
+function buildEstimatedPresenceActivities(presenceDocs, cutoff) {
+  const activities = [];
+  presenceDocs.forEach(presenceDoc => {
+    const data = presenceDoc.data || {};
+    const userKey = presenceDoc.id || data.userKey || data.name || 'unknown';
+    Object.values(data.usageBuckets || {}).forEach(row => {
+      const bucketStart = Number(row?.bucketStart || 0);
+      const bucketEnd = Number(row?.bucketEnd || bucketStart);
+      const activityWrites = Number(row?.activeWrites || 0) +
+        Number(row?.idleWrites || 0) +
+        Number(row?.logoutWrites || 0);
+      if (!row?.bucketId || bucketEnd <= cutoff || !activityWrites) return;
+      activities.push({
+        userKey,
+        displayName: data.name || userKey,
+        role: data.role || 'pm',
+        bucketId: row.bucketId,
+        bucketStart,
+        bucketEnd,
+        activeWrites: Number(row.activeWrites || 0),
+        idleWrites: Number(row.idleWrites || 0),
+        logoutWrites: Number(row.logoutWrites || 0),
+        activityWrites
+      });
+    });
+  });
+  return activities.sort((a, b) => a.bucketStart - b.bucketStart || a.userKey.localeCompare(b.userKey));
+}
+/* presence-estimate:end */
+
+function renderPresenceUsageChart(rows, sessions = [], rangeDays = 56, estimatedActivities = []) {
   const chart = document.getElementById('presenceDailyChart');
+  const now = Date.now();
+  const rangeStart = now - rangeDays * 24 * 60 * 60 * 1000;
   const points = rows
     .map(row => ({
       label: row.bucketLabel || row.bucketId || '-',
@@ -2254,23 +2479,46 @@ function renderPresenceUsageChart(rows) {
       writes: Number(row.totalPresenceWrites || 0) + Number(row.counterFlushWrites || 0)
     }))
     .sort((a, b) => a.bucketStart - b.bucketStart)
-    .slice(-PRESENCE_USAGE_LOOKBACK_BUCKETS);
+    .filter(point => point.bucketStart >= rangeStart)
+    .slice(-(rangeDays * 2));
+  const visibleSessions = sessions
+    .map(session => normalizePresenceSession(session, now))
+    .filter(session => session.startedAt && session.endedAt >= rangeStart)
+    .sort((a, b) => a.startedAt - b.startedAt);
+  const visibleEstimates = estimatedActivities
+    .filter(activity => activity.bucketEnd >= rangeStart && activity.bucketStart <= now)
+    .sort((a, b) => a.bucketStart - b.bucketStart);
 
-  if (!points.length) {
-    chart.innerHTML = '<div class="usage-chart-empty">The 12-hour trend will appear after the first completed bucket.</div>';
+  if (!points.length && !visibleSessions.length && !visibleEstimates.length) {
+    chart.innerHTML = '<div class="usage-chart-empty">Writes and user sessions will appear after activity is recorded.</div>';
     return;
   }
 
-  const width = Math.max(920, points.length * 30 + 70);
-  const height = 210;
-  const margin = { top: 12, right: 16, bottom: 32, left: 54 };
+  const laneMap = new Map();
+  visibleSessions.forEach(session => {
+    const laneKey = `${session.displayName || session.userKey || 'Unknown'}|${session.role || 'pm'}`;
+    if (!laneMap.has(laneKey)) laneMap.set(laneKey, []);
+    laneMap.get(laneKey).push(session);
+  });
+  visibleEstimates.forEach(activity => {
+    const laneKey = `${activity.displayName || activity.userKey || 'Unknown'}|${activity.role || 'pm'}`;
+    if (!laneMap.has(laneKey)) laneMap.set(laneKey, []);
+    laneMap.get(laneKey).push({ ...activity, estimated: true });
+  });
+  const lanes = Array.from(laneMap.entries()).sort(([a], [b]) => a.localeCompare(b));
+  const width = Math.max(920, rangeDays * 42 + 110);
+  const upperHeight = 168;
+  const laneHeight = 28;
+  const timelineTop = upperHeight + 38;
+  const height = timelineTop + Math.max(1, lanes.length) * laneHeight + 38;
+  const margin = { top: 12, right: 16, bottom: 28, left: 118 };
   const plotWidth = width - margin.left - margin.right;
-  const plotHeight = height - margin.top - margin.bottom;
+  const plotHeight = upperHeight - margin.top;
   const maxWrites = FIRESTORE_FREE_WRITES_PER_12H;
   const warningWrites = maxWrites * 0.8;
-  const yFor = value => margin.top + plotHeight - (Math.min(value, maxWrites) / maxWrites) * plotHeight;
-  const slotWidth = plotWidth / points.length;
-  const barWidth = Math.max(3, Math.min(18, slotWidth * 0.62));
+  const yFor = value => upperHeight - (Math.min(value, maxWrites) / maxWrites) * plotHeight;
+  const xFor = value => margin.left + ((Math.min(now, Math.max(rangeStart, value)) - rangeStart) / (now - rangeStart)) * plotWidth;
+  const barWidth = Math.max(3, Math.min(18, plotWidth / Math.max(1, rangeDays * 2) * 0.62));
 
   const grid = [0, 2500, 5000, 7500, 10000].map(value => {
     const y = yFor(value);
@@ -2278,33 +2526,100 @@ function renderPresenceUsageChart(rows) {
       <text x="${margin.left - 8}" y="${y + 3}" text-anchor="end" fill="var(--muted)" font-size="9">${value === 0 ? '0' : `${value / 1000}k`}</text>`;
   }).join('');
 
-  const bars = points.map((item, index) => {
-    const x = margin.left + slotWidth * index + (slotWidth - barWidth) / 2;
+  const bars = points.map(item => {
+    const x = xFor(item.bucketStart + PRESENCE_USAGE_FLUSH_MS / 2) - barWidth / 2;
     const y = yFor(item.writes);
-    const barHeight = Math.max(item.writes ? 1 : 0, margin.top + plotHeight - y);
+    const barHeight = Math.max(item.writes ? 1 : 0, upperHeight - y);
     const color = item.writes >= warningWrites ? '#d14343' : 'var(--accent)';
-    const half = item.label.slice(-2);
-    const dateLabel = half === 'H1' ? item.label.slice(5, 10) : '';
-    const label = `<text x="${x + barWidth / 2}" y="${height - 18}" text-anchor="middle" fill="var(--muted)" font-size="8">${half}</text>
-      ${dateLabel ? `<text x="${x + barWidth / 2}" y="${height - 7}" text-anchor="middle" fill="var(--muted)" font-size="8">${dateLabel}</text>` : ''}`;
-    return `<rect x="${x}" y="${margin.top + plotHeight - barHeight}" width="${barWidth}" height="${barHeight}" rx="2" fill="${color}">
+    return `<rect x="${x}" y="${upperHeight - barHeight}" width="${barWidth}" height="${barHeight}" rx="2" fill="${color}">
         <title>${item.label}: ${fmtUsageNumber(item.writes)} writes (${((item.writes / maxWrites) * 100).toFixed(2)}%)</title>
-      </rect>${label}`;
+      </rect>`;
   }).join('');
 
   const warningY = yFor(warningWrites);
-  chart.innerHTML = `<svg viewBox="0 0 ${width} ${height}" width="${width}" role="img" aria-label="12-hour presence writes with 80 percent free quota warning line">
+  const dayMs = 24 * 60 * 60 * 1000;
+  const dateGrid = Array.from({ length: rangeDays + 1 }, (_, index) => {
+    const timestamp = rangeStart + index * dayMs;
+    const x = xFor(timestamp);
+    const showLabel = rangeDays <= 7 || index % (rangeDays <= 30 ? 3 : 7) === 0 || index === rangeDays;
+    return `<line x1="${x}" y1="${upperHeight + 12}" x2="${x}" y2="${height - margin.bottom}" stroke="#E7EDF2" stroke-width="1"/>
+      ${showLabel ? `<text x="${x + 3}" y="${upperHeight + 27}" fill="var(--muted)" font-size="8">${new Date(timestamp).toLocaleDateString([], { month:'2-digit', day:'2-digit' })}</text>` : ''}`;
+  }).join('');
+  const laneSvg = lanes.map(([laneKey, laneSessions], laneIndex) => {
+    const [name, role] = laneKey.split('|');
+    const y = timelineTop + laneIndex * laneHeight;
+    const blocks = laneSessions.map(session => {
+      const start = Math.max(rangeStart, session.estimated ? session.bucketStart : session.startedAt);
+      const end = Math.min(now, session.estimated ? session.bucketEnd : session.endedAt);
+      const x = xFor(start);
+      const blockWidth = Math.max(3, xFor(end) - x);
+      if (session.estimated) {
+        return `<rect x="${x}" y="${y + 5}" width="${blockWidth}" height="13" rx="3" fill="#D8B76A" fill-opacity=".65" stroke="#B99749" stroke-dasharray="3 2">
+          <title>${escHtml(name)} (${escHtml(role.toUpperCase())}) · Estimated activity in this 12-hour bucket · ${fmtUsageNumber(session.activityWrites)} activity writes (active ${fmtUsageNumber(session.activeWrites)}, idle ${fmtUsageNumber(session.idleWrites)}, logout ${fmtUsageNumber(session.logoutWrites)}) · Exact login time and duration were not recorded</title>
+        </rect>`;
+      }
+      const color = session.timedOut ? '#AAB7C4' : '#78B395';
+      const startLabel = new Date(session.startedAt).toLocaleString();
+      const endLabel = new Date(session.endedAt).toLocaleString();
+      return `<rect x="${x}" y="${y + 5}" width="${blockWidth}" height="13" rx="3" fill="${color}">
+        <title>${escHtml(name)} (${escHtml(role.toUpperCase())}) · ${escHtml(startLabel)} → ${escHtml(endLabel)} · Online ${fmtSessionDuration(session.onlineMs)} · Active ${fmtSessionDuration(session.activeMs)} · Idle ${fmtSessionDuration(session.idleMs)}${session.timedOut ? ' · Timed out' : ''}</title>
+      </rect>`;
+    }).join('');
+    return `<text x="${margin.left - 8}" y="${y + 15}" text-anchor="end" fill="var(--text-light)" font-size="9" font-weight="700">${escHtml(name)} · ${escHtml(role.toUpperCase())}</text>
+      <line x1="${margin.left}" y1="${y + 20}" x2="${width - margin.right}" y2="${y + 20}" stroke="var(--border)" stroke-width="1"/>
+      ${blocks}`;
+  }).join('');
+  const noLanes = lanes.length ? '' : `<text x="${margin.left}" y="${timelineTop + 15}" fill="var(--muted)" font-size="10">No recorded sessions or estimated user activity in this range.</text>`;
+
+  chart.innerHTML = `<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="Firestore writes and user login timeline">
     ${grid}
     <line x1="${margin.left}" y1="${warningY}" x2="${width - margin.right}" y2="${warningY}" stroke="#d14343" stroke-width="2" stroke-dasharray="6 5"/>
     <text x="${width - margin.right}" y="${warningY - 5}" text-anchor="end" fill="#d14343" font-size="9" font-weight="700">80% · 8k</text>
     ${bars}
+    <text x="${margin.left}" y="${upperHeight + 8}" fill="var(--text)" font-size="10" font-weight="800">USER ACCESS TIMELINE</text>
+    ${dateGrid}
+    ${laneSvg}
+    ${noLanes}
   </svg>`;
   requestAnimationFrame(() => {
     chart.scrollLeft = chart.scrollWidth;
   });
 }
 
-function renderPresenceUsageStats(rows) {
+function renderPresenceSessionStats(sessions = []) {
+  const normalized = sessions.map(session => normalizePresenceSession(session));
+  const users = new Set(normalized.map(session => session.userKey || session.displayName).filter(Boolean));
+  const onlineMs = normalized.reduce((sum, session) => sum + session.onlineMs, 0);
+  const activeMs = normalized.reduce((sum, session) => sum + Number(session.activeMs || 0), 0);
+  const timedOut = normalized.filter(session => session.timedOut).length;
+  document.getElementById('presenceSessionSummary').innerHTML = `
+    <div class="usage-card"><div class="usage-card-label">Unique users</div><div class="usage-card-value">${users.size}</div><div class="usage-card-note">PM, VIP and Admin accounts</div></div>
+    <div class="usage-card"><div class="usage-card-label">Sessions</div><div class="usage-card-value">${normalized.length}</div><div class="usage-card-note">${timedOut} inferred timeout${timedOut === 1 ? '' : 's'}</div></div>
+    <div class="usage-card"><div class="usage-card-label">Online time</div><div class="usage-card-value">${fmtSessionDuration(onlineMs)}</div><div class="usage-card-note">Login to logout or inferred end</div></div>
+    <div class="usage-card"><div class="usage-card-label">Active time</div><div class="usage-card-value">${fmtSessionDuration(activeMs)}</div><div class="usage-card-note">Accumulated heartbeat activity</div></div>
+  `;
+  const table = document.getElementById('presenceSessionTable');
+  if (!normalized.length) {
+    table.innerHTML = '<div class="usage-empty">No session history has been recorded in this range yet.</div>';
+    return;
+  }
+  table.innerHTML = `<div class="session-table-wrap"><table class="usage-table">
+    <thead><tr><th>User</th><th>Role</th><th>Login</th><th>Logout / inferred end</th><th>Online</th><th>Active</th><th>Idle</th><th>Status</th></tr></thead>
+    <tbody>${normalized.sort((a, b) => b.startedAt - a.startedAt).map(session => `
+      <tr>
+        <td>${escHtml(session.displayName || session.userKey || '-')}</td>
+        <td><span class="session-role">${escHtml(session.role || 'pm')}</span></td>
+        <td>${escHtml(new Date(session.startedAt).toLocaleString())}</td>
+        <td>${escHtml(new Date(session.endedAt).toLocaleString())}</td>
+        <td class="num">${fmtSessionDuration(session.onlineMs)}</td>
+        <td class="num">${fmtSessionDuration(session.activeMs)}</td>
+        <td class="num">${fmtSessionDuration(session.idleMs)}</td>
+        <td><span class="session-state ${session.timedOut ? 'timed-out' : ''}">${session.timedOut ? 'Timed out' : (session.state || 'Closed')}</span></td>
+      </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+function renderPresenceUsageStats(rows, sessions = [], rangeDays = 56, estimatedActivities = []) {
   const totals = rows.reduce((acc, row) => {
     acc.active += row.activeWrites || 0;
     acc.idle += row.idleWrites || 0;
@@ -2324,7 +2639,18 @@ function renderPresenceUsageStats(rows) {
     <div class="usage-card"><div class="usage-card-label">Idle / logout</div><div class="usage-card-value">${fmtUsageNumber(totals.idle + totals.logout)}</div><div class="usage-card-note">Idle ${fmtUsageNumber(totals.idle)} · Logout ${fmtUsageNumber(totals.logout)}</div></div>
     <div class="usage-card"><div class="usage-card-label">Free quota used</div><div class="usage-card-value">${usedPct.toFixed(2)}%</div><div class="usage-card-note">${rows.length ? `${fmtUsageNumber(remaining)} writes remaining in loaded buckets` : 'No completed buckets yet'}</div></div>
   `;
-  renderPresenceUsageChart(rows);
+  if (Array.isArray(sessions)) {
+    renderPresenceSessionStats(sessions);
+  } else {
+    const estimatedUsers = new Set(estimatedActivities.map(item => item.userKey).filter(Boolean));
+    const estimatedWrites = estimatedActivities.reduce((sum, item) => sum + item.activityWrites, 0);
+    document.getElementById('presenceSessionSummary').innerHTML = `
+      <div class="usage-card"><div class="usage-card-label">Estimated users</div><div class="usage-card-value">${estimatedUsers.size}</div><div class="usage-card-note">Users with historical activity writes</div></div>
+      <div class="usage-card"><div class="usage-card-label">Activity buckets</div><div class="usage-card-value">${estimatedActivities.length}</div><div class="usage-card-note">12-hour estimates, not sessions</div></div>
+      <div class="usage-card"><div class="usage-card-label">Activity writes</div><div class="usage-card-value">${fmtUsageNumber(estimatedWrites)}</div><div class="usage-card-note">No duration inferred</div></div>
+      <div class="usage-card"><div class="usage-card-label">Recorded sessions</div><div class="usage-card-value">—</div><div class="usage-card-note">Firestore access required</div></div>`;
+  }
+  renderPresenceUsageChart(rows, Array.isArray(sessions) ? sessions : [], rangeDays, estimatedActivities);
 
   if (!rows.length) {
     document.getElementById('presenceUsageTable').innerHTML = '<div class="usage-empty">No completed 12-hour presence usage buckets yet.</div>';
@@ -2361,10 +2687,16 @@ window.loadPresenceUsageStats = async () => {
   if (currentRole !== 'admin') return;
   const table = document.getElementById('presenceUsageTable');
   table.innerHTML = '<div class="usage-empty">Loading presence usage...</div>';
+  const rangeDays = Number(document.getElementById('presenceRangeDays')?.value || 56);
+  const cutoff = Date.now() - rangeDays * 24 * 60 * 60 * 1000;
   try {
     await flushDuePresenceUsage();
     const snap = await getDocs(collection(db, "presence"));
     const buckets = {};
+    const presenceDocs = snap.docs.map(presenceDoc => ({
+      id: presenceDoc.id,
+      data: presenceDoc.data()
+    }));
     snap.docs.forEach(presenceDoc => {
       Object.values(presenceDoc.data().usageBuckets || {}).forEach(row => {
         if (!row?.bucketId) return;
@@ -2390,7 +2722,24 @@ window.loadPresenceUsageStats = async () => {
     const rows = Object.values(buckets)
       .sort((a, b) => Number(b.bucketStart || 0) - Number(a.bucketStart || 0))
       .slice(0, PRESENCE_USAGE_LOOKBACK_BUCKETS);
-    renderPresenceUsageStats(rows);
+    const estimatedActivities = buildEstimatedPresenceActivities(presenceDocs, cutoff);
+    let sessions = [];
+    try {
+      const sessionSnap = await getDocs(query(
+        collection(db, PRESENCE_SESSION_COLLECTION),
+        where('startedAt', '>=', cutoff)
+      ));
+      sessions = sessionSnap.docs.map(sessionDoc => ({ id: sessionDoc.id, ...sessionDoc.data() }));
+    } catch (sessionError) {
+      console.warn('Presence session history unavailable:', sessionError);
+      document.getElementById('presenceSessionSummary').innerHTML = '';
+      document.getElementById('presenceSessionTable').innerHTML =
+        `<div class="usage-empty">${sessionError?.code === 'permission-denied'
+          ? 'Session history requires Firestore access for the presenceSessions collection.'
+          : 'Session history could not be loaded. Existing write usage remains available.'}</div>`;
+      sessions = null;
+    }
+    renderPresenceUsageStats(rows, sessions, rangeDays, estimatedActivities);
   } catch (error) {
     console.error("Presence usage load failed:", error);
     const message = error?.code === 'permission-denied'
@@ -2416,7 +2765,10 @@ const pingPresence = () => {
     status: 'active',
     lastActive: Date.now()
   }, { merge: true })
-    .then(() => queuePresenceUsage('active'))
+    .then(() => {
+      queuePresenceUsage('active');
+      trackPresenceSession('active');
+    })
     .catch(e => console.warn("Presence ping failed:", e));
 };
 
@@ -2440,8 +2792,15 @@ function updatePresenceUI() {
 }
 
 function startPresenceSystem() {
+  startPresenceSession();
   pingPresence();
   heartbeatInterval = setInterval(pingPresence, PRESENCE_HEARTBEAT_MS);
+  presenceSessionHeartbeatInterval = setInterval(
+    () => {
+      if (isIdle) trackPresenceSession('idle');
+    },
+    PRESENCE_HEARTBEAT_MS
+  );
   startPresenceUsageFlushTimer();
 
   ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart'].forEach(evt => {
@@ -2461,6 +2820,7 @@ function startPresenceSystem() {
 
 function stopPresenceSystem() {
   if (heartbeatInterval) clearInterval(heartbeatInterval);
+  if (presenceSessionHeartbeatInterval) clearInterval(presenceSessionHeartbeatInterval);
   if (presenceUITimer) clearInterval(presenceUITimer);
   if (idleTimer) clearTimeout(idleTimer);
   if (presenceUnsub) presenceUnsub();
@@ -2474,6 +2834,8 @@ function stopPresenceSystem() {
       .then(() => queuePresenceUsage('logout'))
       .catch(()=>{});
   }
+  closePresenceSession('logout');
+  presenceSessionHeartbeatInterval = null;
   stopPresenceUsageFlushTimer();
 }
 
@@ -2509,6 +2871,7 @@ window.addEventListener('beforeunload', () => {
   if (currentUser) {
     setDoc(doc(db, "presence", getEmailKey(currentUser)), { lastActive: 0 }, { merge: true })
       .then(() => queuePresenceUsage('logout'));
+    closePresenceSession('page-close');
   }
 });
 
@@ -2633,6 +2996,7 @@ onAuthStateChanged(auth, async user => {
       weeksUnsub();
       weeksUnsub = null;
     }
+    resetPresenceSessionState();
     currentUser = null;
     currentRole = 'pm';
     stopPresenceUsageFlushTimer();
@@ -2912,14 +3276,129 @@ function demoTeamMembers(project, index = 0) {
   ];
 }
 
+/* resource-budget-status:start */
+function normalizeResourceBudgetStatus(project = {}) {
+  const status = project.dataStatus || {};
+  const normalizeState = (value, allowed, fallback) => allowed.includes(value) ? value : fallback;
+  return {
+    team: {
+      state: normalizeState(status.team?.state, ['unconfirmed', 'confirmed'], 'unconfirmed'),
+      confirmedAt: Number(status.team?.confirmedAt || 0) || null,
+      confirmedBy: status.team?.confirmedBy || null,
+      noAllocationRequired: status.team?.noAllocationRequired === true
+    },
+    budgetPlan: {
+      state: normalizeState(status.budgetPlan?.state, ['unconfirmed', 'confirmed'], 'unconfirmed'),
+      confirmedAt: Number(status.budgetPlan?.confirmedAt || 0) || null,
+      confirmedBy: status.budgetPlan?.confirmedBy || null,
+      overBudgetAcknowledged: status.budgetPlan?.overBudgetAcknowledged === true
+    },
+    budgetActual: {
+      state: normalizeState(status.budgetActual?.state, ['not-available', 'draft', 'confirmed'], 'not-available'),
+      confirmedAt: Number(status.budgetActual?.confirmedAt || 0) || null,
+      confirmedBy: status.budgetActual?.confirmedBy || null
+    }
+  };
+}
+
+function validateTeamAllocation(members = [], noAllocationRequired = false) {
+  const errors = [];
+  const names = new Set();
+  if (!members.length && !noAllocationRequired) errors.push('Add at least one member or mark allocation information as not required.');
+  members.forEach((member, index) => {
+    const name = String(member.name || '').trim();
+    const role = String(member.roleName || member.role || '').trim();
+    const effort = Number(member.effortPct ?? member.effort);
+    if (!name || !role || !Number.isFinite(effort) || effort < 0 || effort > 100) {
+      errors.push(`Member ${index + 1} requires name, role and effort from 0 to 100%.`);
+    }
+    const key = name.toLowerCase();
+    if (key && names.has(key)) errors.push(`Duplicate member: ${name}.`);
+    if (key) names.add(key);
+  });
+  return { errors, warnings: [] };
+}
+
+function validateBudgetPlan(budget = {}, overBudgetAcknowledged = false) {
+  const errors = [];
+  const warnings = [];
+  const plans = Array.isArray(budget.monthlyPlans) ? budget.monthlyPlans : [];
+  plans.forEach((item, index) => {
+    if (!item.month || !String(item.categoryName || item.category || '').trim() ||
+        !item.currency || !(Number(item.amount) > 0)) {
+      errors.push(`Plan ${index + 1} requires month, category, currency and an amount greater than zero.`);
+    }
+  });
+  const total = Number(budget.totalEstimated || 0);
+  const planSum = plans.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  if (budget.mode === 'auto' && !plans.length) errors.push('Auto budget requires at least one monthly plan.');
+  if (budget.mode !== 'auto' && !(total > 0)) errors.push('Manual budget ceiling must be greater than zero.');
+  if (budget.mode !== 'auto' && planSum > total && !overBudgetAcknowledged) {
+    errors.push('Monthly plan exceeds the manual budget ceiling. Acknowledge the over-plan before confirming.');
+  }
+  if (budget.mode !== 'auto' && total > planSum) warnings.push('Part of the budget is not allocated to a monthly plan.');
+  return { errors, warnings };
+}
+
+function validateActualSpend(actuals = [], plannedCategories = []) {
+  const errors = [];
+  const warnings = [];
+  const planned = new Set(plannedCategories.map(value => String(value).toLowerCase()));
+  actuals.forEach((item, index) => {
+    const category = String(item.categoryName || item.category || '').trim();
+    if (!item.month || !category || !item.currency || !(Number(item.amount) > 0)) {
+      errors.push(`Actual ${index + 1} requires month, category, currency and an amount greater than zero.`);
+    } else if (planned.size && !planned.has(category.toLowerCase())) {
+      warnings.push(`Actual ${index + 1} is not represented in the monthly plan.`);
+    }
+  });
+  return { errors, warnings };
+}
+
+function getConfirmedResourceProjects(projects = []) {
+  return projects.filter(project => normalizeResourceBudgetStatus(project).team.state === 'confirmed');
+}
+
+function getConfirmedBudgetPlanProjects(projects = []) {
+  return projects.filter(project => normalizeResourceBudgetStatus(project).budgetPlan.state === 'confirmed');
+}
+
+function getConfirmedBudgetActualProjects(projects = []) {
+  return projects.filter(project => normalizeResourceBudgetStatus(project).budgetActual.state === 'confirmed');
+}
+
+function getResourceBudgetCoverage(projects = []) {
+  const statuses = projects.map(normalizeResourceBudgetStatus);
+  return {
+    total: projects.length,
+    teamConfirmed: statuses.filter(status => status.team.state === 'confirmed').length,
+    teamPending: statuses.filter(status => status.team.state !== 'confirmed').length,
+    planConfirmed: statuses.filter(status => status.budgetPlan.state === 'confirmed').length,
+    planPending: statuses.filter(status => status.budgetPlan.state !== 'confirmed').length,
+    actualConfirmed: statuses.filter(status => status.budgetActual.state === 'confirmed').length,
+    actualPending: statuses.filter(status => status.budgetActual.state === 'draft').length,
+    actualUnavailable: statuses.filter(status => status.budgetActual.state === 'not-available').length
+  };
+}
+/* resource-budget-status:end */
+
 function enrichProjectPrototype(project, index = 0) {
+  const isPrototypeSeed = /^DEMO-/i.test(project.code || '');
   const budget = project.budget && (project.budget.totalEstimated || project.budget.monthlyPlans?.length || project.budget.actuals?.length)
     ? project.budget
-    : demoProjectFinance(project, index);
+    : isPrototypeSeed
+      ? demoProjectFinance(project, index)
+      : { mode: 'manual', currency: 'USD', totalEstimated: 0, monthlyPlans: [], actuals: [] };
   const teamMembers = Array.isArray(project.teamMembers) && project.teamMembers.length
     ? project.teamMembers
-    : demoTeamMembers(project, index);
-  return { ...project, budget, teamMembers };
+    : isPrototypeSeed ? demoTeamMembers(project, index) : [];
+  const hasStoredData = Boolean(project.dataStatus);
+  const dataStatus = hasStoredData ? normalizeResourceBudgetStatus(project) : isPrototypeSeed ? {
+    team: { state: 'confirmed', confirmedAt: Date.now(), confirmedBy: 'Prototype seed', noAllocationRequired: false },
+    budgetPlan: { state: 'confirmed', confirmedAt: Date.now(), confirmedBy: 'Prototype seed', overBudgetAcknowledged: false },
+    budgetActual: { state: 'confirmed', confirmedAt: Date.now(), confirmedBy: 'Prototype seed' }
+  } : normalizeResourceBudgetStatus({});
+  return { ...project, budget, teamMembers, dataStatus };
 }
 
 function enrichProjectsPrototype(projects = []) {
@@ -3150,12 +3629,30 @@ function buildResourceSummary(projects = []) {
   return [...map.values()].map(item => ({ ...item, roles: [...item.roles] })).sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
 }
 
-function buildBudgetSummary(projects = [], displayCurrency = overviewCurrency) {
-  const projectRows = projects.map(p => ({ project: p, ...projectBudgetTotals(p, displayCurrency) })).sort((a, b) => b.usedPct - a.usedPct);
+function buildBudgetSummary(planProjects = [], actualProjects = planProjects, displayCurrency = overviewCurrency) {
+  const planKeys = new Set(planProjects.map(p => p.code || p.name));
+  const actualKeys = new Set(actualProjects.map(p => p.code || p.name));
+  const allProjects = [...new Map([...planProjects, ...actualProjects].map(p => [p.code || p.name, p])).values()];
+  const projectRows = allProjects.map(p => {
+    const row = projectBudgetTotals(p, displayCurrency);
+    const key = p.code || p.name;
+    const total = planKeys.has(key) ? row.total : 0;
+    const planned = planKeys.has(key) ? row.planned : 0;
+    const actual = actualKeys.has(key) ? row.actual : 0;
+    return {
+      project: p,
+      total,
+      planned,
+      actual,
+      variance: actual - planned,
+      planGap: total - planned,
+      usedPct: total ? Math.round((actual / total) * 100) : 0
+    };
+  }).sort((a, b) => b.usedPct - a.usedPct);
   const total = projectRows.reduce((sum, row) => sum + row.total, 0);
   const planned = projectRows.reduce((sum, row) => sum + row.planned, 0);
   const actual = projectRows.reduce((sum, row) => sum + row.actual, 0);
-  return { total, planned, actual, variance: actual - planned, planGap: total - planned, plannedCoverage: total ? Math.round((planned / total) * 100) : 0, usedPct: total ? Math.round((actual / total) * 100) : 0, projectRows, categories: budgetCategoryTotals(projects, displayCurrency) };
+  return { total, planned, actual, variance: actual - planned, planGap: total - planned, plannedCoverage: total ? Math.round((planned / total) * 100) : 0, usedPct: total ? Math.round((actual / total) * 100) : 0, projectRows, categories: budgetCategoryTotals(actualProjects, displayCurrency) };
 }
 
 function allocationClass(pct) {
@@ -3165,8 +3662,12 @@ function allocationClass(pct) {
 }
 
 function renderResourceBudgetOverview(projects) {
-  const resources = buildResourceSummary(projects);
-  const budget = buildBudgetSummary(projects, overviewCurrency);
+  const coverage = getResourceBudgetCoverage(projects);
+  const resourceProjects = getConfirmedResourceProjects(projects);
+  const planProjects = getConfirmedBudgetPlanProjects(projects);
+  const actualProjects = getConfirmedBudgetActualProjects(projects);
+  const resources = buildResourceSummary(resourceProjects);
+  const budget = buildBudgetSummary(planProjects, actualProjects, overviewCurrency);
   const overloaded = resources.filter(r => r.total > 100).length;
   const under = resources.filter(r => r.total < 50).length;
   const avg = resources.length ? Math.round(resources.reduce((sum, r) => sum + r.total, 0) / resources.length) : 0;
@@ -3179,7 +3680,7 @@ function renderResourceBudgetOverview(projects) {
           <div class="exec-eyebrow">Resource Overview</div>
           <div class="exec-panel-title">Team effort allocation</div>
         </div>
-        <div class="exec-panel-note">${resources.length} members · ${overloaded} overloaded</div>
+        <div class="exec-panel-note">${coverage.teamConfirmed} confirmed · ${coverage.teamPending} pending</div>
       </div>
       <div class="rb-kpi-grid">
         <div class="rb-kpi"><div class="rb-kpi-label">Overloaded</div><div class="rb-kpi-value red">${overloaded}</div></div>
@@ -3206,7 +3707,8 @@ function renderResourceBudgetOverview(projects) {
           <div class="exec-eyebrow">Budget Overview</div>
           <div class="exec-panel-title">Budget vs actual</div>
         </div>
-        <div class="resource-budget-toolbar">
+      <div class="resource-budget-toolbar">
+          <span class="exec-panel-note">${coverage.planConfirmed} plans confirmed · ${coverage.actualConfirmed} actuals confirmed · ${coverage.planPending} pending</span>
           <span class="exec-panel-note">Display</span>
           <select class="currency-select" onchange="setOverviewCurrency(this.value)">${currencyOptions(overviewCurrency)}</select>
         </div>
@@ -3555,7 +4057,7 @@ function renderStrategicTrackFilter(projs, layer, editable, inline = false) {
   </${tag}>`;
 }
 
-function getTrendWeeks(limit = 8) {
+function getTrendWeeks(limit = 12) {
   const weeks = Array.isArray(allWeeks) ? allWeeks : [];
   const selectedIdx = Math.min(Math.max(Number(currentIdx) || 0, 0), Math.max(weeks.length - 1, 0));
   const visibleHistory = weeks
@@ -3592,26 +4094,37 @@ function weeklyTrendPoints(weeks, currentProjects = []) {
   });
 }
 
+/* trend-axis:start */
+function trendXCoordinates(count, width = 360, pad = 12) {
+  if (count <= 0) return [];
+  if (count === 1) return [width / 2];
+  const step = (width - pad * 2) / (count - 1);
+  return Array.from({ length: count }, (_, index) => pad + index * step);
+}
+/* trend-axis:end */
+
 function renderTrendSvg(points, key, className = '') {
-  const width = 360;
-  const height = 112;
+  const width = 720;
+  const height = 132;
   const pad = 12;
+  const plotBottom = 104;
   const values = points.map(p => Number(p[key] || 0));
   const max = Math.max(1, ...values);
   const min = Math.min(0, ...values);
   const span = Math.max(1, max - min);
-  const xStep = points.length > 1 ? (width - pad * 2) / (points.length - 1) : 0;
+  const xCoordinates = trendXCoordinates(points.length, width, pad);
   const coords = values.map((v, i) => {
-    const x = points.length > 1 ? pad + i * xStep : width / 2;
-    const y = height - pad - ((v - min) / span) * (height - pad * 2);
+    const x = xCoordinates[i];
+    const y = plotBottom - ((v - min) / span) * (plotBottom - pad);
     return [x, y];
   });
   const d = coords.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
   return `<svg class="weekly-trend-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escHtml(key)} trend">
-    <line class="weekly-trend-axis" x1="${pad}" y1="${height - pad}" x2="${width - pad}" y2="${height - pad}"></line>
-    <line class="weekly-trend-axis" x1="${pad}" y1="${pad}" x2="${pad}" y2="${height - pad}"></line>
+    <line class="weekly-trend-axis" x1="${pad}" y1="${plotBottom}" x2="${width - pad}" y2="${plotBottom}"></line>
+    <line class="weekly-trend-axis" x1="${pad}" y1="${pad}" x2="${pad}" y2="${plotBottom}"></line>
     <path class="weekly-trend-line ${className}" d="${d}"></path>
     ${coords.map(([x, y]) => `<circle class="weekly-trend-dot ${className}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.6"></circle>`).join('')}
+    ${points.map((point, index) => `<text class="weekly-trend-axis-label" x="${xCoordinates[index].toFixed(1)}" y="126">${escHtml(point.label)}</text>`).join('')}
   </svg>`;
 }
 
@@ -3638,7 +4151,6 @@ function renderWeeklyTrendPanel(projects) {
           <div class="weekly-trend-value">${latest.riskPressure}<span class="exec-panel-note"> ${riskDelta >= 0 ? '+' : ''}${riskDelta}</span></div>
         </div>
         ${renderTrendSvg(points, 'riskPressure', 'risk')}
-        <div class="weekly-trend-labels">${points.map(p => `<span>${escHtml(p.label)}</span>`).join('')}</div>
       </section>
       <section class="weekly-trend-card">
         <div class="weekly-trend-head">
@@ -3646,7 +4158,6 @@ function renderWeeklyTrendPanel(projects) {
           <div class="weekly-trend-value">${latest.avgProgress}%<span class="exec-panel-note"> ${progressDelta >= 0 ? '+' : ''}${progressDelta}%</span></div>
         </div>
         ${renderTrendSvg(points, 'avgProgress')}
-        <div class="weekly-trend-labels">${points.map(p => `<span>${escHtml(p.label)}</span>`).join('')}</div>
       </section>
     </div>
   </div>`;
@@ -3818,6 +4329,7 @@ function renderSummaryContent(summary, allProjects = [], scopedProjects = allPro
   let html = '';
   let inSection = false;
   let inList = false;
+  let portfolioLeadRendered = false;
   const openSection = title => {
     let section = '';
     if (inList) { section += '</ul>'; inList = false; }
@@ -3852,7 +4364,9 @@ function renderSummaryContent(summary, allProjects = [], scopedProjects = allPro
         html += renderProjectItem(projectItem);
         return;
       }
-      html += `<p>${escHtml(line)}</p>`;
+      const leadClass = !portfolioLeadRendered ? ' class="exec-summary-portfolio-lead"' : '';
+      html += `<p${leadClass}>${escHtml(line)}</p>`;
+      portfolioLeadRendered = true;
     }
   });
   if (inList) html += '</ul>';
@@ -4141,6 +4655,19 @@ function projectMovement(prev, curr) {
   if (milestones.length) changes.push(`Milestone changes:\n- ${milestones.join('\n- ')}`);
   if (quarterly.length) changes.push(`Quarterly milestone changes:\n- ${quarterly.join('\n- ')}`);
   return changes;
+}
+
+function addPortfolioSummaryInstruction(prompt) {
+  const instruction = '- Immediately below WEEKLY MOVEMENT, write one cross-project overview sentence beginning exactly with "Portfolio Summary:". Keep it on its own line, without a bullet, before any project updates.\n- The Portfolio Summary must describe overall movement across projects and must not be repeated inside a project bullet.';
+  return String(prompt || '')
+    .replace(
+      '- Return exactly these two section headings, each on its own line: WEEKLY MOVEMENT and MANAGEMENT ASK.',
+      `- Return exactly these two section headings, each on its own line: WEEKLY MOVEMENT and MANAGEMENT ASK.\n${instruction}`
+    )
+    .replace(
+      '- Never combine multiple projects into one bullet. Use a separate Portfolio: bullet only for a genuinely portfolio-wide point.',
+      '- Never combine multiple projects into one bullet. Do not create a Portfolio project bullet because the portfolio-wide point belongs only in Portfolio Summary.'
+    );
 }
 
 function buildCopilotPrompt() {
@@ -5593,6 +6120,108 @@ function getSelectedBudgetMode() {
   return document.querySelector('input[name="budgetMode"]:checked')?.value || 'manual';
 }
 
+function getEditorBudget() {
+  const currency = document.getElementById('pe_budget_currency')?.value || 'USD';
+  return {
+    mode: getSelectedBudgetMode(),
+    currency,
+    totalEstimated: Number(document.getElementById('pe_budget_total')?.value || 0),
+    monthlyPlans: collectBudgetRows('.budget-plan-row').map(item => ({ ...item, currency: item.currency || currency })),
+    actuals: collectBudgetRows('.budget-actual-row').map(item => ({ ...item, currency: item.currency || currency }))
+  };
+}
+
+function sectionStateLabel(section, state) {
+  if (state === 'confirmed') return 'Confirmed';
+  if (state === 'draft') return 'Draft';
+  if (state === 'not-available') return 'Not available';
+  return 'Not confirmed';
+}
+
+function setResourceValidation(section, result = { errors: [], warnings: [] }) {
+  const target = document.getElementById(`${section}Validation`);
+  if (!target) return;
+  const items = [...(result.errors || []), ...(result.warnings || [])];
+  target.className = `resource-validation${items.length ? ' show' : ''}${result.errors?.length ? ' error' : ''}`;
+  target.innerHTML = items.map(item => `<div>• ${escHtml(item)}</div>`).join('');
+}
+
+window.renderResourceSectionState = () => {
+  const config = {
+    team: { badge: 'teamStateBadge', summary: 'teamSectionSummary' },
+    budgetPlan: { badge: 'budgetPlanStateBadge', summary: 'budgetPlanSectionSummary' },
+    budgetActual: { badge: 'budgetActualStateBadge', summary: 'budgetActualSectionSummary' }
+  };
+  Object.entries(config).forEach(([section, ids]) => {
+    const state = editorResourceStatus[section].state;
+    const badge = document.getElementById(ids.badge);
+    if (badge) {
+      badge.textContent = sectionStateLabel(section, state);
+      badge.className = `resource-state-badge ${state}`;
+    }
+  });
+  const members = collectTeamMembers();
+  const budget = getEditorBudget();
+  const teamSummary = document.getElementById('teamSectionSummary');
+  const planSummary = document.getElementById('budgetPlanSectionSummary');
+  const actualSummary = document.getElementById('budgetActualSectionSummary');
+  if (teamSummary) teamSummary.textContent = members.length ? `${members.length} member${members.length === 1 ? '' : 's'} entered` : 'No allocation entered';
+  if (planSummary) planSummary.textContent = budget.monthlyPlans.length ? `${budget.monthlyPlans.length} monthly plan item${budget.monthlyPlans.length === 1 ? '' : 's'}` : 'No monthly plan entered';
+  if (actualSummary) actualSummary.textContent = budget.actuals.length ? `${budget.actuals.length} actual spend item${budget.actuals.length === 1 ? '' : 's'}` : 'No actual spend available';
+};
+
+window.markResourceSectionDirty = section => {
+  if (resourceEditorHydrating || !editorResourceStatus[section]) return;
+  editorResourceStatus[section] = {
+    ...editorResourceStatus[section],
+    state: section === 'budgetActual'
+      ? (collectBudgetRows('.budget-actual-row').length ? 'draft' : 'not-available')
+      : 'unconfirmed',
+    confirmedAt: null,
+    confirmedBy: null
+  };
+  setResourceValidation(section);
+  renderResourceSectionState();
+};
+
+window.confirmResourceSection = section => {
+  const budget = getEditorBudget();
+  let result;
+  if (section === 'team') {
+    result = validateTeamAllocation(collectTeamMembers(), document.getElementById('pe_team_not_required')?.checked);
+  } else if (section === 'budgetPlan') {
+    const acknowledged = document.getElementById('pe_over_budget_ack')?.checked === true;
+    result = validateBudgetPlan(budget, acknowledged);
+    editorResourceStatus.budgetPlan.overBudgetAcknowledged = acknowledged;
+  } else {
+    if (!budget.actuals.length) {
+      editorResourceStatus.budgetActual = { state: 'not-available', confirmedAt: null, confirmedBy: null };
+      setResourceValidation(section, { errors: [], warnings: ['No actual spend is available. This is a valid state and remains excluded from spend KPIs.'] });
+      renderResourceSectionState();
+      return;
+    }
+    result = validateActualSpend(budget.actuals, budget.monthlyPlans.map(item => item.categoryName));
+  }
+  setResourceValidation(section, result);
+  if (result.errors.length) {
+    document.getElementById(`${section}EditorPanel`)?.setAttribute('open', '');
+    return;
+  }
+  editorResourceStatus[section] = {
+    ...editorResourceStatus[section],
+    state: 'confirmed',
+    confirmedAt: Date.now(),
+    confirmedBy: currentUser?.email || 'Unknown'
+  };
+  if (section === 'team') editorResourceStatus.team.noAllocationRequired = document.getElementById('pe_team_not_required')?.checked === true;
+  renderResourceSectionState();
+  showSaveToast(`${sectionStateLabel(section, 'confirmed')} for Overview`);
+};
+
+function collectResourceBudgetStatus() {
+  return JSON.parse(JSON.stringify(editorResourceStatus));
+}
+
 window.setBudgetTab = (tab = 'plan') => {
   const isActual = tab === 'actual';
   document.getElementById('budgetPlanPane')?.classList.toggle('active', !isActual);
@@ -5638,6 +6267,8 @@ window.updateBudgetLinkSummary = () => {
   document.getElementById('pe_budget_gap').className = `budget-link-value ${gapClass}`;
   document.getElementById('pe_budget_coverage').textContent = `${coverage}%`;
   document.getElementById('pe_budget_coverage').className = `budget-link-value ${coverageClass}`;
+  const ackWrap = document.getElementById('overBudgetAckWrap');
+  if (ackWrap) ackWrap.style.display = mode === 'manual' && gap < 0 ? 'flex' : 'none';
   const message = mode === 'auto'
     ? 'Auto mode: total estimated budget follows the monthly planned spend sum.'
     : gap < 0
@@ -5646,6 +6277,7 @@ window.updateBudgetLinkSummary = () => {
         ? 'Manual mode: remaining budget is not allocated to monthly plan yet.'
         : 'Manual mode: monthly plan fully matches the total budget.';
   document.getElementById('pe_budget_message').textContent = message;
+  renderResourceSectionState();
 };
 
 window.addTeamMemberRow = (member = {}) => {
@@ -5657,9 +6289,11 @@ window.addTeamMemberRow = (member = {}) => {
     <input class="fi team-name" value="${escHtml(member.name || '')}" placeholder="Name">
     <input class="fi team-role" list="teamRoleOptions" value="${escHtml(member.roleName || member.role || '')}" placeholder="Role">
     <input class="fi team-effort" type="number" min="0" max="200" value="${Number(member.effortPct || member.effort || 0)}" placeholder="Effort %">
-    <button class="row-delete" onclick="this.parentElement.remove();" title="Delete member">&#128465;&#65039;</button>
+    <button class="row-delete" onclick="this.parentElement.remove(); markResourceSectionDirty('team');" title="Delete member">&#128465;&#65039;</button>
   `;
+  row.addEventListener('input', () => markResourceSectionDirty('team'));
   container.appendChild(row);
+  markResourceSectionDirty('team');
 };
 
 window.addBudgetPlanRow = (item = {}) => {
@@ -5672,9 +6306,12 @@ window.addBudgetPlanRow = (item = {}) => {
     <input class="fi budget-category" list="budgetCategoryOptions" value="${escHtml(item.categoryName || item.category || 'NRE')}" placeholder="Category">
     <select class="fs budget-currency" onchange="updateBudgetLinkSummary()">${currencyOptions(item.currency || document.getElementById('pe_budget_currency')?.value || 'USD')}</select>
     <input class="fi budget-amount" type="number" min="0" step="100" value="${Number(item.amount || 0)}" placeholder="Amount" oninput="updateBudgetLinkSummary()">
-    <button class="row-delete" onclick="this.parentElement.remove(); updateBudgetLinkSummary();" title="Delete plan">&#128465;&#65039;</button>
+    <button class="row-delete" onclick="this.parentElement.remove(); markResourceSectionDirty('budgetPlan'); updateBudgetLinkSummary();" title="Delete plan">&#128465;&#65039;</button>
   `;
+  row.addEventListener('input', () => markResourceSectionDirty('budgetPlan'));
+  row.addEventListener('change', () => markResourceSectionDirty('budgetPlan'));
   container.appendChild(row);
+  markResourceSectionDirty('budgetPlan');
   updateBudgetLinkSummary();
 };
 
@@ -5689,9 +6326,12 @@ window.addBudgetActualRow = (item = {}) => {
     <select class="fs budget-currency">${currencyOptions(item.currency || document.getElementById('pe_budget_currency')?.value || 'USD')}</select>
     <input class="fi budget-amount" type="number" min="0" step="100" value="${Number(item.amount || 0)}" placeholder="Amount">
     <input class="fi budget-note" value="${escHtml(item.note || '')}" placeholder="Note">
-    <button class="row-delete" onclick="this.parentElement.remove(); updateBudgetLinkSummary();" title="Delete actual">&#128465;&#65039;</button>
+    <button class="row-delete" onclick="this.parentElement.remove(); markResourceSectionDirty('budgetActual'); updateBudgetLinkSummary();" title="Delete actual">&#128465;&#65039;</button>
   `;
+  row.addEventListener('input', () => markResourceSectionDirty('budgetActual'));
+  row.addEventListener('change', () => markResourceSectionDirty('budgetActual'));
   container.appendChild(row);
+  markResourceSectionDirty('budgetActual');
   updateBudgetLinkSummary();
 };
 
@@ -5866,8 +6506,10 @@ window.openProjEdit = (code, isNew = false) => {
   isCreatingNew = isNew;
   editingProjCode = code;
   const week = allWeeks[currentIdx];
-  let p = isNew ? {name:'', code:'', owner:'', deputy:'', customer:'', location:'', visibility:'active', milestones:[], quarterlyMilestones:[], status:'green', progress:0, attention:'watch', highlight:'', weeklyActions:'', risk:'', next:'', riskActions:[], teamMembers:[], budget:{ mode:'manual', currency:'USD', totalEstimated:0, monthlyPlans:[], actuals:[] }} : enrichProjectPrototype(week.projects.find(x => x.code === code), week.projects.findIndex(x => x.code === code));
+  let p = isNew ? {name:'', code:'', owner:'', deputy:'', customer:'', location:'', visibility:'active', milestones:[], quarterlyMilestones:[], status:'green', progress:0, attention:'watch', highlight:'', weeklyActions:'', risk:'', next:'', riskActions:[], teamMembers:[], budget:{ mode:'manual', currency:'USD', totalEstimated:0, monthlyPlans:[], actuals:[] }, dataStatus: normalizeResourceBudgetStatus({})} : enrichProjectPrototype(week.projects.find(x => x.code === code), week.projects.findIndex(x => x.code === code));
   p = normalizeProject(p);
+  resourceEditorHydrating = true;
+  editorResourceStatus = normalizeResourceBudgetStatus(p);
   
   document.getElementById('peTitle').textContent = isNew ? "New Project" : "Edit Project";
   
@@ -5930,20 +6572,26 @@ window.openProjEdit = (code, isNew = false) => {
   const budgetCurrencySelect = document.getElementById('pe_budget_currency');
   const budgetTotalInput = document.getElementById('pe_budget_total');
   budgetCurrencySelect.innerHTML = currencyOptions(p.budget?.currency || 'USD');
-  budgetCurrencySelect.onchange = updateBudgetLinkSummary;
+  budgetCurrencySelect.onchange = () => { markResourceSectionDirty('budgetPlan'); updateBudgetLinkSummary(); };
   budgetTotalInput.value = p.budget?.totalEstimated || 0;
-  budgetTotalInput.oninput = updateBudgetLinkSummary;
+  budgetTotalInput.oninput = () => { markResourceSectionDirty('budgetPlan'); updateBudgetLinkSummary(); };
+  document.getElementById('pe_team_not_required').checked = editorResourceStatus.team.noAllocationRequired === true;
+  document.getElementById('pe_over_budget_ack').checked = editorResourceStatus.budgetPlan.overBudgetAcknowledged === true;
   const teamCont = document.getElementById('teamMemberContainer');
   const planCont = document.getElementById('budgetPlanContainer');
   const actualCont = document.getElementById('budgetActualContainer');
   teamCont.innerHTML = '';
   planCont.innerHTML = '';
   actualCont.innerHTML = '';
-  (p.teamMembers?.length ? p.teamMembers : [{}]).forEach(member => addTeamMemberRow(member));
-  (p.budget?.monthlyPlans?.length ? p.budget.monthlyPlans : [{}]).forEach(item => addBudgetPlanRow(item));
-  (p.budget?.actuals?.length ? p.budget.actuals : [{}]).forEach(item => addBudgetActualRow(item));
-  setBudgetTab('plan');
+  (p.teamMembers || []).forEach(member => addTeamMemberRow(member));
+  (p.budget?.monthlyPlans || []).forEach(item => addBudgetPlanRow(item));
+  (p.budget?.actuals || []).forEach(item => addBudgetActualRow(item));
+  resourceEditorHydrating = false;
   updateBudgetLinkSummary();
+  renderResourceSectionState();
+  setResourceValidation('team');
+  setResourceValidation('budgetPlan');
+  setResourceValidation('budgetActual');
   
   const actionDiv = document.getElementById('adminProjActions');
   if (currentRole === 'admin') {
@@ -6060,7 +6708,8 @@ window.saveProjEdit = async () => {
       totalEstimated: Number(document.getElementById('pe_budget_total').value || 0),
       monthlyPlans: collectBudgetRows('.budget-plan-row').map(item => ({ ...item, currency: item.currency || budgetCurrency })),
       actuals: collectBudgetRows('.budget-actual-row').map(item => ({ ...item, currency: item.currency || budgetCurrency }))
-    }
+    },
+    dataStatus: collectResourceBudgetStatus()
   };
 
   if (isCreatingNew && currentRole !== 'admin') {
@@ -6088,7 +6737,14 @@ window.saveProjEdit = async () => {
   
   await new Promise(r => setTimeout(r, 600)); 
   hideLoader();
-  showSaveToast("Project saved successfully");
+  const pendingSections = [
+    pData.dataStatus.team.state !== 'confirmed' && 'team',
+    pData.dataStatus.budgetPlan.state !== 'confirmed' && 'budget plan',
+    pData.dataStatus.budgetActual.state === 'draft' && 'actual spend'
+  ].filter(Boolean);
+  showSaveToast(pendingSections.length
+    ? `Project saved · ${pendingSections.join(', ')} excluded from Overview`
+    : "Project saved successfully");
 };
 
 window.deleteProject = async () => {
@@ -6285,7 +6941,7 @@ window.updateCopilotPrompt = () => {
   note.textContent = prevWeek
     ? `Prompt will compare ${prevWeek.weekLabel} (${prevWeek.weekDate}) to ${currentWeek.weekLabel} (${currentWeek.weekDate}).`
     : 'No previous week is available; prompt will use current week only.';
-  prompt.value = buildCopilotPrompt();
+  prompt.value = addPortfolioSummaryInstruction(buildCopilotPrompt());
 };
 
 window.copyCopilotPrompt = async () => {

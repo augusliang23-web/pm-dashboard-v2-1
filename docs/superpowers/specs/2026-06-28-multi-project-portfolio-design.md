@@ -8,13 +8,13 @@ This design preserves the existing v2.0T executive workflow while adding project
 
 ## 2. Baseline and Deployment
 
-- Source baseline: commit `ddc0e5f00e859edaf9355fcb77a694b95718fb26` in the `pm-dashboard-uat` repository.
+- Source baseline: commit `6d9f7bd3e58cbe25f8fd3603c11c9b8a983c3dd1` in the `pm-dashboard-uat` repository.
 - Product source file: `team-2/index.html`.
 - UAT deployment path: `/pm-dashboard-uat/team-2/`.
 - The root-level `index.html` and standalone prototype files are not implementation baselines.
 - Existing Firebase integration, authentication, roles, weekly reporting, VIP preview, and Overview behavior must be preserved unless this specification explicitly changes them.
 
-The `?v=ddc0e5f` URL parameter is a cache-busting value, not a pinned deployment reference. Development must branch from the Git commit itself.
+The `?v=6d9f7bd-2` URL parameter is a cache-busting value, not a pinned deployment reference. Development must branch from the Git commit itself.
 
 ## 3. Scope
 
