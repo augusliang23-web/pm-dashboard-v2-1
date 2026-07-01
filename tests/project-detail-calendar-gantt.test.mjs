@@ -41,3 +41,23 @@ test('post-milestone sections follow the approved full-width order', () => {
   assert.match(detail, /detail-full-width detail-resources-section/);
   assert.match(detail, /detail-full-width detail-resource-summary-section/);
 });
+
+test('Gantt exposes descriptive scale controls and calendar guidance', () => {
+  assert.match(html, />Weekly view<\/button>/);
+  assert.match(html, />Monthly view<\/button>/);
+  assert.match(html, /aria-pressed="\$\{ganttScale === 'week'\}"/);
+  assert.match(html, /axis\.rangeLabel/);
+  assert.match(html, /axis\.guidance/);
+});
+
+test('Gantt header and rows share calendar-axis positions', () => {
+  assert.match(html, /buildGanttCalendarAxis\(min,\s*max,\s*ganttScale\)/);
+  assert.match(html, /class="gantt-calendar-groups"/);
+  assert.match(html, /class="gantt-calendar-ticks"/);
+  assert.match(html, /class="gantt-grid-line"/);
+  assert.match(html, /const gridLines = axis\.ticks\.map/);
+  assert.doesNotMatch(
+    html,
+    /\.gantt-track\s*\{[^}]*repeating-linear-gradient/,
+  );
+});
