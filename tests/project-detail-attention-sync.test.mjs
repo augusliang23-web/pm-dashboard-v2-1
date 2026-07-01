@@ -22,3 +22,28 @@ test('project detail quarterly milestones render Q1 through Q4 columns', () => {
   assert.match(html, /class="detail-quarter-heading"/);
   assert.match(html, /No milestone in this quarter\./);
 });
+
+test('overview orders portfolio and routes both attention controls through one transaction', () => {
+  assert.match(html, /orderProjectsByAttention/);
+  assert.match(html, /const portfolioProjects = orderProjectsByAttention\(projs, project => project\.attention\)/);
+  assert.match(html, /portfolioProjects\.map\(p =>/);
+  assert.match(html, /async function updateProjectAttention\(code, attention\)/);
+
+  const bindStart = html.indexOf('function bindDecisionControls(editable)');
+  const bindEnd = html.indexOf('// ── UTILS & ACTIONS ──', bindStart);
+  const bindSource = html.slice(bindStart, bindEnd);
+  assert.equal((bindSource.match(/await updateProjectAttention\(/g) || []).length, 2);
+  assert.doesNotMatch(bindSource, /p\.attention\s*=/);
+});
+
+test('attention transaction reads live week and commits UI only after success', () => {
+  const start = html.indexOf('async function updateProjectAttention(code, attention)');
+  const end = html.indexOf('function bindDecisionControls(editable)', start);
+  const source = html.slice(start, end);
+  assert.match(source, /await runTransaction\(db, async transaction =>/);
+  assert.match(source, /await transaction\.get\(weekRef\)/);
+  assert.match(source, /applyProjectAttentionUpdate\(snapshot\.data\(\)/);
+  assert.match(source, /transaction\.update\(weekRef/);
+  assert.ok(source.indexOf('allWeeks[currentIdx] = result.week') > source.indexOf('await runTransaction'));
+  assert.match(source, /render\(\)/);
+});

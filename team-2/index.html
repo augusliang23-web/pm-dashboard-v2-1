@@ -2028,9 +2028,9 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 
 <script type="module">
 import { isAuthInitializationCurrent } from "./js/auth-session.mjs";
-import { RESOURCE_DISCIPLINES, calculateDropIndex, createDefaultWorkstreams, createTimelineTicks, filterOverviewSummaryLines, filterProjects, filterRoleVisibleProjects, getFocusTrapIndex, getOverviewProjectBadgeLabel, getOverviewProjects, getOverviewScopeStorageKey, matchOverviewSummaryProjectLine, mergeResourceEntry, normalizeOverviewMilestoneStatus, normalizeOverviewPercent, normalizeOverviewRagStatus, normalizeOverviewScope, normalizeOverviewSummaryHeading, normalizeProject, normalizeResourceEntry, normalizeRiskActionRows, normalizeWorkstream, parseIsoDate, projectOwnershipMatchesIdentity, resolveProjectStatusDate, resolveWorkstreamTemplateConfig, validateResourceInput, validateWorkstreamTemplateConfig, validateWorkstreams } from "./js/portfolio-core.mjs";
+import { RESOURCE_DISCIPLINES, calculateDropIndex, createDefaultWorkstreams, createTimelineTicks, filterOverviewSummaryLines, filterProjects, filterRoleVisibleProjects, getFocusTrapIndex, getOverviewProjectBadgeLabel, getOverviewProjects, getOverviewScopeStorageKey, matchOverviewSummaryProjectLine, mergeResourceEntry, normalizeOverviewMilestoneStatus, normalizeOverviewPercent, normalizeOverviewRagStatus, normalizeOverviewScope, normalizeOverviewSummaryHeading, normalizeProject, normalizeResourceEntry, normalizeRiskActionRows, normalizeWorkstream, orderProjectsByAttention, parseIsoDate, projectOwnershipMatchesIdentity, resolveProjectStatusDate, resolveWorkstreamTemplateConfig, validateResourceInput, validateWorkstreamTemplateConfig, validateWorkstreams } from "./js/portfolio-core.mjs";
 import { assertReasonableWeekDocument, buildImportResults, formatImportPreviewRow, importResultsToCsv, mergeReadyImportRows, planImport } from "./js/excel-import.mjs";
-import { applyProjectDelete, applyProjectSave, ensureStableEditorRowId, projectRevisionFingerprint, withProjectEditorRowIds } from "./js/project-mutations.mjs";
+import { applyProjectAttentionUpdate, applyProjectDelete, applyProjectSave, ensureStableEditorRowId, projectRevisionFingerprint, withProjectEditorRowIds } from "./js/project-mutations.mjs";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, doc, onSnapshot, runTransaction, setDoc, updateDoc, query, orderBy, where, getDoc, getDocs, increment, serverTimestamp, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, updatePassword, onAuthStateChanged, signOut, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -5728,6 +5728,7 @@ function renderExec(projs, summary, allProjects = projs) {
   const strategyLayer = getStrategyLayer(allWeeks[currentIdx]);
   const activeTrack = 'all';
   const roadmapYear = getDefaultRoadmapYear(projs, strategyLayer);
+  const portfolioProjects = orderProjectsByAttention(projs, project => project.attention);
 
   const total = projs.length;
   const critical = projs.filter(p => p.status === 'red').length;
@@ -5874,7 +5875,7 @@ function renderExec(projs, summary, allProjects = projs) {
       </div>
 
       <div class="exec-projects project-portfolio-grid">
-        ${projs.length ? projs.map(p => {
+        ${portfolioProjects.length ? portfolioProjects.map(p => {
           const status = normalizeOverviewRagStatus(p.status);
           const progress = normalizeOverviewPercent(p.progress);
           const visibility = ['hidden', 'archived'].includes(p.visibility) ? p.visibility : '';
@@ -6106,16 +6107,67 @@ function findCurrentProject(code) {
   return week?.projects?.find(p => p.code === code);
 }
 
+async function updateProjectAttention(code, attention) {
+  const selectedWeek = allWeeks[currentIdx];
+  const selectedIndex = currentIdx;
+  const weekId = selectedWeek?.__documentId || selectedWeek?.weekLabel?.replace(/\s+/g, '-');
+  const authUid = currentUser?.uid || '';
+  const authEmail = getEmailKey(currentUser);
+  const role = currentRole;
+  if (!selectedWeek || !weekId || !authEmail || isWeekReleased(selectedWeek) || isVipPerspective()) {
+    render();
+    return false;
+  }
+  const weekRef = doc(db, 'weeks', weekId);
+  try {
+    const result = await runTransaction(db, async transaction => {
+      const snapshot = await transaction.get(weekRef);
+      if (!snapshot.exists()) throw new Error('The selected week no longer exists.');
+      const mutation = applyProjectAttentionUpdate(snapshot.data(), {
+        projectCode: code,
+        attention,
+        role,
+        canEdit: project => projectOwnershipMatchesIdentity(project, {
+          displayName: getUserDisplayName(authEmail),
+          email: authEmail,
+        }),
+        lastModifiedBy: authEmail,
+      });
+      transaction.update(weekRef, {
+        projects: mutation.week.projects,
+        lastModifiedBy: authEmail,
+      });
+      return mutation;
+    });
+    const selectionStillCurrent = currentIdx === selectedIndex
+      && (currentUser?.uid || '') === authUid
+      && getEmailKey(currentUser) === authEmail
+      && currentRole === role;
+    if (!selectionStillCurrent) return false;
+    Object.defineProperty(result.week, '__documentId', {
+      value: weekId,
+      enumerable: false,
+      configurable: true,
+    });
+    allWeeks[currentIdx] = result.week;
+    render();
+    showSaveToast('Attention updated');
+    return true;
+  } catch (error) {
+    console.error('Attention update failed:', error);
+    render();
+    showSaveToast(getWriteErrorMessage(error));
+    return false;
+  }
+}
+
 function bindDecisionControls(editable) {
   if (!editable) return;
   document.querySelectorAll('.attention-select').forEach(sel => {
     sel.onchange = async () => {
       const p = findCurrentProject(sel.dataset.code);
       if (!p || !canEditProject(p)) return;
-      p.attention = sel.value;
-      p.attentionManual = true;
-      await saveCurrentWeekQuietly();
-      showSaveToast("Attention updated");
+      await updateProjectAttention(p.code, sel.value);
     };
   });
   document.querySelectorAll('.risk-toggle').forEach(chk => {
@@ -6152,11 +6204,7 @@ function bindDecisionControls(editable) {
       quad.classList.remove('drag-over');
       const p = findCurrentProject(e.dataTransfer.getData('text/plain'));
       if (!p || !canEditProject(p)) return;
-      p.attention = quad.dataset.attention;
-      p.attentionManual = true;
-      await saveCurrentWeekQuietly();
-      render();
-      showSaveToast("Attention updated");
+      await updateProjectAttention(p.code, quad.dataset.attention);
     });
   });
 }
