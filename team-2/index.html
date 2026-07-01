@@ -621,7 +621,14 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 .qms-row:hover { background:var(--s2); }
 .qms-delete { border:none; background:none; cursor:pointer; font-size:16px; line-height:1; }
 .qms-delete:disabled { opacity:.28; cursor:not-allowed; }
-.detail-qms-list { display:grid; gap:10px; }
+.detail-full-width { min-width:0; margin-top:24px; padding:24px; border:1px solid var(--border); border-radius:8px; background:var(--s2); }
+.detail-schedule-section { overflow:hidden; }
+.detail-quarterly-section { overflow-x:auto; }
+.detail-quarter-grid { display:grid; grid-template-columns:repeat(4,minmax(220px,1fr)); gap:12px; min-width:916px; }
+.detail-quarter-column { min-width:0; padding:12px; border:1px solid var(--border); border-radius:8px; background:#fff; }
+.detail-quarter-heading { margin-bottom:10px; font-weight:800; color:var(--text); }
+.detail-quarter-items { display:grid; gap:10px; }
+.detail-quarter-empty { color:var(--muted); font-style:italic; }
 .detail-qms-item { border:1px solid var(--border); border-left:4px solid var(--blue); border-radius:8px; background:#fff; padding:10px 12px; }
 .detail-qms-item.done { border-left-color:var(--green); background:#F3FBF6; }
 .detail-qms-item.at-risk { border-left-color:var(--yellow); background:#FFFAF0; }
@@ -1591,10 +1598,6 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
       </div>
       <div class="info-lbl" style="margin-bottom:16px;">Milestones Roadmap</div>
       <div class="ms-container" id="pd_milestones"></div>
-      <div class="info-lbl" style="margin:24px 0 12px;">Schedule</div>
-      <div id="pd_schedule"></div>
-      <div class="info-lbl" style="margin:24px 0 12px;">Quarterly Milestones</div>
-      <div class="detail-qms-list" id="pd_quarterly_milestones"></div>
       <div class="info-lbl" style="margin:24px 0 12px;">Resources</div>
       <div id="pd_resources"></div>
       <div class="detail-rb-grid">
@@ -1609,6 +1612,14 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
       </div>
     </div>
   </div>
+  <section class="detail-full-width detail-schedule-section">
+    <div class="info-lbl" style="margin-bottom:12px;">Schedule</div>
+    <div id="pd_schedule"></div>
+  </section>
+  <section class="detail-full-width detail-quarterly-section">
+    <div class="info-lbl" style="margin-bottom:12px;">Quarterly Milestones</div>
+    <div class="detail-quarter-grid" id="pd_quarterly_milestones"></div>
+  </section>
 </div>
 </div>
 
@@ -5044,17 +5055,25 @@ function milestoneHistoryHtml(m) {
 
 function formatDetailQuarterlyMilestones(project) {
   const list = getQuarterlyMilestones(project);
-  if (!list.length) return '<div class="exec-note">No quarterly milestones yet.</div>';
-  return list.map(m => `
-    <div class="detail-qms-item ${escHtml(m.status || 'planned')}">
-      <div class="detail-qms-top">
-        <span class="detail-qms-quarter">${escHtml(m.quarter || 'No quarter')}</span>
-        <span class="exec-ms-badge ${escHtml(m.status || 'to-do')}">${escHtml(getStatusLabel(m.status || 'planned'))}</span>
+  const year = getDefaultRoadmapYear([project], getStrategyLayer(allWeeks[currentIdx]));
+  const quarters = getQuarterLabelsForYear(year);
+  return quarters.map(quarter => {
+    const items = list.filter(item => item.quarter === quarter);
+    return `<section class="detail-quarter-column">
+      <div class="detail-quarter-heading">${escHtml(quarter)}</div>
+      <div class="detail-quarter-items">
+        ${items.length ? items.map(m => `
+          <div class="detail-qms-item ${escHtml(m.status || 'planned')}">
+            <div class="detail-qms-top">
+              <span class="exec-ms-badge ${escHtml(m.status || 'to-do')}">${escHtml(getStatusLabel(m.status || 'planned'))}</span>
+            </div>
+            <div class="detail-qms-goal">${escHtml(m.goal || '-')}</div>
+            <div class="detail-qms-meta">${escHtml(m.window || '-')}</div>
+          </div>
+        `).join('') : '<div class="detail-quarter-empty">No milestone in this quarter.</div>'}
       </div>
-      <div class="detail-qms-goal">${escHtml(m.goal || '-')}</div>
-      <div class="detail-qms-meta">${escHtml(m.window || '-')}</div>
-    </div>
-  `).join('');
+    </section>`;
+  }).join('');
 }
 
 function renderExecutiveQuarterMilestones(projs, layer = getStrategyLayer(), activeTrack = 'all', year = getDefaultRoadmapYear(projs, layer)) {
