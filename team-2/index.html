@@ -313,7 +313,7 @@ body {
 
 /* Read-Only Project Detail Layout */
 #projDetailOverlay .modal { width: min(1180px, 94vw); }
-.detail-grid { display: grid; grid-template-columns: minmax(260px, .75fr) minmax(0, 1.4fr); gap: 32px; }
+.detail-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 32px; }
 .detail-left, .detail-right { min-width: 0; }
 .detail-right { background: var(--s2); padding: 24px; border-radius: 8px; border: 1px solid var(--border); height: fit-content; }
 @media (max-width: 1100px) {
@@ -877,6 +877,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 .budget-table-head.actual { grid-template-columns:.8fr 1fr .8fr .8fr 1.1fr 32px; }
 .budget-empty-note { font-size:12px; color:var(--muted); padding:14px; border:1px dashed var(--border); border-radius:8px; background:#fff; }
 .detail-rb-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:22px; }
+.detail-resource-summary-section .detail-rb-grid { margin-top:0; }
 .detail-rb-box { border:1px solid var(--border); border-radius:10px; background:var(--s2); padding:14px; }
 .detail-rb-list { display:grid; gap:7px; margin-top:10px; font-size:12px; color:var(--text-light); }
 .resource-editor-grid { display:grid; gap:8px; margin-top:10px; }
@@ -1564,10 +1565,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 <div class="modal">
   <div class="modal-hdr">
     <h3 id="pd_title" style="font-size:22px; color:var(--text);">Project Name</h3>
-    <div style="display:flex;align-items:center;gap:8px;">
-      <button type="button" class="btn btn-ghost" onclick="openOnePageStatus(document.getElementById('projDetailOverlay').dataset.projectCode)">One-page Status</button>
-      <button class="modal-x" aria-label="Close project detail" onclick="closeModal('projDetailOverlay')">×</button>
-    </div>
+    <button class="modal-x" aria-label="Close project detail" onclick="closeModal('projDetailOverlay')">×</button>
   </div>
   <div class="detail-grid">
     <div class="detail-left">
@@ -1598,18 +1596,6 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
       </div>
       <div class="info-lbl" style="margin-bottom:16px;">Milestones Roadmap</div>
       <div class="ms-container" id="pd_milestones"></div>
-      <div class="info-lbl" style="margin:24px 0 12px;">Resources</div>
-      <div id="pd_resources"></div>
-      <div class="detail-rb-grid">
-        <div class="detail-rb-box">
-          <div class="info-lbl">Team & Effort</div>
-          <div class="detail-rb-list" id="pd_team_effort"></div>
-        </div>
-        <div class="detail-rb-box">
-          <div class="info-lbl">Budget Snapshot</div>
-          <div class="detail-rb-list" id="pd_budget_snapshot"></div>
-        </div>
-      </div>
     </div>
   </div>
   <section class="detail-full-width detail-schedule-section">
@@ -1619,6 +1605,22 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
   <section class="detail-full-width detail-quarterly-section">
     <div class="info-lbl" style="margin-bottom:12px;">Quarterly Milestones</div>
     <div class="detail-quarter-grid" id="pd_quarterly_milestones"></div>
+  </section>
+  <section class="detail-full-width detail-resources-section">
+    <div class="info-lbl" style="margin-bottom:12px;">Resources</div>
+    <div id="pd_resources"></div>
+  </section>
+  <section class="detail-full-width detail-resource-summary-section">
+    <div class="detail-rb-grid">
+      <div class="detail-rb-box">
+        <div class="info-lbl">Team & Effort</div>
+        <div class="detail-rb-list" id="pd_team_effort"></div>
+      </div>
+      <div class="detail-rb-box">
+        <div class="info-lbl">Budget Snapshot</div>
+        <div class="detail-rb-list" id="pd_budget_snapshot"></div>
+      </div>
+    </div>
   </section>
 </div>
 </div>
