@@ -269,6 +269,25 @@ export function calculateDropIndex(pointerY, rowBounds = []) {
   return index < 0 ? rowBounds.length : index;
 }
 
+const ATTENTION_PRIORITY = Object.freeze({
+  action: 0,
+  strategy: 1,
+  monitor: 2,
+  watch: 3,
+});
+
+export function orderProjectsByAttention(source = [], getAttention = project => project?.attention) {
+  const projects = Array.isArray(source) ? source : [];
+  return projects
+    .map((project, index) => ({
+      project,
+      index,
+      rank: ATTENTION_PRIORITY[getAttention(project)] ?? Number.MAX_SAFE_INTEGER,
+    }))
+    .sort((left, right) => left.rank - right.rank || left.index - right.index)
+    .map(entry => entry.project);
+}
+
 export function validateWorkstreams(rows = [], milestoneIds) {
   if (!Array.isArray(rows)) return [];
   const validMilestones = Array.isArray(milestoneIds) ? new Set(milestoneIds) : null;

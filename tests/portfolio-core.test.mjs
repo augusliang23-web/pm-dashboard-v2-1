@@ -20,6 +20,7 @@ import {
   normalizeOverviewMilestoneStatus,
   normalizeOverviewPercent,
   normalizeOverviewRagStatus,
+  orderProjectsByAttention,
   normalizeRiskActionRows,
   normalizeOverviewSummaryHeading,
   normalizeOverviewScope,
@@ -33,6 +34,26 @@ import {
   validateWorkstreamTemplateConfig,
   validateWorkstreams,
 } from '../team-2/js/portfolio-core.mjs';
+
+test('portfolio order follows attention priority and is stable within each group', () => {
+  const projects = [
+    { code: 'W-1', attention: 'watch' },
+    { code: 'A-1', attention: 'action' },
+    { code: 'S-1', attention: 'strategy' },
+    { code: 'A-2', attention: 'action' },
+    { code: 'M-1', attention: 'monitor' },
+    { code: 'X-1', attention: 'other' },
+    { code: 'X-2' },
+  ];
+
+  assert.deepEqual(
+    orderProjectsByAttention(projects, project => project.attention).map(project => project.code),
+    ['A-1', 'A-2', 'S-1', 'M-1', 'W-1', 'X-1', 'X-2'],
+  );
+  assert.deepEqual(projects.map(project => project.code), [
+    'W-1', 'A-1', 'S-1', 'A-2', 'M-1', 'X-1', 'X-2',
+  ]);
+});
 
 test('project ownership uses exact canonical identity tokens', () => {
   const ann = { displayName: 'Ann', email: 'ann.smith@example.com' };
