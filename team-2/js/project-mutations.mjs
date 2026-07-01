@@ -195,6 +195,46 @@ function assertUniqueCode(projects, code, excludedIndex = -1) {
   }
 }
 
+const ATTENTION_VALUES = new Set(['action', 'strategy', 'monitor', 'watch']);
+
+export function applyProjectAttentionUpdate(week, options = {}) {
+  const projects = liveProjects(week);
+  const { projectCode, attention, role, canEdit, lastModifiedBy } = options;
+  if (week.isReleased === true) {
+    throw new ProjectMutationError(
+      'released-week',
+      'This reporting week has been released and can no longer be changed.',
+    );
+  }
+  if (!ATTENTION_VALUES.has(attention)) {
+    throw new ProjectMutationError('invalid-attention', 'Select a valid attention category.');
+  }
+  const targetIndex = projects.findIndex(project => project?.code === projectCode);
+  if (targetIndex < 0) {
+    throw new ProjectMutationError('missing-target', 'This project no longer exists.');
+  }
+  const targetProject = projects[targetIndex];
+  const authorized = role === 'admin'
+    || (role === 'pm' && typeof canEdit === 'function' && canEdit(targetProject));
+  if (!authorized) {
+    throw new ProjectMutationError(
+      'edit-forbidden',
+      'You no longer have permission to edit this project.',
+    );
+  }
+  const project = { ...targetProject, attention, attentionManual: true };
+  const nextProjects = [...projects];
+  nextProjects[targetIndex] = project;
+  return {
+    project,
+    week: {
+      ...week,
+      projects: nextProjects,
+      lastModifiedBy,
+    },
+  };
+}
+
 export function applyProjectSave(week, options = {}) {
   const projects = liveProjects(week);
   const {

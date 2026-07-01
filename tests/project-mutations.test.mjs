@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 import {
+  applyProjectAttentionUpdate,
   applyProjectDelete,
   applyProjectSave,
   ensureStableEditorRowId,
@@ -15,6 +16,51 @@ const dashboard = await readFile(
   new URL('../team-2/index.html', import.meta.url),
   'utf8',
 );
+
+test('attention update preserves nested project data and changes only the target', () => {
+  const week = {
+    isReleased: false,
+    projects: [
+      { code: 'SYS-1', owner: 'Bonnie', attention: 'watch', nested: { keep: true } },
+      { code: 'SYS-2', attention: 'monitor' },
+    ],
+  };
+  const result = applyProjectAttentionUpdate(week, {
+    projectCode: 'SYS-1',
+    attention: 'action',
+    role: 'pm',
+    canEdit: project => project.owner === 'Bonnie',
+    lastModifiedBy: 'bonnie@example.com',
+  });
+
+  assert.equal(result.project.attention, 'action');
+  assert.equal(result.project.attentionManual, true);
+  assert.deepEqual(result.project.nested, { keep: true });
+  assert.equal(result.week.projects[1], week.projects[1]);
+  assert.equal(week.projects[0].attention, 'watch');
+});
+
+test('attention update rejects released weeks, invalid values, and unauthorized users', () => {
+  const base = { projects: [{ code: 'SYS-1', owner: 'Bonnie', attention: 'watch' }] };
+  assert.throws(
+    () => applyProjectAttentionUpdate({ ...base, isReleased: true }, {
+      projectCode: 'SYS-1', attention: 'action', role: 'admin',
+    }),
+    error => error.code === 'released-week',
+  );
+  assert.throws(
+    () => applyProjectAttentionUpdate(base, {
+      projectCode: 'SYS-1', attention: 'invalid', role: 'admin',
+    }),
+    error => error.code === 'invalid-attention',
+  );
+  assert.throws(
+    () => applyProjectAttentionUpdate(base, {
+      projectCode: 'SYS-1', attention: 'action', role: 'vip',
+    }),
+    error => error.code === 'edit-forbidden',
+  );
+});
 
 test('editing merges only the live target and preserves concurrent projects and unknown fields', () => {
   const concurrentProject = { code: 'LIVE-2', name: 'Added concurrently', custom: 42 };
