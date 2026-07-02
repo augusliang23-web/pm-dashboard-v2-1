@@ -236,6 +236,16 @@ export function normalizeWorkstream(source = {}, index = 0) {
   };
 }
 
+export function getGanttProgressSegments(value) {
+  const numeric = Number(value);
+  const progress = Number.isFinite(numeric) ? Math.min(100, Math.max(0, numeric)) : 0;
+  return {
+    progress,
+    completedPercent: progress,
+    remainingPercent: 100 - progress,
+  };
+}
+
 export function parseIsoDate(value) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) return null;
   const [year, month, day] = value.split('-').map(Number);

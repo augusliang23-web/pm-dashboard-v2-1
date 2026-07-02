@@ -792,8 +792,9 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 .gantt-name { font-size:11px; font-weight:700; color:var(--text); }
 .gantt-track { position:relative; min-height:42px; background:#fff; }
 .gantt-grid-line { position:absolute; top:0; bottom:0; width:1px; background:var(--border); pointer-events:none; }
-.gantt-bar { position:absolute; top:9px; height:24px; min-width:4px; border-radius:5px; color:#fff; padding:5px 7px; font-size:9px; overflow:hidden; white-space:nowrap; }
-.gantt-bar.not-started { background:#8291a3; }.gantt-bar.on-track { background:var(--green); }.gantt-bar.at-risk { background:var(--yellow); }.gantt-bar.delayed { background:var(--red); }.gantt-bar.completed { background:var(--blue); }
+.gantt-bar { position:absolute; top:9px; height:24px; min-width:4px; border-radius:5px; color:#fff; background:#8291a3; font-size:9px; overflow:hidden; white-space:nowrap; }
+.gantt-bar-completed { position:absolute; inset:0 auto 0 0; background:var(--green); pointer-events:none; }
+.gantt-bar-label { position:relative; z-index:1; height:100%; display:flex; align-items:center; padding:0 7px; }
 .gantt-today { position:absolute; top:0; bottom:0; width:2px; background:var(--red); z-index:2; }
 .gantt-milestone { position:absolute; top:14px; width:12px; height:12px; background:#26384a; transform:rotate(45deg); z-index:3; }
 .gantt-empty { padding:18px; color:var(--muted); font-size:12px; }
@@ -2040,7 +2041,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 
 <script type="module">
 import { isAuthInitializationCurrent } from "./js/auth-session.mjs";
-import { RESOURCE_DISCIPLINES, buildGanttCalendarAxis, calculateDropIndex, createDefaultWorkstreams, createTimelineTicks, filterOverviewSummaryLines, filterProjects, filterRoleVisibleProjects, getFocusTrapIndex, getOverviewProjectBadgeLabel, getOverviewProjects, getOverviewScopeStorageKey, matchOverviewSummaryProjectLine, mergeResourceEntry, normalizeOverviewMilestoneStatus, normalizeOverviewPercent, normalizeOverviewRagStatus, normalizeOverviewScope, normalizeOverviewSummaryHeading, normalizeProject, normalizeResourceEntry, normalizeRiskActionRows, normalizeWorkstream, orderProjectsByAttention, parseIsoDate, projectOwnershipMatchesIdentity, resolveProjectStatusDate, resolveWorkstreamTemplateConfig, validateResourceInput, validateWorkstreamTemplateConfig, validateWorkstreams } from "./js/portfolio-core.mjs";
+import { RESOURCE_DISCIPLINES, buildGanttCalendarAxis, calculateDropIndex, createDefaultWorkstreams, createTimelineTicks, filterOverviewSummaryLines, filterProjects, filterRoleVisibleProjects, getFocusTrapIndex, getGanttProgressSegments, getOverviewProjectBadgeLabel, getOverviewProjects, getOverviewScopeStorageKey, matchOverviewSummaryProjectLine, mergeResourceEntry, normalizeOverviewMilestoneStatus, normalizeOverviewPercent, normalizeOverviewRagStatus, normalizeOverviewScope, normalizeOverviewSummaryHeading, normalizeProject, normalizeResourceEntry, normalizeRiskActionRows, normalizeWorkstream, orderProjectsByAttention, parseIsoDate, projectOwnershipMatchesIdentity, resolveProjectStatusDate, resolveWorkstreamTemplateConfig, validateResourceInput, validateWorkstreamTemplateConfig, validateWorkstreams } from "./js/portfolio-core.mjs";
 import { assertReasonableWeekDocument, buildImportResults, formatImportPreviewRow, importResultsToCsv, mergeReadyImportRows, planImport } from "./js/excel-import.mjs";
 import { applyProjectAttentionUpdate, applyProjectDelete, applyProjectSave, ensureStableEditorRowId, projectRevisionFingerprint, withProjectEditorRowIds } from "./js/project-mutations.mjs";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -5413,14 +5414,15 @@ function renderProjectGantt(project, targetId = 'pd_schedule') {
       ${rows.map(row => {
         const start = ganttDate(row.startDate);
         const end = ganttDate(row.endDate);
+        const segments = getGanttProgressSegments(row.progress);
         const milestone = milestones.get(row.milestoneId);
         const milestoneDate = ganttDate(milestone?.date);
         const marker = milestoneDate && milestoneDate >= axis.axisStart && milestoneDate < axis.axisEnd
           ? `<span class="gantt-milestone" style="left:${pct(milestoneDate)}%" title="${escHtml(milestone.name || 'Linked milestone')}"></span>`
           : '';
         return `<div class="gantt-row">
-          <div class="gantt-name">${escHtml(row.name)}<br><span style="font-weight:400;color:var(--muted)">${row.progress}%</span></div>
-          <div class="gantt-track">${gridLines}${todayLine}<span class="gantt-bar ${row.status}" style="left:${Math.max(0,pct(start))}%;width:${Math.max(.7,((end-start+day)/total)*100)}%" title="${escHtml(row.name)}: ${row.progress}%">${row.progress}%</span>${marker}</div>
+          <div class="gantt-name">${escHtml(row.name)}<br><span style="font-weight:400;color:var(--muted)">${segments.progress}%</span></div>
+          <div class="gantt-track">${gridLines}${todayLine}<span class="gantt-bar" style="left:${Math.max(0,pct(start))}%;width:${Math.max(.7,((end-start+day)/total)*100)}%" title="${escHtml(row.name)}: ${segments.progress}% completed"><span class="gantt-bar-completed" style="width:${segments.completedPercent}%"></span><span class="gantt-bar-label">${segments.progress}%</span></span>${marker}</div>
         </div>`;
       }).join('')}
     </div></div>`;
