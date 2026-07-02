@@ -2048,6 +2048,7 @@ import { getFirestore, collection, doc, onSnapshot, runTransaction, setDoc, upda
 import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, updatePassword, onAuthStateChanged, signOut, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { confirmWeekMutation, getWriteErrorMessage } from "../sync-core.js";
 import { getExecutiveTimelineCell, serializeExecutiveMilestoneTimeline } from "../executive-timeline-core.js";
+import { copyPreviousWeekCarryover } from "../week-carryover.mjs";
 
 const app = initializeApp(FIREBASE_CONFIG);
 const db = getFirestore(app);
@@ -7971,18 +7972,16 @@ window.createNewWeekFromManage = async () => {
   closeModal('weekManageOverlay');
   showLoader("Creating New Week...");
   
-  let projects = [];
-  if (allWeeks.length > 0) {
-    projects = JSON.parse(JSON.stringify(allWeeks[allWeeks.length - 1].projects || []));
-    projects = projects.filter(p => !p.visibility || p.visibility === 'active');
-  }
+  const carryover = allWeeks.length > 0
+    ? copyPreviousWeekCarryover(allWeeks[allWeeks.length - 1])
+    : { projects: [] };
   
   const newWeek = {
     weekLabel: label,
     weekDate: date,
     summary: '', 
     lastModifiedBy: currentUser.email,
-    projects: projects,
+    ...carryover,
     isReleased: false 
   };
   
