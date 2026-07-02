@@ -798,6 +798,9 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 .gantt-today { position:absolute; top:0; bottom:0; width:2px; background:var(--red); z-index:2; }
 .gantt-milestone { position:absolute; top:14px; width:12px; height:12px; background:#26384a; transform:rotate(45deg); z-index:3; }
 .gantt-empty { padding:18px; color:var(--muted); font-size:12px; }
+.schedule-preview { margin-top:18px; padding-top:16px; border-top:1px solid var(--border); }
+.schedule-preview-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:8px; }
+.schedule-preview-status { min-height:18px; margin-bottom:8px; color:var(--muted); font-size:10px; line-height:1.5; }
 .proto-section-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
 .proto-section-title { font-size:13px; font-weight:800; color:var(--text); }
 .proto-section-note { font-size:11px; color:var(--muted); line-height:1.45; }
@@ -1753,6 +1756,16 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
         </div>
         <div id="workstreamAnnouncements" class="sr-only" aria-live="polite"></div>
         <div id="workstreamErrors" class="schedule-error-summary" role="alert"></div>
+        <div class="schedule-preview">
+          <div class="schedule-preview-head">
+            <div>
+              <div class="proto-section-title">Schedule Preview</div>
+              <div class="proto-section-note">Updates immediately from the unsaved schedule above.</div>
+            </div>
+          </div>
+          <div id="workstreamPreviewStatus" class="schedule-preview-status" role="status"></div>
+          <div id="workstreamGanttPreview"></div>
+        </div>
       </section>
       <section class="resource-budget-editor">
         <div class="resource-budget-editor-head">
@@ -2098,6 +2111,7 @@ let ganttTemplateSessionSequence = 0;
 let ganttTemplateSaveInFlight = false;
 let modalReturnFocus = null;
 let ganttScale = 'month';
+let workstreamPreviewFrame = 0;
 let editorResourceStatus = normalizeResourceBudgetStatus({});
 let resourceEditorHydrating = false;
 const PROJECT_MEMBER_TBD = 'TBD';
@@ -5334,6 +5348,7 @@ window.setGanttScale = scale => {
       renderProjectGantt(normalized, 'onePageGantt');
     }
   }
+  scheduleWorkstreamPreview();
 };
 
 function ganttDate(value) {
@@ -7165,6 +7180,7 @@ window.removeMilestoneRow = button => {
   row?.remove();
   checkMsDates();
   refreshWorkstreamMilestoneOptions();
+  scheduleWorkstreamPreview();
 };
 
 window.addWorkstreamRow = (source = {}, untouched = false) => {
@@ -7183,6 +7199,7 @@ window.addWorkstreamRow = (source = {}, untouched = false) => {
       container.insertBefore(dragging, destination);
       if (Array.from(container.children).indexOf(dragging) !== previousIndex) {
         newProjectScheduleUntouched = false;
+        scheduleWorkstreamPreview();
       }
       syncWorkstreamSortOrder();
     });
@@ -7191,6 +7208,7 @@ window.addWorkstreamRow = (source = {}, untouched = false) => {
       const dragging = container.querySelector('.dragging');
       if (dragging) announceWorkstreamMove(dragging);
       newProjectScheduleUntouched = false;
+      scheduleWorkstreamPreview();
     });
   }
   const index = container.children.length;
@@ -7212,8 +7230,13 @@ window.addWorkstreamRow = (source = {}, untouched = false) => {
     <select class="fs ws-milestone" aria-label="Linked milestone" title="Optional milestone associated with this workstream">${editorMilestoneOptions(row.milestoneId)}</select>
     <button type="button" class="row-move" title="Move up" aria-label="Move workstream up" onclick="moveWorkstreamRow(this, -1)">↑</button>
     <button type="button" class="row-move" title="Move down" aria-label="Move workstream down" onclick="moveWorkstreamRow(this, 1)">↓</button>
-    <button type="button" class="row-delete" title="Remove workstream" aria-label="Remove workstream" onclick="this.parentElement.remove(); newProjectScheduleUntouched=false;">🗑️</button>`;
-  div.addEventListener('input', () => { newProjectScheduleUntouched = false; clearWorkstreamErrors(); });
+    <button type="button" class="row-delete" title="Remove workstream" aria-label="Remove workstream" onclick="removeWorkstreamRow(this)">🗑️</button>`;
+  div.addEventListener('input', () => {
+    newProjectScheduleUntouched = false;
+    clearWorkstreamErrors();
+    scheduleWorkstreamPreview();
+  });
+  div.addEventListener('change', scheduleWorkstreamPreview);
   const handle = div.querySelector('.drag-handle');
   handle.ondragstart = event => {
     div.classList.add('dragging');
@@ -7227,6 +7250,14 @@ window.addWorkstreamRow = (source = {}, untouched = false) => {
   container.appendChild(div);
   syncWorkstreamSortOrder();
   if (!untouched) newProjectScheduleUntouched = false;
+  scheduleWorkstreamPreview();
+};
+
+window.removeWorkstreamRow = button => {
+  button.closest('.schedule-edit-row')?.remove();
+  syncWorkstreamSortOrder();
+  newProjectScheduleUntouched = false;
+  scheduleWorkstreamPreview();
 };
 
 function announceWorkstreamMove(row) {
@@ -7251,6 +7282,7 @@ window.moveWorkstreamRow = (button, direction) => {
   syncWorkstreamSortOrder();
   newProjectScheduleUntouched = false;
   announceWorkstreamMove(row);
+  scheduleWorkstreamPreview();
   button.focus();
 };
 
@@ -7259,6 +7291,7 @@ function replaceWorkstreamTemplate(level) {
   container.innerHTML = '';
   createDefaultWorkstreams(level, currentGanttTemplateConfig).forEach(({ id, ...row }) => addWorkstreamRow(row, true));
   newProjectScheduleUntouched = true;
+  scheduleWorkstreamPreview();
 }
 
 function collectWorkstreams() {
@@ -7272,6 +7305,45 @@ function collectWorkstreams() {
     milestoneId: div.querySelector('.ws-milestone').value,
     sortOrder: index
   }, index));
+}
+
+function collectEditorMilestonesForPreview() {
+  return Array.from(document.querySelectorAll('.ms-row')).map((row, index) => ({
+    planId: row.dataset.planId || `milestone-${index + 1}`,
+    id: row.dataset.planId || `milestone-${index + 1}`,
+    name: row.querySelector('.ms-name')?.value || 'Milestone',
+    date: row.querySelector('.ms-date')?.value || '',
+    status: row.querySelector('.ms-status')?.value || 'to-do'
+  }));
+}
+
+function scheduleWorkstreamPreview() {
+  cancelAnimationFrame(workstreamPreviewFrame);
+  workstreamPreviewFrame = requestAnimationFrame(() => {
+    workstreamPreviewFrame = 0;
+    renderWorkstreamEditorPreview();
+  });
+}
+
+function renderWorkstreamEditorPreview() {
+  const overlay = document.getElementById('projEditOverlay');
+  const target = document.getElementById('workstreamGanttPreview');
+  const status = document.getElementById('workstreamPreviewStatus');
+  if (!overlay?.classList.contains('open') || !target || !status) return;
+
+  const ganttWorkstreams = collectWorkstreams();
+  const invalidCount = ganttWorkstreams.filter(row => {
+    const start = ganttDate(row.startDate);
+    const end = ganttDate(row.endDate);
+    return !start || !end || end < start;
+  }).length;
+  status.textContent = invalidCount
+    ? `${invalidCount} workstream${invalidCount === 1 ? '' : 's'} omitted. Complete valid start and end dates to preview each workstream.`
+    : 'Previewing unsaved schedule changes.';
+  renderProjectGantt({
+    ganttWorkstreams,
+    milestones: collectEditorMilestonesForPreview()
+  }, 'workstreamGanttPreview');
 }
 
 function clearWorkstreamErrors() {
@@ -7494,6 +7566,7 @@ window.openProjEdit = (code, isNew = false) => {
   });
   document.getElementById('pe_details').open = isNew;
   document.getElementById('projEditOverlay').classList.add('open');
+  scheduleWorkstreamPreview();
 };
 
 function getEditorPortfolioValue(id, fallback = '') {
@@ -7746,7 +7819,11 @@ window.addMilestoneRow = (name='', status='to-do', dateStr='', planData = null) 
   div.style = "display:flex; flex-wrap:wrap; gap:10px; margin-bottom:8px; align-items:center;";
   
   div.ondragstart = (e) => { e.dataTransfer.setData('text/plain', ''); e.target.classList.add('dragging'); };
-  div.ondragend = (e) => { e.target.classList.remove('dragging'); checkMsDates(); };
+  div.ondragend = (e) => {
+    e.target.classList.remove('dragging');
+    checkMsDates();
+    scheduleWorkstreamPreview();
+  };
   
   div.innerHTML = `
     <span style="cursor:grab; color:var(--muted)">☰</span>
@@ -7761,9 +7838,15 @@ window.addMilestoneRow = (name='', status='to-do', dateStr='', planData = null) 
     <button type="button" onclick="removeMilestoneRow(this)" style="border:none; background:none; cursor:pointer;" title="Delete milestone" aria-label="Delete milestone">🗑️</button>
   `;
   div.insertAdjacentHTML('beforeend', milestoneHistoryHtml(normalized));
+  div.addEventListener('input', () => {
+    refreshWorkstreamMilestoneOptions();
+    scheduleWorkstreamPreview();
+  });
+  div.addEventListener('change', scheduleWorkstreamPreview);
   document.getElementById('msListContainer').appendChild(div);
   checkMsDates();
   refreshWorkstreamMilestoneOptions();
+  scheduleWorkstreamPreview();
 }
 
 window.addQuarterlyMilestoneRow = (item = {}) => {

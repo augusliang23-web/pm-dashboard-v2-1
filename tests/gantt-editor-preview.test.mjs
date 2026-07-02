@@ -39,3 +39,34 @@ test('shared Gantt renderer uses a gray base with a green completed overlay', ()
   assert.doesNotMatch(dashboard, /\.gantt-bar\.delayed\s*\{/);
   assert.doesNotMatch(dashboard, /\.gantt-bar\.completed\s*\{/);
 });
+
+test('Project Editor exposes a shared live Schedule Preview', () => {
+  assert.match(dashboard, /id="workstreamPreviewStatus"[^>]+role="status"/);
+  assert.match(dashboard, /id="workstreamGanttPreview"/);
+  assert.match(dashboard, /function scheduleWorkstreamPreview\(\)/);
+  assert.match(dashboard, /function renderWorkstreamEditorPreview\(\)/);
+  assert.match(
+    dashboard,
+    /renderProjectGantt\(\s*\{[\s\S]*ganttWorkstreams,[\s\S]*milestones:[\s\S]*\},\s*'workstreamGanttPreview'\s*\)/
+  );
+});
+
+test('draft schedule interactions refresh preview without saving', () => {
+  const previewSource = dashboard.slice(
+    dashboard.indexOf('function scheduleWorkstreamPreview()'),
+    dashboard.indexOf('window.saveProjEdit')
+  );
+  assert.match(previewSource, /requestAnimationFrame/);
+  assert.match(previewSource, /collectWorkstreams\(\)/);
+  assert.match(previewSource, /scheduleWorkstreamPreview\(\)/);
+  assert.match(dashboard, /setGanttScale[\s\S]*scheduleWorkstreamPreview\(\)/);
+  assert.match(dashboard, /removeWorkstreamRow[\s\S]*scheduleWorkstreamPreview\(\)/);
+  assert.doesNotMatch(previewSource, /runTransaction|setDoc|updateDoc/);
+});
+
+test('editor preview explains omitted invalid date rows', () => {
+  assert.match(
+    dashboard,
+    /Complete valid start and end dates to preview[\s\S]*workstream/
+  );
+});
