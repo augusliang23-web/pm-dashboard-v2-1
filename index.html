@@ -1545,6 +1545,8 @@ import { getFirestore, collection, doc, onSnapshot, setDoc, updateDoc, query, or
 import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, updatePassword, onAuthStateChanged, signOut, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { confirmWeekMutation, getWriteErrorMessage } from "./sync-core.js";
 import { getExecutiveTimelineCell, serializeExecutiveMilestoneTimeline } from "./executive-timeline-core.js";
+import { canUserEditProject } from "./project-permissions.mjs";
+import { copyPreviousWeekCarryover } from "./week-carryover.mjs";
 
 const app = initializeApp(FIREBASE_CONFIG);
 const db = getFirestore(app);
@@ -2657,28 +2659,12 @@ function initData() {
 }
 
 function canEditProject(proj) {
-  if (currentRole === 'admin') return true;
-  if (currentRole === 'vip') return false; 
-  if (!currentUser) return false;
-  
-  const userEmail = getEmailKey(currentUser);
-  const userPrefix = userEmail.split('@')[0]; 
-  
-  // Include the huichong.kong alias so the system can match Huichong correctly.
-  const aliasMap = { 
-    "augus.liang": "augus", 
-    "josiah.winkler": "josiah", 
-    "qianyun.zhu": "bonnie",
-    "huichong.kong": "huichong"
-  };
-  
-  const owner = (proj.owner || "").toLowerCase();
-  const deputy = (proj.deputy || "").toLowerCase();
-  const assignedOwner = owner === PROJECT_MEMBER_TBD.toLowerCase() ? "" : owner;
-  const assignedDeputy = deputy === PROJECT_MEMBER_TBD.toLowerCase() ? "" : deputy;
-  const userAlias = aliasMap[userPrefix] || userPrefix;
-  
-  return assignedOwner.includes(userPrefix) || assignedOwner.includes(userAlias) || assignedDeputy.includes(userPrefix) || assignedDeputy.includes(userAlias);
+  return canUserEditProject({
+    role: currentRole,
+    userEmail: currentUser ? getEmailKey(currentUser) : '',
+    project: proj,
+    displayNameForEmail: getUserDisplayName
+  });
 }
 
 function formatBullets(text) {
@@ -4760,18 +4746,16 @@ window.createNewWeekFromManage = async () => {
   closeModal('weekManageOverlay');
   showLoader("Creating New Week...");
   
-  let projects = [];
-  if (allWeeks.length > 0) {
-    projects = JSON.parse(JSON.stringify(allWeeks[allWeeks.length - 1].projects || []));
-    projects = projects.filter(p => !p.visibility || p.visibility === 'active');
-  }
+  const carryover = allWeeks.length > 0
+    ? copyPreviousWeekCarryover(allWeeks[allWeeks.length - 1])
+    : { projects: [] };
   
   const newWeek = {
     weekLabel: label,
     weekDate: date,
     summary: '', 
     lastModifiedBy: currentUser.email,
-    projects: projects,
+    ...carryover,
     isReleased: false 
   };
   
