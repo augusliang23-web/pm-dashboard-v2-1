@@ -579,6 +579,62 @@ export function summarizeTeamEffort(members = []) {
   };
 }
 
+function oneDecimal(value) {
+  return Math.round((Number(value) || 0) * 10) / 10;
+}
+
+export function buildResourceAnalytics(projects = []) {
+  const byLevel = {
+    [PROJECT_LEVEL.SYSTEM]: 0,
+    [PROJECT_LEVEL.HARDWARE_MODULE]: 0,
+    [PROJECT_LEVEL.SOFTWARE]: 0,
+  };
+  const people = new Map();
+  const functions = new Map();
+  let totalPct = 0;
+
+  (Array.isArray(projects) ? projects : []).forEach(project => {
+    const level = PROJECT_LEVELS.has(project?.projectLevel) ? project.projectLevel : PROJECT_LEVEL.SYSTEM;
+    (Array.isArray(project?.teamMembers) ? project.teamMembers : []).forEach(member => {
+      const effort = Math.max(0, Number(member?.effortPct ?? member?.effort) || 0);
+      const name = String(member?.name || '').trim().toLocaleLowerCase();
+      const roleLabel = String(member?.roleName || member?.role || '').trim().replace(/\s+/g, ' ');
+      const roleKey = roleLabel.toLocaleLowerCase();
+      if (!effort && !name && !roleKey) return;
+      totalPct += effort;
+      byLevel[level] += effort / 100;
+      if (name) people.set(name, (people.get(name) || 0) + effort);
+      if (roleKey) {
+        const item = functions.get(roleKey) || {
+          role: roleLabel,
+          levels: {
+            [PROJECT_LEVEL.SYSTEM]: 0,
+            [PROJECT_LEVEL.HARDWARE_MODULE]: 0,
+            [PROJECT_LEVEL.SOFTWARE]: 0,
+          },
+        };
+        item.levels[level] += effort / 100;
+        functions.set(roleKey, item);
+      }
+    });
+  });
+
+  const personLoads = [...people.values()];
+  return {
+    totalAllocatedFte: oneDecimal(totalPct / 100),
+    overallocatedPeople: personLoads.filter(total => total > 100).length,
+    availableCapacityFte: oneDecimal(personLoads.reduce((sum, total) => sum + Math.max(100 - total, 0), 0) / 100),
+    byLevel: Object.fromEntries(Object.entries(byLevel).map(([level, value]) => [level, oneDecimal(value)])),
+    byFunction: [...functions.values()]
+      .map(item => ({
+        role: item.role,
+        levels: Object.fromEntries(Object.entries(item.levels).map(([level, value]) => [level, oneDecimal(value)])),
+        totalFte: oneDecimal(Object.values(item.levels).reduce((sum, value) => sum + value, 0)),
+      }))
+      .sort((a, b) => b.totalFte - a.totalFte || a.role.localeCompare(b.role)),
+  };
+}
+
 export function filterRoleVisibleProjects(source = [], options = {}) {
   const projects = Array.isArray(source) ? source : [];
   const role = stringValue(options.role).toLocaleLowerCase() || 'pm';

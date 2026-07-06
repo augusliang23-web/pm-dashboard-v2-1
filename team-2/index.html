@@ -895,6 +895,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 .resource-budget-toolbar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 .currency-select { font-family:'IBM Plex Mono', monospace; font-size:12px; font-weight:800; border:1px solid var(--border2); border-radius:6px; padding:6px 8px; color:var(--text); background:#fff; }
 .rb-overview-grid { display:grid; grid-template-columns:minmax(420px,1fr) minmax(420px,1fr); gap:20px; margin-bottom:20px; }
+.overview-resource-budget { grid-template-columns:1fr; margin-top:20px; }
 .rb-kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:14px; }
 .rb-kpi { background:#fff; border:1px solid var(--border); border-radius:8px; padding:11px 12px; }
 .rb-kpi-label { font-size:9px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
@@ -917,6 +918,28 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 .category-chip-stack { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
 .category-chip { display:inline-flex; align-items:center; gap:6px; padding:5px 8px; border:1px solid var(--border); border-radius:999px; background:#fff; font-size:10px; color:var(--text-light); }
 .fx-note { font-size:10px; color:var(--muted); font-family:'IBM Plex Mono', monospace; margin-top:10px; }
+.resource-analytics-layout { display:grid; grid-template-columns:280px minmax(0,1fr); gap:18px; align-items:start; }
+.resource-level-card, .resource-function-card { min-width:0; padding:14px; border:1px solid var(--border); border-radius:9px; background:#fff; }
+.resource-analytics-subtitle { margin-bottom:12px; font-size:12px; font-weight:850; color:var(--text); }
+.resource-level-donut { width:154px; aspect-ratio:1; margin:4px auto 14px; border-radius:50%; background:conic-gradient(#7EAAC8 0 var(--system-end), #88C9AC var(--system-end) var(--hardware-end), #BCA5D8 var(--hardware-end) 100%); display:grid; place-items:center; }
+.resource-level-donut::after { content:''; width:92px; aspect-ratio:1; border-radius:50%; background:#fff; }
+.resource-level-legend { display:grid; gap:7px; }
+.resource-level-row { display:grid; grid-template-columns:10px 1fr auto; gap:7px; align-items:center; color:var(--text-light); font-size:10px; }
+.resource-level-swatch { width:9px; height:9px; border-radius:3px; background:#7EAAC8; }
+.resource-level-swatch.hardware { background:#88C9AC; }
+.resource-level-swatch.software { background:#BCA5D8; }
+.resource-function-list { display:grid; gap:10px; }
+.resource-function-row { display:grid; grid-template-columns:minmax(100px,.7fr) minmax(220px,2fr) 58px; gap:10px; align-items:center; }
+.resource-function-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text-light); font-size:10px; font-weight:800; }
+.resource-function-track { display:flex; height:12px; overflow:hidden; border-radius:999px; background:var(--s3); }
+.resource-function-segment.system { background:#7EAAC8; }
+.resource-function-segment.hardware-module { background:#88C9AC; }
+.resource-function-segment.software { background:#BCA5D8; }
+.resource-function-value { text-align:right; color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:800; }
+.print-preset-row { display:flex; flex-wrap:wrap; gap:7px; margin:12px 0; }
+.print-section-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.print-section-grid label { display:flex; align-items:center; gap:8px; padding:10px 11px; border:1px solid var(--border); border-radius:8px; background:#fff; color:var(--text-light); font-size:11px; font-weight:750; cursor:pointer; }
+.print-section-grid input { accent-color:var(--accent); }
 .card-extra-signals { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; }
 .card-signal { background:var(--s2); border:1px solid var(--border); border-radius:8px; padding:8px 10px; }
 .card-signal-label { font-size:9px; color:var(--muted); font-weight:800; text-transform:uppercase; letter-spacing:.05em; }
@@ -974,7 +997,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 .resource-detail-table th, .resource-detail-table td { padding:7px 6px; border-bottom:1px solid var(--border); text-align:right; }
 .resource-detail-table th:first-child, .resource-detail-table td:first-child { text-align:left; }
 @media(max-width: 1100px) {
-  .rb-overview-grid, .proto-grid-2, .detail-rb-grid, .budget-control-top { grid-template-columns:1fr; }
+  .rb-overview-grid, .proto-grid-2, .detail-rb-grid, .budget-control-top, .resource-analytics-layout { grid-template-columns:1fr; }
   .rb-kpi-grid { grid-template-columns:1fr 1fr; }
 }
 @media(max-width: 760px) {
@@ -1047,6 +1070,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
   #topMetricsGrid { display: none !important; }
   #execView { display: block !important; animation:none !important; }
   #normalView { display: none !important; }
+  [data-print-section].print-excluded { display:none !important; }
 
   .strategy-layer, .exec-panel, .exec-summary-card, .exec-decision-panel, .exec-project-card, .quarter-col, .quarter-item, .quarter-exec-goal, .attention-item, .risk-action-table tr, .exec-summary-section, .exec-summary-project-item {
     break-inside: avoid-page !important;
@@ -1498,6 +1522,40 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
   <div class="toast-check">✓</div>
   <span id="saveToastMsg">Saved successfully</span>
 </div>
+
+<div class="overlay" id="overviewPrintOverlay" role="dialog" aria-modal="true" aria-labelledby="overviewPrintTitle">
+  <div class="modal" style="width:min(620px,92vw);">
+    <div class="modal-hdr">
+      <h3 id="overviewPrintTitle">Choose Overview sections</h3>
+      <button class="modal-x" onclick="closeModal('overviewPrintOverlay')" aria-label="Close print selection">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="inline-field-guide">All sections are selected by default. Choose a preset or customize the PDF.</div>
+      <div class="print-preset-row">
+        <button type="button" class="btn btn-ghost" onclick="applyOverviewPrintPreset('all')">All</button>
+        <button type="button" class="btn btn-ghost" onclick="applyOverviewPrintPreset('executive')">Executive</button>
+        <button type="button" class="btn btn-ghost" onclick="applyOverviewPrintPreset('roadmap')">Roadmap</button>
+        <button type="button" class="btn btn-ghost" onclick="applyOverviewPrintPreset('resource')">Resource &amp; Budget</button>
+        <button type="button" class="btn btn-ghost" onclick="applyOverviewPrintPreset('custom')">Custom</button>
+      </div>
+      <div class="print-section-grid" id="overviewPrintSections">
+        <label><input type="checkbox" value="health-focus" checked> Portfolio health &amp; focus</label>
+        <label><input type="checkbox" value="weekly-trend" checked> Weekly trends</label>
+        <label><input type="checkbox" value="executive-summary" checked> Executive summary</label>
+        <label><input type="checkbox" value="attention-matrix" checked> Attention matrix</label>
+        <label><input type="checkbox" value="risk-actions" checked> Risk actions</label>
+        <label><input type="checkbox" value="quarterly-roadmap" checked> Quarterly roadmap</label>
+        <label><input type="checkbox" value="project-portfolio" checked> Project portfolio</label>
+        <label><input type="checkbox" value="resource-budget" checked> Resource analytics &amp; budget</label>
+      </div>
+      <div class="resource-validation" id="overviewPrintValidation"></div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-ghost" type="button" onclick="closeModal('overviewPrintOverlay')">Cancel</button>
+      <button class="btn btn-primary" type="button" onclick="confirmOverviewPrint()">Export PDF</button>
+    </div>
+  </div>
+</div>
 <datalist id="teamRoleOptions"></datalist>
 <datalist id="budgetCategoryOptions"></datalist>
 
@@ -1560,7 +1618,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
       </button>
       
-      <button class="btn-icon vip-hidden" onclick="window.print()" title="Export PDF">
+      <button class="btn-icon vip-hidden" onclick="openOverviewPrintDialog()" title="Export PDF">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
       </button>
 
@@ -2077,7 +2135,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 
 <script type="module">
 import { isAuthInitializationCurrent } from "./js/auth-session.mjs";
-import { RESOURCE_DISCIPLINES, buildGanttCalendarAxis, calculateDropIndex, createDefaultWorkstreams, createTimelineTicks, deriveRoleResourceRows, filterOverviewSummaryLines, filterProjects, filterRoleVisibleProjects, getFocusTrapIndex, getGanttProgressSegments, getOverviewProjectBadgeLabel, getOverviewProjects, getOverviewScopeStorageKey, matchOverviewSummaryProjectLine, mergeResourceEntry, normalizeOverviewMilestoneStatus, normalizeOverviewPercent, normalizeOverviewRagStatus, normalizeOverviewScope, normalizeOverviewSummaryHeading, normalizeProject, normalizeResourceEntry, normalizeRiskActionRows, normalizeWorkstream, orderProjectsByAttention, parseIsoDate, projectOwnershipMatchesIdentity, resolveProjectStatusDate, resolveWorkstreamTemplateConfig, summarizeTeamEffort, validateResourceInput, validateWorkstreamTemplateConfig, validateWorkstreams } from "./js/portfolio-core.mjs";
+import { RESOURCE_DISCIPLINES, buildGanttCalendarAxis, buildResourceAnalytics, calculateDropIndex, createDefaultWorkstreams, createTimelineTicks, deriveRoleResourceRows, filterOverviewSummaryLines, filterProjects, filterRoleVisibleProjects, getFocusTrapIndex, getGanttProgressSegments, getOverviewProjectBadgeLabel, getOverviewProjects, getOverviewScopeStorageKey, matchOverviewSummaryProjectLine, mergeResourceEntry, normalizeOverviewMilestoneStatus, normalizeOverviewPercent, normalizeOverviewRagStatus, normalizeOverviewScope, normalizeOverviewSummaryHeading, normalizeProject, normalizeResourceEntry, normalizeRiskActionRows, normalizeWorkstream, orderProjectsByAttention, parseIsoDate, projectOwnershipMatchesIdentity, resolveProjectStatusDate, resolveWorkstreamTemplateConfig, summarizeTeamEffort, validateResourceInput, validateWorkstreamTemplateConfig, validateWorkstreams } from "./js/portfolio-core.mjs";
 import { calculateQuarterlyKpi, normalizeQuarterlyMilestone, quarterlyWeightValue } from "./js/quarterly-kpi.mjs";
 import { calculateExecutiveCategory, calculateExecutiveOutcome, executiveOutcomeStatusLabel, executiveSourceKey, normalizeExecutiveCategoryOverride, normalizeExecutiveOutcome } from "./js/executive-outcomes.mjs";
 import { applyProjectAttentionUpdate, applyProjectDelete, applyProjectSave, ensureStableEditorRowId, projectRevisionFingerprint, withProjectEditorRowIds } from "./js/project-mutations.mjs";
@@ -4295,39 +4353,54 @@ function renderResourceBudgetOverview(projects) {
   const resourceProjects = getConfirmedResourceProjects(projects);
   const planProjects = getConfirmedBudgetPlanProjects(projects);
   const actualProjects = getConfirmedBudgetActualProjects(projects);
-  const resources = buildResourceSummary(resourceProjects);
+  const analytics = buildResourceAnalytics(resourceProjects);
   const budget = buildBudgetSummary(planProjects, actualProjects, overviewCurrency);
-  const overloaded = resources.filter(r => r.total > 100).length;
-  const under = resources.filter(r => r.total < 50).length;
-  const avg = resources.length ? Math.round(resources.reduce((sum, r) => sum + r.total, 0) / resources.length) : 0;
+  const allocationCoverage = projects.length ? Math.round((coverage.teamConfirmed / projects.length) * 100) : 0;
+  const totalLevelFte = Object.values(analytics.byLevel).reduce((sum, value) => sum + value, 0);
+  const systemEnd = totalLevelFte ? (analytics.byLevel.system / totalLevelFte) * 100 : 0;
+  const hardwareEnd = totalLevelFte ? systemEnd + (analytics.byLevel['hardware-module'] / totalLevelFte) * 100 : 0;
+  const maxFunctionFte = Math.max(...analytics.byFunction.map(item => item.totalFte), 1);
   const varianceClass = budget.variance > 0 ? 'red' : '';
   const planGapClass = budget.planGap < 0 ? 'red' : budget.planGap > 0 ? 'yellow' : '';
-  return `<div class="rb-overview-grid">
-    <section class="exec-panel">
+  return `<div class="rb-overview-grid overview-resource-budget" data-print-section="resource-budget">
+    <section class="exec-panel resource-analytics-panel">
       <div class="exec-panel-head">
         <div>
           <div class="exec-eyebrow">Resource Overview</div>
-          <div class="exec-panel-title">Team effort allocation</div>
+          <div class="exec-panel-title">Resource analytics</div>
         </div>
         <div class="exec-panel-note">${coverage.teamConfirmed} confirmed · ${coverage.teamPending} pending</div>
       </div>
       <div class="rb-kpi-grid">
-        <div class="rb-kpi"><div class="rb-kpi-label">Overloaded</div><div class="rb-kpi-value red">${overloaded}</div></div>
-        <div class="rb-kpi"><div class="rb-kpi-label">Under 50%</div><div class="rb-kpi-value yellow">${under}</div></div>
-        <div class="rb-kpi"><div class="rb-kpi-label">Avg Load</div><div class="rb-kpi-value">${avg}%</div></div>
-        <div class="rb-kpi"><div class="rb-kpi-label">Assignments</div><div class="rb-kpi-value">${resources.reduce((sum, r) => sum + r.projects.length, 0)}</div></div>
+        <div class="rb-kpi"><div class="rb-kpi-label">Total Allocated FTE</div><div class="rb-kpi-value">${analytics.totalAllocatedFte}</div></div>
+        <div class="rb-kpi"><div class="rb-kpi-label">Allocation Coverage</div><div class="rb-kpi-value">${allocationCoverage}%</div></div>
+        <div class="rb-kpi"><div class="rb-kpi-label">Overallocated People</div><div class="rb-kpi-value ${analytics.overallocatedPeople ? 'red' : ''}">${analytics.overallocatedPeople}</div></div>
+        <div class="rb-kpi"><div class="rb-kpi-label">Available Capacity</div><div class="rb-kpi-value">${analytics.availableCapacityFte} FTE</div></div>
       </div>
-      <div class="resource-list">${resources.slice(0, 8).map(r => {
-        const cls = allocationClass(r.total);
-        return `<div class="resource-row">
-          <div>
-            <div class="rb-name">${escHtml(r.name)} <span class="rb-meta">${escHtml(r.roles.join(', ') || '-')}</span></div>
-            <div class="rb-meta">${r.projects.map(p => `${escHtml(p.name)}${overviewProjectBadge(p)} ${normalizeOverviewPercent(p.effort)}%`).join(' · ')}</div>
-            <div class="allocation-bar"><div class="allocation-fill ${cls}" style="--pct:${Math.min(r.total, 140)}%;"></div></div>
+      <div class="resource-analytics-layout">
+        <div class="resource-level-card">
+          <div class="resource-analytics-subtitle">FTE by project level</div>
+          <div class="resource-level-donut" style="--system-end:${systemEnd}%; --hardware-end:${hardwareEnd}%;"></div>
+          <div class="resource-level-legend">
+            <div class="resource-level-row"><span class="resource-level-swatch"></span><span>System</span><strong>${analytics.byLevel.system} FTE</strong></div>
+            <div class="resource-level-row"><span class="resource-level-swatch hardware"></span><span>Hardware Module</span><strong>${analytics.byLevel['hardware-module']} FTE</strong></div>
+            <div class="resource-level-row"><span class="resource-level-swatch software"></span><span>Software</span><strong>${analytics.byLevel.software} FTE</strong></div>
           </div>
-          <div class="rb-number ${cls}">${r.total}%</div>
-        </div>`;
-      }).join('')}</div>
+        </div>
+        <div class="resource-function-card">
+          <div class="resource-analytics-subtitle">Function mix by project level</div>
+          <div class="resource-function-list">${analytics.byFunction.length ? analytics.byFunction.map(item => `
+            <div class="resource-function-row">
+              <div class="resource-function-name" title="${escHtml(item.role)}">${escHtml(item.role)}</div>
+              <div class="resource-function-track" aria-label="${escHtml(item.role)} ${item.totalFte} FTE">
+                <span class="resource-function-segment system" style="width:${item.levels.system / maxFunctionFte * 100}%"></span>
+                <span class="resource-function-segment hardware-module" style="width:${item.levels['hardware-module'] / maxFunctionFte * 100}%"></span>
+                <span class="resource-function-segment software" style="width:${item.levels.software / maxFunctionFte * 100}%"></span>
+              </div>
+              <div class="resource-function-value">${item.totalFte} FTE</div>
+            </div>`).join('') : '<div class="empty-state">No confirmed team allocation is available.</div>'}</div>
+        </div>
+      </div>
     </section>
 
     <section class="exec-panel">
@@ -6002,7 +6075,7 @@ function renderExec(projs, summary, allProjects = projs) {
   const riskEnd = total ? ((critical + atRisk) / total) * 100 : 0;
 
   view.innerHTML = `
-    <div class="exec-overview">
+    <div class="exec-overview" data-print-section="health-focus">
       <section class="exec-panel">
         <div class="exec-panel-head">
           <div>
@@ -6076,11 +6149,9 @@ function renderExec(projs, summary, allProjects = projs) {
       </section>
     </div>
 
-    ${renderResourceBudgetOverview(projs)}
+    <div data-print-section="weekly-trend">${renderWeeklyTrendPanel(projs)}</div>
 
-    ${renderWeeklyTrendPanel(projs)}
-
-    <div class="exec-summary-grid">
+    <div class="exec-summary-grid" data-print-section="executive-summary">
       <div class="exec-summary-card border-accent">
         <div class="exec-summary-head">
           <div class="exec-summary-title">Weekly Executive Summary</div>
@@ -6090,7 +6161,7 @@ function renderExec(projs, summary, allProjects = projs) {
       </div>
     </div>
 
-    <div class="exec-decision-panel attention-map-panel">
+    <div class="exec-decision-panel attention-map-panel" data-print-section="attention-matrix">
       <div class="exec-decision-head">
         <div>
           <div class="exec-eyebrow">Management Attention Map</div>
@@ -6101,7 +6172,7 @@ function renderExec(projs, summary, allProjects = projs) {
       ${renderAttentionMatrix(projs, editableDecisionView)}
     </div>
 
-    <div class="exec-decision-panel risk-action-panel">
+    <div class="exec-decision-panel risk-action-panel" data-print-section="risk-actions">
       <div class="exec-decision-head">
         <div>
           <div class="exec-eyebrow">Risk Action Table</div>
@@ -6112,7 +6183,7 @@ function renderExec(projs, summary, allProjects = projs) {
       ${renderRiskActionTable(projs, editableDecisionView)}
     </div>
 
-    <div class="exec-decision-panel quarterly-roadmap-panel">
+    <div class="exec-decision-panel quarterly-roadmap-panel" data-print-section="quarterly-roadmap">
       <div class="exec-decision-head">
         <div>
           <div class="exec-eyebrow">Quarterly Target Roadmap</div>
@@ -6125,7 +6196,7 @@ function renderExec(projs, summary, allProjects = projs) {
       ${renderQuarterlyBoard(projs, strategyLayer, activeTrack, roadmapYear)}
     </div>
 
-    <section class="project-portfolio-panel">
+    <section class="project-portfolio-panel" data-print-section="project-portfolio">
       <div class="exec-board-head project-portfolio-head">
         <div>
           <div class="exec-board-title">Project portfolio</div>
@@ -6190,6 +6261,8 @@ function renderExec(projs, summary, allProjects = projs) {
         }).join('') : '<div class="empty-state">No projects in the selected Overview scope.</div>'}
       </div>
     </section>
+
+    ${renderResourceBudgetOverview(projs)}
   `;
   view.querySelectorAll('.exec-project-card[data-project-code]').forEach(card => {
     card.addEventListener('dblclick', () => openProjDetail(card.dataset.projectCode));
@@ -6638,6 +6711,54 @@ window.toggleOverview = () => {
   isOverview = !isOverview;
   render();
 };
+
+const OVERVIEW_PRINT_PRESETS = {
+  all: ['health-focus', 'weekly-trend', 'executive-summary', 'attention-matrix', 'risk-actions', 'quarterly-roadmap', 'project-portfolio', 'resource-budget'],
+  executive: ['health-focus', 'weekly-trend', 'executive-summary', 'attention-matrix', 'risk-actions'],
+  roadmap: ['quarterly-roadmap', 'project-portfolio'],
+  resource: ['resource-budget'],
+};
+
+window.applyOverviewPrintPreset = preset => {
+  if (preset === 'custom') return;
+  const selected = new Set(OVERVIEW_PRINT_PRESETS[preset] || OVERVIEW_PRINT_PRESETS.all);
+  document.querySelectorAll('#overviewPrintSections input[type="checkbox"]').forEach(input => {
+    input.checked = selected.has(input.value);
+  });
+  const validation = document.getElementById('overviewPrintValidation');
+  if (validation) {
+    validation.className = 'resource-validation';
+    validation.textContent = '';
+  }
+};
+
+window.openOverviewPrintDialog = () => {
+  applyOverviewPrintPreset('all');
+  openAccessibleModal(document.getElementById('overviewPrintOverlay'));
+};
+
+function clearOverviewPrintSelection() {
+  document.querySelectorAll('[data-print-section].print-excluded').forEach(section => section.classList.remove('print-excluded'));
+}
+
+window.confirmOverviewPrint = () => {
+  const checked = [...document.querySelectorAll('#overviewPrintSections input[type="checkbox"]:checked')];
+  const validation = document.getElementById('overviewPrintValidation');
+  if (!checked.length) {
+    validation.className = 'resource-validation show error';
+    validation.textContent = 'Select at least one section to export.';
+    return;
+  }
+  const selected = new Set(checked.map(input => input.value));
+  clearOverviewPrintSelection();
+  document.querySelectorAll('[data-print-section]').forEach(section => {
+    section.classList.toggle('print-excluded', !selected.has(section.dataset.printSection));
+  });
+  closeModal('overviewPrintOverlay');
+  window.addEventListener('afterprint', clearOverviewPrintSelection, { once: true });
+  window.print();
+};
+
 window.setOverviewScope = scope => {
   overviewScope = normalizeOverviewScope(scope);
   const storageKey = getOverviewScopeStorageKey(currentUser?.uid || getEmailKey(currentUser));

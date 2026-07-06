@@ -279,7 +279,7 @@ test('Overview scope changes persist locally and redraw once without Firestore w
 
 test('mixed Overview lists use conditional project-level badges and empty scope messaging', () => {
   const badgeUses = dashboard.match(/overviewProjectBadge\(p\)/g) || [];
-  assert.ok(badgeUses.length >= 7, `expected badges in every mixed list, found ${badgeUses.length}`);
+  assert.ok(badgeUses.length >= 6, `expected badges in every project-level mixed list, found ${badgeUses.length}`);
   assert.ok(dashboard.includes('No projects in the selected Overview scope.'));
   assert.ok(dashboard.includes("overviewScope === 'all'"));
 });
