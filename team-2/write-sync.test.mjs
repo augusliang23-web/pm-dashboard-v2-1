@@ -40,6 +40,29 @@ test('serializes v2.0T executive timeline without nested arrays', () => {
   assert.deepEqual(getExecutiveTimelineCell(stored.rows[0].cells, 1), ['Beta']);
 });
 
+test('serializes executive outcome evidence as Firestore-safe keyed maps', () => {
+  const stored = serializeExecutiveMilestoneTimeline({
+    rows: [{
+      label: 'Solution',
+      cells: [[{
+        id: 'outcome-1',
+        text: 'Launch site',
+        progressMode: 'auto',
+        sources: [
+          { projectCode: 'SYS-1', type: 'milestone', milestoneId: 'ms-1' },
+          { projectCode: 'MOD-1', type: 'quarterly', milestoneId: 'qms-1' },
+        ],
+      }], [], [], []],
+    }],
+  });
+
+  assert.equal(stored.rows[0].cells.q1[0].text, 'Launch site');
+  assert.deepEqual(stored.rows[0].cells.q1[0].sources, {
+    source1: { projectCode: 'SYS-1', type: 'milestone', milestoneId: 'ms-1' },
+    source2: { projectCode: 'MOD-1', type: 'quarterly', milestoneId: 'qms-1' },
+  });
+});
+
 test('v2.0T wires guarded release and Firestore-safe timeline saves', () => {
   assert.match(
     source,

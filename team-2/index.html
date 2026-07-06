@@ -679,7 +679,21 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 .dcdc-corner { background:#fff; border-bottom:0; }
 .dcdc-row-label { font-size:14px; font-weight:900; line-height:1.25; color:var(--text); background:#F8FBFD; }
 .dcdc-list { margin:0; padding-left:18px; color:var(--text); }
-.dcdc-list li { margin:0 0 7px; font-size:13px; line-height:1.36; font-weight:700; }
+.dcdc-list li { margin:0 0 9px; font-size:13px; line-height:1.36; font-weight:700; }
+.exec-outcome-head { display:flex; gap:6px; align-items:flex-start; justify-content:space-between; }
+.exec-outcome-badges { display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end; }
+.exec-outcome-badge { padding:2px 5px; border:1px solid var(--border); border-radius:999px; color:var(--muted); background:#fff; font-family:'IBM Plex Mono',monospace; font-size:8px; white-space:nowrap; }
+.exec-outcome-badge.green { color:#4F8C70; background:var(--gdim); border-color:#B9DCCB; }
+.exec-outcome-badge.yellow { color:#9D7C27; background:var(--ydim); border-color:#E9D59B; }
+.exec-outcome-badge.red { color:#A85454; background:var(--rdim); border-color:#E7B7B7; }
+.exec-outcome-badge.unknown { color:var(--muted); background:var(--s3); }
+.exec-outcome-progress { display:flex; align-items:center; gap:7px; margin-top:5px; }
+.exec-outcome-progress-track { flex:1; height:5px; overflow:hidden; border-radius:999px; background:var(--s3); }
+.exec-outcome-progress-fill { height:100%; background:var(--green); border-radius:inherit; }
+.exec-outcome-progress-fill.yellow { background:var(--yellow); }
+.exec-outcome-progress-fill.red { background:var(--red); }
+.exec-outcome-progress-label { width:30px; text-align:right; color:var(--text-light); font-family:'IBM Plex Mono',monospace; font-size:9px; }
+.exec-outcome-relink { margin-top:3px; color:#A85454; font-size:9px; font-weight:700; }
 .dcdc-phase-row { display:grid; grid-template-columns:150px repeat(4,minmax(0,1fr)); align-items:stretch; background:#F1F7FB; }
 .dcdc-phase-spacer { border-right:1px solid #C8DDEB; }
 .dcdc-phase { padding:12px 10px; text-align:center; color:#005BAA; font-size:15px; line-height:1.15; font-weight:900; border-right:1px solid #C8DDEB; }
@@ -750,7 +764,16 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 .exec-timeline-head { font-family:'IBM Plex Mono', monospace; font-size:9px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
 .exec-timeline-row, .exec-timeline-phase-row { padding:8px; border:1px solid var(--border); border-radius:8px; background:#fff; }
 .exec-timeline-row-label { font-weight:800; }
-.exec-timeline-cell { min-height:86px; resize:vertical; }
+.exec-timeline-cell { min-height:86px; }
+.etm-cell { padding:6px; border:1px solid var(--border); border-radius:7px; background:var(--s2); }
+.etm-outcome-list { display:grid; gap:7px; }
+.exec-outcome-row { display:grid; gap:6px; padding:7px; border:1px solid var(--border); border-radius:7px; background:#fff; }
+.exec-outcome-controls { display:grid; grid-template-columns:.8fr .7fr .9fr 28px; gap:5px; }
+.exec-outcome-sources { display:grid; gap:4px; }
+.exec-outcome-source { display:grid; grid-template-columns:minmax(0,1fr) 26px; gap:4px; }
+.exec-outcome-row .fi, .exec-outcome-row .fs { min-width:0; width:100%; font-size:10px; padding:6px; }
+.exec-outcome-row button { min-height:27px; border:1px solid var(--border2); border-radius:5px; background:#fff; color:var(--text-light); cursor:pointer; }
+.exec-outcome-add, .exec-source-add { margin-top:5px; width:100%; padding:6px; border:1px dashed var(--border2); border-radius:6px; background:#fff; color:var(--text-light); cursor:pointer; font-size:10px; font-weight:700; }
 
 /* Resource & Budget Prototype */
 .proto-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
@@ -2030,6 +2053,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 import { isAuthInitializationCurrent } from "./js/auth-session.mjs";
 import { RESOURCE_DISCIPLINES, buildGanttCalendarAxis, calculateDropIndex, createDefaultWorkstreams, createTimelineTicks, filterOverviewSummaryLines, filterProjects, filterRoleVisibleProjects, getFocusTrapIndex, getGanttProgressSegments, getOverviewProjectBadgeLabel, getOverviewProjects, getOverviewScopeStorageKey, matchOverviewSummaryProjectLine, mergeResourceEntry, normalizeOverviewMilestoneStatus, normalizeOverviewPercent, normalizeOverviewRagStatus, normalizeOverviewScope, normalizeOverviewSummaryHeading, normalizeProject, normalizeResourceEntry, normalizeRiskActionRows, normalizeWorkstream, orderProjectsByAttention, parseIsoDate, projectOwnershipMatchesIdentity, resolveProjectStatusDate, resolveWorkstreamTemplateConfig, summarizeTeamEffort, validateResourceInput, validateWorkstreamTemplateConfig, validateWorkstreams } from "./js/portfolio-core.mjs";
 import { calculateQuarterlyKpi, normalizeQuarterlyMilestone, quarterlyWeightValue } from "./js/quarterly-kpi.mjs";
+import { calculateExecutiveOutcome, executiveSourceKey, normalizeExecutiveOutcome } from "./js/executive-outcomes.mjs";
 import { applyProjectAttentionUpdate, applyProjectDelete, applyProjectSave, ensureStableEditorRowId, projectRevisionFingerprint, withProjectEditorRowIds } from "./js/project-mutations.mjs";
 import { buildLastSeenPresenceActivities, buildPresenceTimelineLanes, selectPresenceWriteScale } from "./js/presence-usage.mjs";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -2089,6 +2113,7 @@ let PM_LIST = [];
 let jumpToLatestOnNextRender = false;
 let releaseWriteInProgress = false;
 let overviewCurrency = 'USD';
+let currentExecutiveEvidenceCatalog = { options: [], lookup: {}, byKey: {} };
 let fxRates = {
   base: 'USD',
   date: '2026-06-25',
@@ -4390,7 +4415,8 @@ function normalizeExecutiveMilestoneTimeline(raw = {}) {
     label: String(row.label || ''),
     cells: Array.from({ length: 4 }, (_, index) => {
       const cell = getExecutiveTimelineCell(row.cells, index);
-      return Array.isArray(cell) ? cell.map(String).filter(Boolean) : textLines(cell);
+      const items = Array.isArray(cell) ? cell : textLines(cell);
+      return items.map(normalizeExecutiveOutcome).filter(item => item.text.trim());
     })
   })).filter(row => row.label || row.cells.some(cell => cell.length));
   const phases = Array.from({ length: 4 }, (_, index) => String(source.phases?.[index] || ''));
@@ -5063,9 +5089,37 @@ function formatDetailQuarterlyMilestones(project) {
   }).join('');
 }
 
+function renderExecutiveOutcomeDisplay(source, catalog, reportingLabel) {
+  const outcome = normalizeExecutiveOutcome(source);
+  const result = calculateExecutiveOutcome(outcome, catalog.lookup);
+  const progressLabel = result.progress === null ? 'N/A' : `${result.progress}%`;
+  const evidence = result.validSources.map(item => item.label).filter(Boolean);
+  const tooltip = [
+    ...evidence.map(label => `Evidence: ${label}`),
+    ...result.missingSources.map(reference => `Needs relink: ${reference.projectCode} / ${reference.milestoneId}`),
+    `Last reporting week: ${reportingLabel || 'Not available'}`,
+  ].join(' | ');
+  return `<li title="${escHtml(tooltip)}">
+    <div class="exec-outcome-head">
+      <span>${escHtml(outcome.text)}</span>
+      <span class="exec-outcome-badges">
+        <span class="exec-outcome-badge">${result.mode === 'auto' ? 'Auto' : 'Manual'}</span>
+        <span class="exec-outcome-badge ${result.health}">${escHtml(result.health === 'green' ? 'On Track' : result.health === 'yellow' ? 'At Risk' : result.health === 'red' ? 'Delayed' : 'Unknown')}</span>
+      </span>
+    </div>
+    <div class="exec-outcome-progress">
+      <span class="exec-outcome-progress-track"><span class="exec-outcome-progress-fill ${result.health}" style="width:${result.progress ?? 0}%"></span></span>
+      <span class="exec-outcome-progress-label">${progressLabel}</span>
+    </div>
+    ${result.missingSources.length ? '<div class="exec-outcome-relink">Needs relink</div>' : ''}
+  </li>`;
+}
+
 function renderExecutiveQuarterMilestones(projs, layer = getStrategyLayer(), activeTrack = 'all', year = getDefaultRoadmapYear(projs, layer)) {
   const timeline = normalizeExecutiveMilestoneTimeline(layer.executiveMilestoneTimeline);
   const quarters = timeline.quarters || ['Q1', 'Q2', 'Q3', 'Q4'];
+  const catalog = buildExecutiveEvidenceCatalog(projs);
+  const reportingLabel = allWeeks[currentIdx]?.weekLabel || getSelectedReportingDate();
   return `<section class="roadmap-block executive-milestone-block">
     <div class="roadmap-block-head">
       <div>
@@ -5084,7 +5138,7 @@ function renderExecutiveQuarterMilestones(projs, layer = getStrategyLayer(), act
         ${quarters.map(q => `<div class="dcdc-cell dcdc-quarter">${escHtml(q)}</div>`).join('')}
         ${(timeline.rows || []).map(row => `
           <div class="dcdc-cell dcdc-row-label">${escHtml(row.label)}</div>
-          ${(row.cells || []).map(items => `<div class="dcdc-cell"><ul class="dcdc-list">${(items || []).map(item => `<li>${escHtml(item)}</li>`).join('')}</ul></div>`).join('')}
+          ${(row.cells || []).map(items => `<div class="dcdc-cell"><ul class="dcdc-list">${(items || []).map(item => renderExecutiveOutcomeDisplay(item, catalog, reportingLabel)).join('')}</ul></div>`).join('')}
         `).join('')}
       </div>
       <div class="dcdc-phase-row">
@@ -5105,6 +5159,59 @@ function renderProjectQuarterItems(items) {
     <div class="pqm-meta">${escHtml(i.window || '-')} | ${i.progress}% | ${escHtml(quarterlyWeightLabel(i.weight))} | ${escHtml(quarterlyHealthLabel(i.health))}${i.strategy.checkpoint ? ` | ${escHtml(i.strategy.checkpoint)}` : ''}</div>
   </div>`;
   }).join('')}</div>`;
+}
+
+function standardMilestoneProgress(status) {
+  const normalized = normalizeOverviewMilestoneStatus(status);
+  if (normalized === 'done') return 100;
+  if (normalized === 'in-progress' || normalized === 'at-risk') return 50;
+  return 0;
+}
+
+function buildExecutiveEvidenceCatalog(projects, reportingDate = getSelectedReportingDate()) {
+  const options = [];
+  const lookup = {};
+  const byKey = {};
+  const reporting = reportingDate ? new Date(`${reportingDate}T00:00:00Z`) : null;
+  (projects || []).forEach(project => {
+    (project.milestones || []).forEach((item, index) => {
+      const milestoneId = ensureStableEditorRowId(item, 'milestone', index);
+      const reference = { projectCode: String(project.code || ''), type: 'milestone', milestoneId };
+      const key = executiveSourceKey(reference);
+      const status = normalizeOverviewMilestoneStatus(item.status);
+      const deadline = parseIsoDate(item.date);
+      const overdue = Boolean(reporting && deadline && reporting > deadline && status !== 'done');
+      const option = {
+        key,
+        reference,
+        label: `${project.name || project.code} › Milestone › ${item.name || 'Unnamed milestone'}`,
+        progress: standardMilestoneProgress(status),
+        health: overdue || status === 'delayed' ? 'red' : status === 'at-risk' ? 'yellow' : 'green',
+        overdue,
+      };
+      options.push(option);
+      lookup[key] = option;
+      byKey[key] = reference;
+    });
+    getQuarterlyMilestones(project).forEach((item, index) => {
+      const milestoneId = ensureStableEditorRowId(item, 'qms', index);
+      const reference = { projectCode: String(project.code || ''), type: 'quarterly', milestoneId };
+      const key = executiveSourceKey(reference);
+      const kpi = calculateQuarterlyKpi([item], item.quarter, reportingDate);
+      const option = {
+        key,
+        reference,
+        label: `${project.name || project.code} › Quarterly › ${item.goal || 'Unnamed target'}`,
+        progress: item.progress,
+        health: kpi.health,
+        overdue: kpi.overdue > 0,
+      };
+      options.push(option);
+      lookup[key] = option;
+      byKey[key] = reference;
+    });
+  });
+  return { options, lookup, byKey };
 }
 
 function quarterlyWeightLabel(weight) {
@@ -6034,6 +6141,56 @@ window.setRoadmapYear = (year) => {
   render();
 };
 
+function newExecutiveOutcomeId() {
+  return `exec-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+function renderExecutiveSourceSelect(reference = {}) {
+  const selectedKey = reference.projectCode ? executiveSourceKey(reference) : '';
+  const sourceExists = selectedKey && currentExecutiveEvidenceCatalog.options.some(option => option.key === selectedKey);
+  if (selectedKey && !sourceExists) currentExecutiveEvidenceCatalog.byKey[selectedKey] = reference;
+  return `<div class="exec-outcome-source">
+    <select class="fs etm-source-select" aria-label="Executive outcome evidence">
+      <option value="">Select project evidence</option>
+      ${selectedKey && !sourceExists ? `<option value="${escHtml(selectedKey)}" selected>Needs relink: ${escHtml(reference.projectCode)} / ${escHtml(reference.milestoneId)}</option>` : ''}
+      ${currentExecutiveEvidenceCatalog.options.map(option => `<option value="${escHtml(option.key)}" ${option.key === selectedKey ? 'selected' : ''}>${escHtml(option.label)}</option>`).join('')}
+    </select>
+    <button type="button" onclick="this.parentElement.remove()" aria-label="Remove evidence">×</button>
+  </div>`;
+}
+
+function renderExecutiveOutcomeEditor(source = {}) {
+  const outcome = normalizeExecutiveOutcome(source);
+  const references = outcome.sources.length ? outcome.sources : [{}];
+  return `<div class="exec-outcome-row" data-outcome-id="${escHtml(outcome.id || newExecutiveOutcomeId())}">
+    <input class="fi etm-outcome-text" value="${escHtml(outcome.text)}" placeholder="Management-facing outcome" aria-label="Executive outcome">
+    <div class="exec-outcome-controls">
+      <select class="fs etm-outcome-mode" onchange="syncExecutiveOutcomeMode(this)" aria-label="Progress mode">
+        <option value="manual" ${outcome.progressMode === 'manual' ? 'selected' : ''}>Manual</option>
+        <option value="auto" ${outcome.progressMode === 'auto' ? 'selected' : ''}>Auto</option>
+      </select>
+      <select class="fs etm-manual-progress" aria-label="Manual progress">
+        ${[0,25,50,75,100].map(value => `<option value="${value}" ${outcome.manualProgress === value ? 'selected' : ''}>${value}%</option>`).join('')}
+      </select>
+      <select class="fs etm-manual-health" aria-label="Manual health">
+        <option value="on-track" ${outcome.manualHealth === 'on-track' ? 'selected' : ''}>On Track</option>
+        <option value="at-risk" ${outcome.manualHealth === 'at-risk' ? 'selected' : ''}>At Risk</option>
+        <option value="delayed" ${outcome.manualHealth === 'delayed' ? 'selected' : ''}>Delayed</option>
+      </select>
+      <button type="button" onclick="this.closest('.exec-outcome-row').remove()" aria-label="Delete executive outcome">×</button>
+    </div>
+    <div class="exec-outcome-sources">${references.map(renderExecutiveSourceSelect).join('')}</div>
+    <button type="button" class="exec-source-add" onclick="addExecutiveOutcomeSource(this)">+ Evidence</button>
+  </div>`;
+}
+
+function renderExecutiveTimelineCell(items = []) {
+  return `<div class="exec-timeline-cell etm-cell">
+    <div class="etm-outcome-list">${items.map(renderExecutiveOutcomeEditor).join('')}</div>
+    <button type="button" class="exec-outcome-add" onclick="addExecutiveOutcome(this)">+ Outcome</button>
+  </div>`;
+}
+
 function renderExecutiveMilestoneEditor(timeline) {
   const data = normalizeExecutiveMilestoneTimeline(timeline);
   return `<div class="exec-timeline-editor">
@@ -6046,7 +6203,7 @@ function renderExecutiveMilestoneEditor(timeline) {
       ${data.rows.map(row => `
         <div class="exec-timeline-row">
           <input class="fi etm-row-label" value="${escHtml(row.label)}" placeholder="Category">
-          ${Array.from({ length: 4 }, (_, index) => `<textarea class="ft exec-timeline-cell etm-cell" rows="4" placeholder="${escHtml(data.quarters[index] || `Q${index + 1}`)}">${escHtml((row.cells[index] || []).join('\n'))}</textarea>`).join('')}
+          ${Array.from({ length: 4 }, (_, index) => renderExecutiveTimelineCell(row.cells[index] || [])).join('')}
         </div>
       `).join('')}
     </div>
@@ -6059,6 +6216,31 @@ function renderExecutiveMilestoneEditor(timeline) {
   </div>`;
 }
 
+window.syncExecutiveOutcomeMode = select => {
+  const row = select.closest('.exec-outcome-row');
+  const isAuto = select.value === 'auto';
+  row?.classList.toggle('is-auto', isAuto);
+  row?.querySelectorAll('.etm-manual-progress, .etm-manual-health').forEach(control => {
+    control.disabled = isAuto;
+  });
+};
+
+window.addExecutiveOutcome = button => {
+  if (!canManageStrategy()) return;
+  const list = button.closest('.etm-cell')?.querySelector('.etm-outcome-list');
+  if (!list) return;
+  list.insertAdjacentHTML('beforeend', renderExecutiveOutcomeEditor());
+};
+
+window.addExecutiveOutcomeSource = button => {
+  if (!canManageStrategy()) return;
+  const container = button.closest('.exec-outcome-row')?.querySelector('.exec-outcome-sources');
+  if (!container) return;
+  const sourceRows = container.querySelectorAll('.exec-outcome-source');
+  if (sourceRows.length >= 3) return;
+  container.insertAdjacentHTML('beforeend', renderExecutiveSourceSelect());
+};
+
 window.addExecutiveTimelineRow = () => {
   if (!canManageStrategy()) return;
   const rows = document.getElementById('execTimelineRows');
@@ -6066,15 +6248,29 @@ window.addExecutiveTimelineRow = () => {
   const row = document.createElement('div');
   row.className = 'exec-timeline-row';
   row.innerHTML = `<input class="fi etm-row-label" placeholder="Category">
-    ${[1,2,3,4].map(q => `<textarea class="ft exec-timeline-cell etm-cell" rows="4" placeholder="Q${q} milestones"></textarea>`).join('')}`;
+    ${[1,2,3,4].map(() => renderExecutiveTimelineCell()).join('')}`;
   rows.appendChild(row);
 };
+
+function collectExecutiveOutcomeRows(cell) {
+  return Array.from(cell.querySelectorAll('.exec-outcome-row')).map(row => normalizeExecutiveOutcome({
+    id: row.dataset.outcomeId || newExecutiveOutcomeId(),
+    text: row.querySelector('.etm-outcome-text')?.value.trim() || '',
+    progressMode: row.querySelector('.etm-outcome-mode')?.value || 'manual',
+    manualProgress: Number(row.querySelector('.etm-manual-progress')?.value || 0),
+    manualHealth: row.querySelector('.etm-manual-health')?.value || 'on-track',
+    sources: Array.from(row.querySelectorAll('.etm-source-select'))
+      .map(select => currentExecutiveEvidenceCatalog.byKey[select.value])
+      .filter(Boolean)
+      .slice(0, 3),
+  })).filter(outcome => outcome.text);
+}
 
 function collectExecutiveMilestoneTimeline() {
   const title = document.querySelector('.etm-title')?.value.trim() || 'Selected 2026 DCDC Milestone Timeline';
   const rows = Array.from(document.querySelectorAll('#execTimelineRows .exec-timeline-row')).map(row => ({
     label: row.querySelector('.etm-row-label')?.value.trim() || '',
-    cells: Array.from(row.querySelectorAll('.etm-cell')).map(cell => textLines(cell.value))
+    cells: Array.from(row.querySelectorAll('.etm-cell')).map(collectExecutiveOutcomeRows)
   })).filter(row => row.label || row.cells.some(cell => cell.length));
   const phases = Array.from(document.querySelectorAll('.etm-phase')).map(input => input.value.trim());
   return normalizeExecutiveMilestoneTimeline({
@@ -6093,7 +6289,9 @@ window.openStrategyLayerModal = () => {
   const projs = (week.projects || []).filter(p => !p.visibility || p.visibility === 'active');
   const quarters = getStrategyYears(projs, layer, { includeNextYear: true }).flatMap(getQuarterLabelsForYear);
 
+  currentExecutiveEvidenceCatalog = buildExecutiveEvidenceCatalog(projs);
   document.getElementById('quarterGoalEditor').innerHTML = renderExecutiveMilestoneEditor(layer.executiveMilestoneTimeline);
+  document.querySelectorAll('.etm-outcome-mode').forEach(window.syncExecutiveOutcomeMode);
 
   const checkpointOptions = UNIVERSAL_CHECKPOINTS.map(c => `<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('');
   document.getElementById('projectStrategyEditor').innerHTML = projs.map(p => {
