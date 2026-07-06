@@ -3,10 +3,6 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 const dashboard = await readFile(new URL('../team-2/index.html', import.meta.url), 'utf8');
-const runbook = await readFile(
-  new URL('../docs/migration/team-2-excel-import-runbook.md', import.meta.url),
-  'utf8',
-);
 
 test('Admin-only template settings UI is an accessible trapped dialog', () => {
   assert.match(dashboard, /id="ganttTemplateSettingsBtn"[^>]+admin-only/);
@@ -127,15 +123,10 @@ test('failed template saves keep the draft modal open and surface an error', () 
   assert.doesNotMatch(catchSource, /closeModal\('ganttTemplateOverlay'\)/);
 });
 
-test('manual creation, untouched level changes, and confirmed imports use loaded templates', () => {
+test('manual creation and untouched level changes use loaded templates', () => {
   assert.ok(dashboard.includes('createDefaultWorkstreams(level, currentGanttTemplateConfig)'));
   assert.ok(dashboard.includes('if (newProjectScheduleUntouched'));
-  assert.ok(dashboard.includes('templateConfig,'));
-  assert.ok(dashboard.includes('const templateConfig = currentGanttTemplateConfig;'));
   assert.ok(dashboard.includes('if (isNew && !ganttTemplateSubscriptionReady) return;'));
-  const importStart = dashboard.indexOf('window.executeConfirmedExcelImport');
-  const importEnd = dashboard.indexOf('// END EXCEL IMPORT', importStart);
-  assert.ok(dashboard.slice(importStart, importEnd).includes('if (!ganttTemplateSubscriptionReady)'));
 });
 
 test('saving new defaults never rewrites existing project schedules', () => {
@@ -144,9 +135,4 @@ test('saving new defaults never rewrites existing project schedules', () => {
   const source = dashboard.slice(start, end);
   assert.doesNotMatch(source, /\ballWeeks\b|ganttWorkstreams|collection\(db,\s*['"]weeks['"]/);
   assert.match(dashboard, /Existing project schedules are never changed\./);
-});
-
-test('runbook documents the Admin-only Firestore Rules boundary', () => {
-  assert.match(runbook, /dashboardSettings\/team-2-portfolio/);
-  assert.match(runbook, /Firestore Rules[\s\S]+Admin-only/i);
 });

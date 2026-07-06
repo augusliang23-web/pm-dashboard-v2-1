@@ -147,17 +147,6 @@ body {
 .btn-primary:hover { background: var(--accent-hov); }
 .btn-ghost { font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border2); transition: all .2s; white-space: nowrap; background: var(--s1); color: var(--text-light); }
 .btn-ghost:hover { background: var(--s2); color: var(--text); }
-.import-summary { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:18px 0; }
-.import-summary div { padding:12px; border:1px solid var(--border); border-radius:8px; background:var(--s2); text-align:center; }
-.import-summary strong { display:block; font-size:20px; color:var(--text); }
-.import-preview { max-height:320px; overflow:auto; border:1px solid var(--border); border-radius:8px; }
-.import-preview-row { padding:9px 12px; border-bottom:1px solid var(--border); font-size:12px; line-height:1.45; }
-.import-preview-row:last-child { border-bottom:0; }
-.import-error { color:#B35858; margin-top:10px; font-size:12px; min-height:18px; }
-.import-confirmation { margin-top:16px; padding:14px; border:1px solid var(--yellow); border-radius:8px; background:var(--ydim); font-size:12px; line-height:1.5; }
-.import-confirmation label { display:flex; align-items:flex-start; gap:8px; margin-top:10px; }
-.import-confirmation input { margin-top:3px; flex:0 0 auto; }
-.import-result { min-height:18px; margin-top:12px; font-size:12px; font-weight:600; }
 .gantt-template-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
 .gantt-template-panel { padding:14px; border:1px solid var(--border); border-radius:9px; background:var(--s2); }
 .gantt-template-panel h4 { margin:0 0 5px; font-size:13px; }
@@ -336,6 +325,10 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 .usage-history-note { font-size:10px; color:var(--muted); line-height:1.5; margin:-8px 0 18px; }
 .usage-chart { position:relative; min-height:250px; margin:0 0 18px; padding:12px; background:var(--s2); border:1px solid var(--border); border-radius:8px; overflow:auto; }
 .usage-chart svg { display:block; max-width:none; }
+.usage-chart-canvas { position:relative; }
+.usage-chart-canvas > svg { position:absolute; inset:0; }
+.usage-chart-frozen-labels { position:sticky; left:0; z-index:2; width:118px; background:var(--s2); border-right:1px solid var(--border); pointer-events:none; }
+.usage-chart-frozen-label { position:absolute; left:0; width:100%; height:28px; display:flex; align-items:center; justify-content:flex-end; padding:0 8px 0 4px; border-bottom:1px solid var(--border); color:var(--text-light); font-size:9px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .usage-chart-empty { height:100%; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:11px; }
 .usage-chart-toolbar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin:-8px 0 12px; }
 .usage-chart-legend { display:flex; align-items:center; gap:14px; font-size:10px; color:var(--muted); }
@@ -617,7 +610,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 .milestone-plan-history li { margin:3px 0; }
 .action-list { margin:0; padding-left:18px; }
 .action-list li { margin:0 0 5px; }
-.qms-row { display:grid; grid-template-columns:.65fr 1.7fr .8fr .8fr 34px; gap:8px; margin-bottom:8px; align-items:center; padding:4px; border-radius:4px; background:var(--s1); }
+.qms-row { display:grid; grid-template-columns:.65fr 1.55fr .7fr .65fr .7fr .75fr 1fr 34px; gap:8px; margin-bottom:8px; align-items:center; padding:4px; border-radius:4px; background:var(--s1); }
 .qms-row:hover { background:var(--s2); }
 .qms-delete { border:none; background:none; cursor:pointer; font-size:16px; line-height:1; }
 .qms-delete:disabled { opacity:.28; cursor:not-allowed; }
@@ -714,6 +707,14 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 .pqm-legend-swatch { width:13px; height:13px; border:1px solid #C9DDEA; border-radius:3px; background:#F1F7FC; }
 .pqm-legend-swatch.done { border-color:#C8E5D5; background:#F3FBF6; }
 .pqm-legend-swatch.at-risk { border-color:#E9D59B; background:#FFFAF0; }
+.quarter-kpi-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; padding:0 0 14px; }
+.quarter-kpi-card { border:1px solid var(--border); border-top:4px solid var(--green); border-radius:9px; background:#fff; padding:11px 12px; }
+.quarter-kpi-card.yellow { border-top-color:var(--yellow); }
+.quarter-kpi-card.red { border-top-color:var(--red); }
+.quarter-kpi-title { display:flex; justify-content:space-between; gap:8px; align-items:center; font-size:12px; font-weight:850; }
+.quarter-kpi-progress { margin-top:7px; font-size:22px; font-weight:900; color:var(--text); }
+.quarter-kpi-label { font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+.quarter-kpi-stats { margin-top:8px; display:grid; grid-template-columns:1fr 1fr; gap:5px 8px; font-size:10px; color:var(--text-light); }
 .strategy-lens-inline { margin:0 0 14px; padding:13px 14px; border:1px solid var(--border); border-radius:9px; background:#FBFDFF; }
 .strategy-lens-inline .strategy-toolbar { margin-bottom:10px; }
 .strategy-lens-inline .strategy-title { font-size:17px; }
@@ -762,6 +763,9 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 .schedule-row-head { grid-template-columns:30px minmax(130px,1.4fr) 125px 125px 120px 80px minmax(130px,1fr) 30px 30px 34px; min-width:920px; }
 .schedule-row-head .row-actions-label { grid-column:8 / 11; text-align:center; }
 .team-row-head { grid-template-columns:1.2fr 1fr .55fr 32px; margin:4px 0 6px; }
+.qms-editor-scroll { overflow-x:auto; padding-bottom:4px; }
+.qms-row-head { grid-template-columns:.65fr 1.55fr .7fr .65fr .7fr .75fr 1fr 34px; min-width:1050px; margin:8px 4px 5px; }
+.qms-row { min-width:1050px; }
 .inline-field-guide { margin:5px 0 8px; color:var(--muted); font-size:10px; line-height:1.45; }
 .schedule-edit-row.has-error { border-color:var(--red); background:#fff8f8; }
 .schedule-field-error { border-color:var(--red) !important; outline:1px solid var(--red); }
@@ -867,6 +871,9 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 .budget-mode-option { display:flex; align-items:center; gap:6px; padding:8px 10px; border:1px solid var(--border); border-radius:8px; background:#fff; font-size:11px; font-weight:800; color:var(--text-light); cursor:pointer; }
 .budget-mode-option input { accent-color:var(--accent); }
 .budget-mode-option:has(input:checked) { border-color:var(--accent); color:var(--accent-hov); background:var(--adim); }
+.budget-rule-fields { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px; }
+.budget-rule-fields > * { min-width:0; }
+.budget-rule-fields .fi, .budget-rule-fields .fs { width:100%; min-width:0; }
 .budget-link-summary { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:12px; }
 .budget-link-tile { border:1px solid var(--border); border-radius:8px; background:#fff; padding:9px 10px; }
 .budget-link-label { font-size:9px; color:var(--muted); font-weight:800; text-transform:uppercase; letter-spacing:.05em; }
@@ -893,7 +900,18 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 .detail-rb-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:22px; }
 .detail-resource-summary-section .detail-rb-grid { margin-top:0; }
 .detail-rb-box { border:1px solid var(--border); border-radius:10px; background:var(--s2); padding:14px; }
-.detail-rb-list { display:grid; gap:7px; margin-top:10px; font-size:12px; color:var(--text-light); }
+.detail-rb-table-wrap { margin-top:10px; overflow-x:auto; }
+.detail-summary-table { width:100%; border-collapse:collapse; table-layout:fixed; font-size:11px; color:var(--text-light); }
+.detail-summary-table th, .detail-summary-table td { padding:8px 9px; border-bottom:1px solid var(--border); text-align:left; vertical-align:top; }
+.detail-summary-table th { background:#fff; color:var(--muted); font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; }
+.detail-summary-table tbody tr:last-child td { border-bottom:0; }
+.detail-summary-table td:first-child { color:var(--text); font-weight:700; }
+.detail-summary-table th:last-child, .detail-summary-table td:last-child { text-align:right; }
+.team-effort-table th:nth-child(1) { width:30%; }
+.team-effort-table th:nth-child(2) { width:50%; }
+.team-effort-table th:nth-child(3) { width:20%; }
+.detail-table-empty { color:var(--muted); font-weight:600 !important; text-align:center !important; }
+.budget-used-note { color:var(--muted); font-weight:500; white-space:nowrap; }
 .resource-editor-grid { display:grid; gap:8px; margin-top:10px; }
 .resource-editor-row { display:grid; grid-template-columns:1.2fr 1fr 1fr; gap:10px; align-items:end; padding:10px; border:1px solid var(--border); border-radius:8px; background:#fff; }
 .resource-editor-row .fg { margin:0; }
@@ -918,6 +936,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
   .resource-list-head, .resource-budget-editor-head { align-items:flex-start; flex-direction:column; }
   .resource-panel-body .proto-section-head { align-items:flex-start; flex-direction:column; }
   .resource-panel-actions .btn { width:100%; }
+  .budget-rule-fields { grid-template-columns:1fr; }
 }
 .copilot-prompt-box { font-family:'IBM Plex Mono', monospace; font-size:11px; line-height:1.55; min-height:220px; background:#FBFDFF; }
 .ai-assist-box { background:var(--s2); border:1px solid var(--border); border-radius:8px; padding:18px; margin-bottom:18px; }
@@ -1502,9 +1521,6 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
       <button id="addProjectBtn" class="btn-icon admin-only" onclick="openProjEdit('', true)" title="Add New Project">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
       </button>
-      <button id="importExcelBtn" class="btn-icon admin-only" style="display:none;" onclick="openExcelImport()" title="Import Excel" aria-label="Import Excel">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
-      </button>
       <button id="ganttTemplateSettingsBtn" class="btn-icon admin-only" style="display:none;" onclick="openGanttTemplateSettings()" title="Default Gantt Templates" aria-label="Manage default Gantt templates">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.6v-.2h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1z"/></svg>
       </button>
@@ -1561,12 +1577,6 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
     </div>
     <div class="portfolio-controls">
       <input class="fi portfolio-search" id="projectSearch" type="search" placeholder="Search project name or code">
-      <select class="fs" id="filterPm" aria-label="Project manager filter"><option value="all">All PMs</option></select>
-      <select class="fs" id="filterRag" aria-label="RAG filter"><option value="all">All RAG</option><option value="green">On Track</option><option value="yellow">At Risk</option><option value="red">Critical</option></select>
-      <select class="fs" id="filterLifecycle" aria-label="Lifecycle filter"><option value="all">All Lifecycles</option><option value="active">Active</option><option value="on-hold">On Hold</option><option value="completed">Completed</option></select>
-      <select class="fs" id="filterProductFamily" aria-label="Product family filter"><option value="all">All Product Families</option></select>
-      <select class="fs" id="filterProjectType" aria-label="Project type filter"><option value="all">All Project Types</option></select>
-      <select class="fs" id="filterClassification" aria-label="Classification filter"><option value="all">All Classifications</option></select>
     </div>
   </div>
   <div id="normalView">
@@ -1575,7 +1585,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
   <div id="execView" class="exec-view"></div>
 </div>
 
-<div class="overlay" id="projDetailOverlay">
+<div class="overlay" id="projDetailOverlay" onclick="closeProjectOverlayFromBackdrop(event)">
 <div class="modal">
   <div class="modal-hdr">
     <h3 id="pd_title" style="font-size:22px; color:var(--text);">Project Name</h3>
@@ -1628,11 +1638,11 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
     <div class="detail-rb-grid">
       <div class="detail-rb-box">
         <div class="info-lbl">Team & Effort</div>
-        <div class="detail-rb-list" id="pd_team_effort"></div>
+        <div class="detail-rb-table-wrap" id="pd_team_effort"></div>
       </div>
       <div class="detail-rb-box">
         <div class="info-lbl">Budget Snapshot</div>
-        <div class="detail-rb-list" id="pd_budget_snapshot"></div>
+        <div class="detail-rb-table-wrap" id="pd_budget_snapshot"></div>
       </div>
     </div>
   </section>
@@ -1671,7 +1681,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 </div>
 </div>
 
-<div class="overlay" id="projEditOverlay">
+<div class="overlay" id="projEditOverlay" onclick="closeProjectOverlayFromBackdrop(event)">
 <div class="modal" style="width:850px">
   <div class="modal-hdr">
     <h3 id="peTitle">Edit Project</h3>
@@ -1725,11 +1735,6 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
         <div class="fg"><label class="fl">Project Level</label><select class="fs" id="pe_project_level"><option value="system">System</option><option value="hardware-module">Hardware Module</option></select></div>
         <div class="fg"><label class="fl">Lifecycle</label><select class="fs" id="pe_lifecycle"><option value="active">Active</option><option value="on-hold">On Hold</option><option value="completed">Completed</option></select></div>
       </div>
-      <div style="display:flex; gap:16px; margin-top:10px;">
-        <div class="fg"><label class="fl">Project Type</label><input class="fi" id="pe_project_type" placeholder="e.g. Market Launch or Internal Use"></div>
-        <div class="fg"><label class="fl">Classification</label><input class="fi" id="pe_classification" placeholder="e.g. Major - Full NPD"></div>
-        <div class="fg"><label class="fl">Product Family</label><input class="fi" id="pe_product_family" placeholder="e.g. Rectifier or EV Charger"></div>
-      </div>
       <div style="margin-top:20px;">
         <label class="fl">Milestones</label>
         <div class="inline-field-guide">Enter the milestone name, target date, and current status.</div>
@@ -1738,8 +1743,11 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
       </div>
       <div style="margin-top:20px;">
         <label class="fl">Quarterly Milestones</label>
-        <div class="inline-field-guide">Select the quarter, business target, target month, and current status.</div>
-        <div id="qmsListContainer" style="margin-top:10px;"></div>
+        <div class="inline-field-guide">Select quarter, target month, completion, weight and health. Reaching 100% records the actual completion date.</div>
+        <div class="qms-editor-scroll">
+          <div class="editor-row-head qms-row-head" aria-hidden="true"><span>Quarter</span><span>Target</span><span>Target month</span><span>Completion</span><span>Weight</span><span>Health</span><span>Actual completion</span><span>Actions</span></div>
+          <div id="qmsListContainer"></div>
+        </div>
         <button class="btn btn-ghost" onclick="addQuarterlyMilestoneRow()" style="width:100%; margin-top:10px;">+ Add Quarterly Milestone</button>
       </div>
 
@@ -1813,7 +1821,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
                   <label class="budget-mode-option"><input type="radio" name="budgetMode" value="manual" onchange="markResourceSectionDirty('budgetPlan'); updateBudgetLinkSummary()"> Manual budget ceiling</label>
                   <label class="budget-mode-option"><input type="radio" name="budgetMode" value="auto" onchange="markResourceSectionDirty('budgetPlan'); updateBudgetLinkSummary()"> Auto from monthly plan</label>
                 </div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <div class="budget-rule-fields">
                   <div class="fg"><label class="fl">Budget Currency</label><select class="fs" id="pe_budget_currency"></select></div>
                   <div class="fg"><label class="fl">Total Estimated Budget</label><input class="fi" type="number" id="pe_budget_total" min="0" step="1000" placeholder="Budget ceiling amount"></div>
                 </div>
@@ -1989,41 +1997,6 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 </div>
 </div>
 
-<div class="overlay" id="excelImportOverlay" role="dialog" aria-modal="true" aria-labelledby="excelImportTitle">
-  <div class="modal" style="width:760px">
-    <div class="modal-hdr">
-      <h3 id="excelImportTitle">Import Excel · Preview &amp; Confirm</h3>
-      <button id="closeExcelImportXBtn" class="modal-x" onclick="closeExcelImport()" aria-label="Close">×</button>
-    </div>
-    <p style="font-size:12px; color:var(--text-light); line-height:1.5;">Select an .xlsx or .xls file to preview its first sheet. Nothing will be written in this step.</p>
-    <label class="fl" for="excelImportFile" style="display:block; margin-top:16px;">Excel workbook (.xlsx or .xls)</label>
-    <input id="excelImportFile" type="file" accept=".xlsx,.xls" onchange="handleExcelImportFile(event)">
-    <div id="excelImportError" class="import-error" role="alert"></div>
-    <div id="excelImportTargetWeek" style="font-size:12px; font-weight:700; color:var(--text-light);">Target week: —</div>
-    <div class="import-summary" aria-live="polite">
-      <div><strong id="importReadyCount">0</strong>Ready</div>
-      <div><strong id="importSkippedCount">0</strong>Skipped</div>
-      <div><strong id="importFailedCount">0</strong>Failed</div>
-    </div>
-    <div id="excelImportPreview" class="import-preview"></div>
-    <div id="excelImportConfirmation" class="import-confirmation" hidden>
-      <strong id="excelImportConfirmationText"></strong>
-      <p style="margin-top:8px;">PMO Hours Completed stays out of persisted actual hours unless the separate checkbox below is checked. When checked, it is treated as PMO actual and remaining is calculated as Estimated minus Actual (not below zero).</p>
-      <label><input id="confirmPmoActual" type="checkbox"> I confirm that “PMO Hours Completed” in this workbook means PMO actual hours and may populate actual/remaining.</label>
-      <label><input id="importConfirmationAcknowledged" type="checkbox" onchange="updateImportExecutionState()"> I reviewed the exact counts and target week above and authorize this one-time import.</label>
-      <div style="display:flex; justify-content:flex-end; margin-top:12px;">
-        <button id="executeImportBtn" class="btn btn-primary" disabled onclick="executeConfirmedExcelImport()">Import Confirmed Rows</button>
-      </div>
-    </div>
-    <div id="excelImportResult" class="import-result" aria-live="polite"></div>
-    <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px;">
-      <button id="downloadImportResultsBtn" class="btn btn-ghost" hidden onclick="downloadExcelImportResults()">Download Results CSV</button>
-      <button id="closeExcelImportBtn" class="btn btn-ghost" onclick="closeExcelImport()">Close</button>
-      <button id="confirmImportBtn" class="btn btn-primary" disabled onclick="prepareExcelImportConfirmation()">Confirm Import</button>
-    </div>
-  </div>
-</div>
-
 <div class="overlay" id="ganttTemplateOverlay" role="dialog" aria-modal="true" aria-labelledby="ganttTemplateTitle">
   <div class="modal" style="width:820px">
     <div class="modal-hdr">
@@ -2056,7 +2029,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 <script type="module">
 import { isAuthInitializationCurrent } from "./js/auth-session.mjs";
 import { RESOURCE_DISCIPLINES, buildGanttCalendarAxis, calculateDropIndex, createDefaultWorkstreams, createTimelineTicks, filterOverviewSummaryLines, filterProjects, filterRoleVisibleProjects, getFocusTrapIndex, getGanttProgressSegments, getOverviewProjectBadgeLabel, getOverviewProjects, getOverviewScopeStorageKey, matchOverviewSummaryProjectLine, mergeResourceEntry, normalizeOverviewMilestoneStatus, normalizeOverviewPercent, normalizeOverviewRagStatus, normalizeOverviewScope, normalizeOverviewSummaryHeading, normalizeProject, normalizeResourceEntry, normalizeRiskActionRows, normalizeWorkstream, orderProjectsByAttention, parseIsoDate, projectOwnershipMatchesIdentity, resolveProjectStatusDate, resolveWorkstreamTemplateConfig, summarizeTeamEffort, validateResourceInput, validateWorkstreamTemplateConfig, validateWorkstreams } from "./js/portfolio-core.mjs";
-import { assertReasonableWeekDocument, buildImportResults, formatImportPreviewRow, importResultsToCsv, mergeReadyImportRows, planImport } from "./js/excel-import.mjs";
+import { calculateQuarterlyKpi, normalizeQuarterlyMilestone, quarterlyWeightValue } from "./js/quarterly-kpi.mjs";
 import { applyProjectAttentionUpdate, applyProjectDelete, applyProjectSave, ensureStableEditorRowId, projectRevisionFingerprint, withProjectEditorRowIds } from "./js/project-mutations.mjs";
 import { buildLastSeenPresenceActivities, buildPresenceTimelineLanes, selectPresenceWriteScale } from "./js/presence-usage.mjs";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -2076,11 +2049,6 @@ let currentIdx = -1;
 let currentUser = null;
 let currentRole = 'pm';
 let authSessionGeneration = 0;
-let pendingExcelImportPlan = null;
-let lastExcelImportResults = null;
-let lastExcelImportTargetWeekId = '';
-let lastExcelImportResultsUserKey = '';
-let excelImportInFlight = false;
 let isAdminVipPreview = false;
 let currentPMFilter = 'all';
 const PORTFOLIO_SCOPE_KEY = 'team2.portfolioScope';
@@ -2430,13 +2398,7 @@ window.saveGanttTemplateSettings = async () => {
 function getPortfolioFilters() {
   return {
     scope: portfolioScope,
-    search: document.getElementById('projectSearch')?.value || '',
-    pm: document.getElementById('filterPm')?.value || 'all',
-    rag: document.getElementById('filterRag')?.value || 'all',
-    lifecycle: document.getElementById('filterLifecycle')?.value || 'all',
-    productFamily: document.getElementById('filterProductFamily')?.value || 'all',
-    projectType: document.getElementById('filterProjectType')?.value || 'all',
-    classification: document.getElementById('filterClassification')?.value || 'all'
+    search: document.getElementById('projectSearch')?.value || ''
   };
 }
 
@@ -2463,31 +2425,6 @@ function overviewProjectBadge(project) {
   return label ? `<span class="project-level-badge">${label}</span>` : '';
 }
 
-function replacePortfolioOptions(selectId, values, allLabel) {
-  const select = document.getElementById(selectId);
-  if (!select) return;
-  const selected = select.value || 'all';
-  const uniqueValues = [...new Map(
-    values
-      .map(value => (value ?? '').toString().trim())
-      .filter(Boolean)
-      .map(value => [value.toLocaleLowerCase(), value])
-  ).values()]
-    .sort((a, b) => a.localeCompare(b));
-  select.replaceChildren();
-  const allOption = document.createElement('option');
-  allOption.value = 'all';
-  allOption.textContent = allLabel;
-  select.appendChild(allOption);
-  uniqueValues.forEach(value => {
-    const option = document.createElement('option');
-    option.value = value;
-    option.textContent = value;
-    select.appendChild(option);
-  });
-  select.value = uniqueValues.includes(selected) ? selected : 'all';
-}
-
 function replaceProjectEditorOptions(selectId, values, selectedValue) {
   const select = document.getElementById(selectId);
   if (!select) return;
@@ -2503,10 +2440,6 @@ function replaceProjectEditorOptions(selectId, values, selectedValue) {
 }
 
 function refreshPortfolioToolbar(projects) {
-  replacePortfolioOptions('filterPm', projects.map(project => project.pm ?? project.projectManager ?? project.owner), 'All PMs');
-  replacePortfolioOptions('filterProductFamily', projects.map(project => normalizeProject(project).productFamily), 'All Product Families');
-  replacePortfolioOptions('filterProjectType', projects.map(project => normalizeProject(project).projectType), 'All Project Types');
-  replacePortfolioOptions('filterClassification', projects.map(project => normalizeProject(project).classification), 'All Classifications');
   document.querySelectorAll('#portfolioScope [data-scope]').forEach(button => {
     button.classList.toggle('active', button.dataset.scope === portfolioScope);
     button.setAttribute('aria-pressed', button.dataset.scope === portfolioScope ? 'true' : 'false');
@@ -2520,10 +2453,7 @@ document.querySelectorAll('#portfolioScope [data-scope]').forEach(button => {
     window.render();
   });
 });
-['projectSearch', 'filterPm', 'filterRag', 'filterLifecycle', 'filterProductFamily', 'filterProjectType', 'filterClassification'].forEach(id => {
-  const control = document.getElementById(id);
-  control?.addEventListener(id === 'projectSearch' ? 'input' : 'change', () => window.render());
-});
+document.getElementById('projectSearch')?.addEventListener('input', () => window.render());
 
 // ── IDLE DETECTION ──
 let heartbeatInterval = null;
@@ -3043,21 +2973,28 @@ function renderPresenceUsageChart(rows, sessions = [], rangeDays = 56, estimated
         <title>${escHtml(name)} (${escHtml(role.toUpperCase())}) · ${escHtml(startLabel)} → ${escHtml(endLabel)} · Online ${fmtSessionDuration(session.onlineMs)} · Active ${fmtSessionDuration(session.activeMs)} · Idle ${fmtSessionDuration(session.idleMs)}${session.timedOut ? ' · Timed out' : ''}</title>
       </rect>`;
     }).join('');
-    return `<text x="${margin.left - 8}" y="${y + 15}" text-anchor="end" fill="var(--text-light)" font-size="9" font-weight="700">${escHtml(name)} · ${escHtml(role.toUpperCase())}</text>
-      <line x1="${margin.left}" y1="${y + 20}" x2="${width - margin.right}" y2="${y + 20}" stroke="var(--border)" stroke-width="1"/>
+    return `<line x1="${margin.left}" y1="${y + 20}" x2="${width - margin.right}" y2="${y + 20}" stroke="var(--border)" stroke-width="1"/>
       ${blocks}`;
+  }).join('');
+  const frozenLabels = lanes.map((lane, laneIndex) => {
+    const name = lane.name || lane.key || 'Unknown';
+    const role = lane.role || 'pm';
+    return `<div class="usage-chart-frozen-label" role="listitem" style="top:${laneIndex * laneHeight}px;" title="${escHtml(name)} · ${escHtml(role.toUpperCase())}">${escHtml(name)} · ${escHtml(role.toUpperCase())}</div>`;
   }).join('');
   const noLanes = lanes.length ? '' : `<text x="${margin.left}" y="${timelineTop + 15}" fill="var(--muted)" font-size="10">No recorded sessions or estimated user activity in this range.</text>`;
 
-  chart.innerHTML = `<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="Firestore writes and user login timeline">
-    ${grid}
-    ${referenceLines}
-    ${bars}
-    <text x="${margin.left}" y="${upperHeight + 8}" fill="var(--text)" font-size="10" font-weight="800">USER ACCESS TIMELINE</text>
-    ${dateGrid}
-    ${laneSvg}
-    ${noLanes}
-  </svg>`;
+  chart.innerHTML = `<div class="usage-chart-canvas" style="width:${width}px;height:${height}px;">
+    <svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="Firestore writes and user login timeline">
+      ${grid}
+      ${referenceLines}
+      ${bars}
+      <text x="${margin.left}" y="${upperHeight + 8}" fill="var(--text)" font-size="10" font-weight="800">USER ACCESS TIMELINE</text>
+      ${dateGrid}
+      ${laneSvg}
+      ${noLanes}
+    </svg>
+    ${lanes.length ? `<div class="usage-chart-frozen-labels" role="list" aria-label="User names" style="height:${lanes.length * laneHeight}px;transform:translateY(${timelineTop}px);">${frozenLabels}</div>` : ''}
+  </div>`;
   requestAnimationFrame(() => {
     chart.scrollLeft = chart.scrollWidth;
   });
@@ -3441,7 +3378,6 @@ function quiesceDashboardForAuthTransition() {
     weeksUnsub = null;
   }
   stopGanttTemplateConfigSubscription();
-  clearExcelImportForAuthTransition();
   invalidateProjectEditorSession();
   invalidateGanttTemplateSession();
   currentRole = 'pending';
@@ -3522,7 +3458,6 @@ window.saveNewPassword = async () => {
 
 window.handleLogout = async () => {
   const logoutGeneration = ++authSessionGeneration;
-  clearExcelImportForAuthTransition();
   invalidateProjectEditorSession();
   invalidateGanttTemplateSession();
   stopGanttTemplateConfigSubscription();
@@ -3638,7 +3573,6 @@ async function fetchDynamicPMList() {
 }
 
 function setupUI() {
-  clearExcelImportForAuthTransition();
   invalidateProjectEditorSession();
   invalidateGanttTemplateSession();
   loadOverviewScopeForCurrentUser();
@@ -3668,7 +3602,6 @@ function setupUI() {
     document.getElementById('presenceUsageBtn').style.display = 'inline-flex';
     document.getElementById('vipPreviewBtn').style.display = 'inline-flex';
     document.getElementById('addProjectBtn').style.display = 'inline-flex';
-    document.getElementById('importExcelBtn').style.display = 'inline-flex';
     document.getElementById('ganttTemplateSettingsBtn').style.display = 'inline-flex';
   } 
   else if (currentRole === 'pm') {
@@ -3693,7 +3626,6 @@ function setupUI() {
 // ── DATA ──
 window.jumpToWeek = (idx) => {
   currentIdx = parseInt(idx, 10);
-  invalidateExcelImportForWeekChange();
   render();
 };
 
@@ -3788,7 +3720,6 @@ function initData(authGeneration, authUser) {
       sel.innerHTML = '<option value="">No Weeks Available</option>';
     }
 
-    invalidateExcelImportForWeekChange();
     render();
     hideLoader();
   }, error => {
@@ -4392,9 +4323,12 @@ function getProjectAttention(p) {
 }
 
 function getQuarterlyMilestones(p) {
-  return (p.quarterlyMilestones || []).map(q => Array.isArray(q)
-    ? { quarter:q[0], goal:q[1], window:q[2], status:q[3] }
-    : { ...q, quarter:q.quarter, goal:q.goal, window:q.window, status:q.status });
+  return (p.quarterlyMilestones || []).map(q => {
+    const source = Array.isArray(q)
+      ? { quarter:q[0], goal:q[1], window:q[2], status:q[3] }
+      : q;
+    return { ...source, ...normalizeQuarterlyMilestone(source) };
+  });
 }
 
 const STRATEGIC_TRACKS = [
@@ -5116,12 +5050,12 @@ function formatDetailQuarterlyMilestones(project) {
       <div class="detail-quarter-heading">${escHtml(quarter)}</div>
       <div class="detail-quarter-items">
         ${items.length ? items.map(m => `
-          <div class="detail-qms-item ${escHtml(m.status || 'planned')}">
+          <div class="detail-qms-item ${escHtml(m.status || 'planned')}" title="${escHtml(`Completion ${m.progress}% | Weight ${quarterlyWeightLabel(m.weight)} | Health ${quarterlyHealthLabel(m.health)} | Actual completion ${m.completedDate || '-'}`)}">
             <div class="detail-qms-top">
-              <span class="exec-ms-badge ${escHtml(m.status || 'to-do')}">${escHtml(getStatusLabel(m.status || 'planned'))}</span>
+              <span class="exec-ms-badge ${escHtml(m.status || 'to-do')}">${m.progress}% · ${escHtml(quarterlyHealthLabel(m.health))}</span>
             </div>
             <div class="detail-qms-goal">${escHtml(m.goal || '-')}</div>
-            <div class="detail-qms-meta">${escHtml(m.window || '-')}</div>
+            <div class="detail-qms-meta">${escHtml(m.window || '-')} · Weight ${escHtml(quarterlyWeightLabel(m.weight))}${m.completedDate ? ` · Completed ${escHtml(m.completedDate)}` : ''}</div>
           </div>
         `).join('') : '<div class="detail-quarter-empty">No milestone in this quarter.</div>'}
       </div>
@@ -5165,17 +5099,43 @@ function renderProjectQuarterItems(items) {
   if (!items.length) return '<div class="pqm-empty">No PM milestone in this quarter.</div>';
   return `<div class="pqm-items">${items.map(i => {
     const status = normalizeOverviewMilestoneStatus(i.status);
-    return `<div class="pqm-item ${status}">
+    return `<div class="pqm-item ${status}" title="${escHtml(`Completion ${i.progress}% | Weight ${quarterlyWeightLabel(i.weight)} | Health ${quarterlyHealthLabel(i.health)} | Contribution ${i.progress * quarterlyWeightValue(i.weight)} | Actual completion ${i.completedDate || '-'}`)}">
     <div class="pqm-goal">${escHtml(i.goal || '-')}</div>
     ${i.strategy.businessObjective ? `<div class="strategic-objective">[${escHtml(i.strategy.businessObjective)}]</div>` : ''}
-    <div class="pqm-meta">${escHtml(i.window || '-')} | ${escHtml(getStatusLabel(status))}${i.strategy.checkpoint ? ` | ${escHtml(i.strategy.checkpoint)}` : ''}</div>
+    <div class="pqm-meta">${escHtml(i.window || '-')} | ${i.progress}% | ${escHtml(quarterlyWeightLabel(i.weight))} | ${escHtml(quarterlyHealthLabel(i.health))}${i.strategy.checkpoint ? ` | ${escHtml(i.strategy.checkpoint)}` : ''}</div>
   </div>`;
   }).join('')}</div>`;
+}
+
+function quarterlyWeightLabel(weight) {
+  return weight === 'low' ? 'Low' : weight === 'high' ? 'High' : 'Medium';
+}
+
+function quarterlyHealthLabel(health) {
+  return health === 'at-risk' ? 'At Risk' : health === 'delayed' ? 'Delayed' : 'On Track';
+}
+
+function renderQuarterKpiSummary(milestones, quarter, reportingDate) {
+  const kpi = calculateQuarterlyKpi(milestones, quarter, reportingDate);
+  const onTime = kpi.onTimeRate === null ? 'N/A' : `${kpi.onTimeRate}%`;
+  return `<article class="quarter-kpi-card ${kpi.health}">
+    <div class="quarter-kpi-title"><span>${escHtml(quarter)}</span><span>${kpi.completed}/${kpi.total}</span></div>
+    <div class="quarter-kpi-progress">${kpi.progress}%</div>
+    <div class="quarter-kpi-label">Weighted progress</div>
+    <div class="quarter-kpi-stats">
+      <span>Completed <b>${kpi.completed}/${kpi.total}</b></span>
+      <span>At Risk <b>${kpi.atRisk}</b></span>
+      <span>Overdue <b>${kpi.overdue}</b></span>
+      <span>On-time delivery <b>${onTime}</b></span>
+    </div>
+  </article>`;
 }
 
 function renderProjectQuarterMatrix(projs, layer = getStrategyLayer(), activeTrack = 'all', year = getDefaultRoadmapYear(projs, layer)) {
   const visibleProjects = filterProjectsByTrack(projs, activeTrack, layer);
   const quarters = getQuarterLabelsForYear(year);
+  const milestones = visibleProjects.flatMap(getQuarterlyMilestones);
+  const reportingDate = getSelectedReportingDate();
   const rows = visibleProjects.filter(p => getQuarterlyMilestones(p).some(m => parseQuarterLabel(m.quarter)?.year === year));
   const projects = rows.length ? rows : visibleProjects;
   if (!visibleProjects.length) {
@@ -5195,6 +5155,9 @@ function renderProjectQuarterMatrix(projs, layer = getStrategyLayer(), activeTra
         </div>
         <span class="reason-pill">${projects.length} projects</span>
       </div>
+    </div>
+    <div class="quarter-kpi-grid">
+      ${quarters.map(quarter => renderQuarterKpiSummary(milestones, quarter, reportingDate)).join('')}
     </div>
     <div class="project-quarter-matrix">
       <div class="pqm-cell pqm-head">Project</div>
@@ -5540,16 +5503,29 @@ window.openProjDetail = (code) => {
   document.getElementById('pd_quarterly_milestones').innerHTML = formatDetailQuarterlyMilestones(p);
   renderProjectResources(normalizeProject(p));
   renderProjectGantt(normalizeProject(p));
-  document.getElementById('pd_team_effort').innerHTML = (p.teamMembers || []).map(m => `
-    <div><b>${escHtml(m.name || '-')}</b> · ${escHtml(m.roleName || m.role || '-')} · ${Number(m.effortPct || m.effort || 0)}%</div>
-  `).join('') || '<div>No team allocation yet.</div>';
+  const teamRows = (p.teamMembers || []).map(m => `
+    <tr>
+      <td>${escHtml(m.name || '-')}</td>
+      <td>${escHtml(m.roleName || m.role || '-')}</td>
+      <td>${Number(m.effortPct || m.effort || 0)}%</td>
+    </tr>
+  `).join('');
+  document.getElementById('pd_team_effort').innerHTML = `
+    <table class="detail-summary-table team-effort-table">
+      <thead><tr><th>Name</th><th>Role</th><th>Allocation</th></tr></thead>
+      <tbody>${teamRows || '<tr><td class="detail-table-empty" colspan="3">No team allocation yet.</td></tr>'}</tbody>
+    </table>`;
   const budgetTotals = projectBudgetTotals(p, overviewCurrency);
   document.getElementById('pd_budget_snapshot').innerHTML = `
-    <div><b>Total:</b> ${fmtMoney(budgetTotals.total, overviewCurrency, false)}</div>
-    <div><b>Actual:</b> ${fmtMoney(budgetTotals.actual, overviewCurrency, false)} (${budgetTotals.usedPct}% used)</div>
-    <div><b>Planned:</b> ${fmtMoney(budgetTotals.planned, overviewCurrency, false)}</div>
-    <div><b>Variance:</b> ${fmtMoney(budgetTotals.variance, overviewCurrency, false)}</div>
-  `;
+    <table class="detail-summary-table budget-snapshot-table">
+      <thead><tr><th>Metric</th><th>Amount</th></tr></thead>
+      <tbody>
+        <tr><td>Total</td><td>${fmtMoney(budgetTotals.total, overviewCurrency, false)}</td></tr>
+        <tr><td>Actual</td><td>${fmtMoney(budgetTotals.actual, overviewCurrency, false)} <span class="budget-used-note">(${budgetTotals.usedPct}% used)</span></td></tr>
+        <tr><td>Planned</td><td>${fmtMoney(budgetTotals.planned, overviewCurrency, false)}</td></tr>
+        <tr><td>Variance</td><td>${fmtMoney(budgetTotals.variance, overviewCurrency, false)}</td></tr>
+      </tbody>
+    </table>`;
   
   document.getElementById('projDetailOverlay').classList.add('open');
 };
@@ -6366,7 +6342,6 @@ window.navWeek = (dir) => {
   const nextIndex = Math.max(0, Math.min(allWeeks.length - 1, currentIdx + dir));
   if (nextIndex !== currentIdx) {
     currentIdx = nextIndex;
-    invalidateExcelImportForWeekChange();
   }
   render();
 };
@@ -6399,434 +6374,16 @@ function openAccessibleModal(modal) {
   requestAnimationFrame(() => modal.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')?.focus());
 }
 
-// EXCEL IMPORT
-const MAX_IMPORT_FILE_BYTES = 10 * 1024 * 1024;
-const MAX_EXCEL_PARSE_MS = 15 * 1000;
-let excelImportRequestToken = 0;
-let excelImportAttemptToken = 0;
-let activeExcelImportAttempt = null;
-let excelImportPreviewTarget = null;
-let excelImportWorker = null;
-let excelImportWorkerReject = null;
-let excelImportWorkerTimer = null;
-function getCurrentImportUserKey() {
-  return currentUser?.uid || getEmailKey(currentUser);
-}
-function clearExcelImportForAuthTransition() {
-  excelImportAttemptToken += 1;
-  excelImportRequestToken += 1;
-  activeExcelImportAttempt = null;
-  excelImportInFlight = false;
-  terminateExcelImportWorker();
-  pendingExcelImportPlan = null;
-  excelImportPreviewTarget = null;
-  lastExcelImportResults = null;
-  lastExcelImportTargetWeekId = '';
-  lastExcelImportResultsUserKey = '';
-  document.getElementById('excelImportFile').value = '';
-  document.getElementById('excelImportError').textContent = '';
-  document.getElementById('excelImportResult').textContent = '';
-  document.getElementById('excelImportPreview').replaceChildren();
-  document.getElementById('excelImportConfirmation').hidden = true;
-  document.getElementById('excelImportTargetWeek').textContent = 'Target week: —';
-  document.getElementById('downloadImportResultsBtn').hidden = true;
-  document.getElementById('excelImportOverlay').classList.remove('open');
-  for (const id of ['importReadyCount', 'importSkippedCount', 'importFailedCount']) {
-    document.getElementById(id).textContent = '0';
-  }
-  setExcelImportControlsDisabled(false);
-  document.getElementById('confirmImportBtn').disabled = true;
-  document.getElementById('executeImportBtn').disabled = true;
-  modalReturnFocus = null;
-}
-function clearExcelImportWorkerTimer() {
-  if (excelImportWorkerTimer !== null) {
-    clearTimeout(excelImportWorkerTimer);
-    excelImportWorkerTimer = null;
-  }
-}
-function terminateExcelImportWorker() {
-  const worker = excelImportWorker;
-  const reject = excelImportWorkerReject;
-  clearExcelImportWorkerTimer();
-  excelImportWorker = null;
-  excelImportWorkerReject = null;
-  worker?.terminate();
-  if (reject) {
-    const cancellation = new Error('Excel import cancelled.');
-    cancellation.name = 'AbortError';
-    reject(cancellation);
-  }
-}
-function setExcelImportControlsDisabled(disabled) {
-  for (const id of [
-    'excelImportFile',
-    'closeExcelImportXBtn',
-    'closeExcelImportBtn',
-    'confirmPmoActual',
-    'importConfirmationAcknowledged',
-    'confirmImportBtn',
-    'executeImportBtn',
-  ]) {
-    document.getElementById(id).disabled = disabled;
-  }
-}
-function resetExcelImportPreview() {
-  if (excelImportInFlight) return false;
-  excelImportRequestToken += 1;
-  terminateExcelImportWorker();
-  pendingExcelImportPlan = null;
-  excelImportPreviewTarget = null;
-  lastExcelImportResults = null;
-  lastExcelImportTargetWeekId = '';
-  lastExcelImportResultsUserKey = '';
-  document.getElementById('excelImportError').textContent = '';
-  document.getElementById('excelImportResult').textContent = '';
-  document.getElementById('excelImportPreview').replaceChildren();
-  document.getElementById('excelImportConfirmation').hidden = true;
-  document.getElementById('confirmPmoActual').checked = false;
-  document.getElementById('importConfirmationAcknowledged').checked = false;
-  document.getElementById('confirmImportBtn').disabled = true;
-  document.getElementById('executeImportBtn').disabled = true;
-  document.getElementById('downloadImportResultsBtn').hidden = true;
-  document.getElementById('excelImportTargetWeek').textContent = 'Target week: —';
-  for (const id of ['importReadyCount', 'importSkippedCount', 'importFailedCount']) {
-    document.getElementById(id).textContent = '0';
-  }
-  return true;
-}
-function clearExcelImport() {
-  if (excelImportInFlight) return false;
-  if (!resetExcelImportPreview()) return false;
-  const file = document.getElementById('excelImportFile');
-  if (file) file.value = '';
-  return true;
-}
-function isExcelImportRequestCurrent(requestToken, file, fileInput) {
-  return requestToken === excelImportRequestToken
-    && currentRole === 'admin'
-    && fileInput.files?.[0] === file
-    && document.getElementById('excelImportOverlay').classList.contains('open');
-}
-function getSelectedImportWeek() {
-  return allWeeks[currentIdx] ?? null;
-}
-function weekDocumentId(week) {
-  return week?.weekLabel?.replace(/\s+/g, '-') || '';
-}
-function isPendingExcelImportCurrent(plan) {
-  const fileInput = document.getElementById('excelImportFile');
-  const selectedWeek = getSelectedImportWeek();
-  return Boolean(plan)
-    && pendingExcelImportPlan === plan
-    && plan.requestToken === excelImportRequestToken
-    && plan.createdByUserKey === getCurrentImportUserKey()
-    && currentRole === 'admin'
-    && currentUser
-    && fileInput.files?.[0] === plan.sourceFile
-    && selectedWeek?.weekLabel === plan.targetWeekLabel
-    && weekDocumentId(selectedWeek) === plan.targetWeekId
-    && document.getElementById('excelImportOverlay').classList.contains('open');
-}
-function isExcelImportAttemptCurrent(attemptToken, plan) {
-  return activeExcelImportAttempt?.token === attemptToken
-    && activeExcelImportAttempt.plan === plan
-    && activeExcelImportAttempt.ownerUserKey === getCurrentImportUserKey();
-}
-function invalidateExcelImportForWeekChange() {
-  if (excelImportInFlight) return;
-  const plan = pendingExcelImportPlan;
-  const previewTarget = plan || excelImportPreviewTarget;
-  const selectedWeek = getSelectedImportWeek();
-  if (!previewTarget || (previewTarget.targetWeekLabel === selectedWeek?.weekLabel
-    && previewTarget.targetWeekId === weekDocumentId(selectedWeek))) return;
-  resetExcelImportPreview();
-  document.getElementById('excelImportFile').value = '';
-  document.getElementById('excelImportTargetWeek').textContent =
-    `Target week: ${selectedWeek?.weekLabel || 'none'} (preview required)`;
-  document.getElementById('excelImportError').textContent =
-    'The selected week changed. Select the workbook again to create a new preview.';
-}
-function parseExcelWorkbook(fileData) {
-  if (typeof Worker !== 'function') {
-    throw new Error('Excel parser is unavailable. Reload the page and try again.');
-  }
-  const worker = new Worker('./js/excel-worker.js');
-  excelImportWorker = worker;
-  return new Promise((resolve, reject) => {
-    let settled = false;
-    const settle = (callback, value) => {
-      if (settled) return;
-      settled = true;
-      if (excelImportWorker === worker) {
-        clearExcelImportWorkerTimer();
-        excelImportWorker = null;
-        excelImportWorkerReject = null;
-      }
-      worker.terminate();
-      callback(value);
-    };
-    excelImportWorkerReject = reason => settle(reject, reason);
-    worker.onmessage = message => {
-      if (message.data?.ok && Array.isArray(message.data.rows)) {
-        settle(resolve, message.data.rows);
-      } else {
-        settle(reject, new Error(message.data?.error || 'Could not parse this workbook.'));
-      }
-    };
-    worker.onerror = () => settle(
-      reject,
-      new Error('Excel parser is unavailable. Reload the page and try again.'),
-    );
-    excelImportWorkerTimer = setTimeout(() => {
-      if (excelImportWorker !== worker) return;
-      settle(reject, new Error(
-        'Excel parsing timed out after 15 seconds. Select a smaller or simpler workbook and try again.',
-      ));
-    }, MAX_EXCEL_PARSE_MS);
-    try {
-      worker.postMessage(fileData, [fileData]);
-    } catch {
-      settle(
-        reject,
-        new Error('Excel parser is unavailable. Reload the page and try again.'),
-      );
-    }
-  });
-}
-window.openExcelImport = () => {
-  if (currentRole !== 'admin' || excelImportInFlight) return;
-  clearExcelImport();
-  openAccessibleModal(document.getElementById('excelImportOverlay'));
-};
-window.closeExcelImport = () => {
-  if (excelImportInFlight) return;
-  if (!clearExcelImport()) return;
-  closeModal('excelImportOverlay');
-};
-function renderExcelImportPlan(plan) {
-  document.getElementById('importReadyCount').textContent = String(plan.counts.ready);
-  document.getElementById('importSkippedCount').textContent = String(plan.counts.skipped);
-  document.getElementById('importFailedCount').textContent = String(plan.counts.failed);
-  document.getElementById('excelImportTargetWeek').textContent =
-    `Target week: ${plan.targetWeekLabel}`;
-  const preview = document.getElementById('excelImportPreview');
-  preview.replaceChildren();
-  for (const [status, rows] of Object.entries({
-    Ready: plan.ready,
-    Skipped: plan.skipped,
-    Failed: plan.failed,
-  })) {
-    for (const row of rows) {
-      const item = document.createElement('div');
-      item.className = 'import-preview-row';
-      item.textContent = formatImportPreviewRow(row, status);
-      preview.append(item);
-    }
-  }
-  document.getElementById('confirmImportBtn').disabled = plan.counts.ready === 0;
-}
-window.handleExcelImportFile = async event => {
-  if (currentRole !== 'admin' || excelImportInFlight) return;
-  if (!resetExcelImportPreview()) return;
-  const requestToken = excelImportRequestToken;
-  const error = document.getElementById('excelImportError');
-  const fileInput = event.currentTarget ?? event.target;
-  const file = fileInput.files?.[0];
-  if (!file) return;
-  const targetWeek = getSelectedImportWeek();
-  if (!targetWeek) {
-    error.textContent = 'No target week is selected.';
-    return;
-  }
-  excelImportPreviewTarget = {
-    targetWeekLabel: targetWeek.weekLabel,
-    targetWeekId: weekDocumentId(targetWeek),
-  };
-  document.getElementById('excelImportTargetWeek').textContent =
-    `Target week: ${targetWeek.weekLabel} (parsing preview)`;
-  if (file.size > MAX_IMPORT_FILE_BYTES) {
-    error.textContent = 'File is too large. Select a file no larger than 10 MB.';
-    return;
-  }
-  try {
-    const fileData = await file.arrayBuffer();
-    if (!isExcelImportRequestCurrent(requestToken, file, fileInput)) return;
-    const rows = await parseExcelWorkbook(fileData);
-    if (!isExcelImportRequestCurrent(requestToken, file, fileInput)) return;
-    const existingIds = (targetWeek.projects || []).map(project => project.code);
-    const importPlan = planImport(rows, existingIds);
-    if (!isExcelImportRequestCurrent(requestToken, file, fileInput)) return;
-    importPlan.requestToken = requestToken;
-    importPlan.sourceFile = file;
-    importPlan.targetWeekLabel = targetWeek.weekLabel;
-    importPlan.targetWeekId = weekDocumentId(targetWeek);
-    importPlan.createdByUserKey = getCurrentImportUserKey();
-    pendingExcelImportPlan = importPlan;
-    renderExcelImportPlan(pendingExcelImportPlan);
-  } catch (parseError) {
-    if (!isExcelImportRequestCurrent(requestToken, file, fileInput)) return;
-    pendingExcelImportPlan = null;
-    error.textContent = parseError instanceof Error ? parseError.message : 'Could not parse this workbook.';
-  }
-};
-window.prepareExcelImportConfirmation = () => {
-  const plan = pendingExcelImportPlan;
-  if (!isPendingExcelImportCurrent(plan) || excelImportInFlight || plan.counts.ready === 0) {
-    document.getElementById('excelImportError').textContent = 'The preview or target week changed. Select the workbook again.';
-    return;
-  }
-  document.getElementById('excelImportConfirmationText').textContent =
-    `Target ${plan.targetWeekLabel}: ${plan.counts.ready} ready, ${plan.counts.skipped} skipped, ${plan.counts.failed} failed.`;
-  document.getElementById('excelImportConfirmation').hidden = false;
-  document.getElementById('importConfirmationAcknowledged').checked = false;
-  window.updateImportExecutionState();
-};
-window.updateImportExecutionState = () => {
-  const acknowledged = document.getElementById('importConfirmationAcknowledged').checked;
-  document.getElementById('executeImportBtn').disabled =
-    excelImportInFlight || !acknowledged || !isPendingExcelImportCurrent(pendingExcelImportPlan);
-};
-function showExcelImportResults(results, message, targetWeekId) {
-  lastExcelImportResults = results;
-  lastExcelImportTargetWeekId = targetWeekId;
-  lastExcelImportResultsUserKey = getCurrentImportUserKey();
-  const counts = { success: 0, skipped: 0, failed: 0 };
-  results.forEach(result => { counts[result.status] += 1; });
-  document.getElementById('excelImportResult').textContent =
-    `${message} Results: ${counts.success} successful, ${counts.skipped} skipped, ${counts.failed} failed.`;
-  document.getElementById('downloadImportResultsBtn').hidden = false;
-}
-window.executeConfirmedExcelImport = async () => {
-  if (excelImportInFlight) return;
-  if (!ganttTemplateSubscriptionReady) {
-    document.getElementById('excelImportError').textContent = 'Default Gantt templates are still loading. Try again.';
-    return;
-  }
-  const plan = pendingExcelImportPlan;
-  const acknowledged = document.getElementById('importConfirmationAcknowledged').checked;
-  if (!acknowledged || !isPendingExcelImportCurrent(plan)) {
-    document.getElementById('excelImportError').textContent = 'Confirmation expired because the preview or target week changed.';
-    return;
-  }
 
-  const attemptToken = ++excelImportAttemptToken;
-  activeExcelImportAttempt = {
-    token: attemptToken,
-    plan,
-    ownerUserKey: plan.createdByUserKey,
-  };
-  excelImportInFlight = true;
-  setExcelImportControlsDisabled(true);
-  document.getElementById('excelImportError').textContent = '';
-  document.getElementById('excelImportResult').textContent = 'Import in progress…';
-  const confirmPmoCompleted = document.getElementById('confirmPmoActual').checked;
-  const targetWeekId = plan.targetWeekId;
-  const targetWeekLabel = plan.targetWeekLabel;
-  const timestamp = new Date().toISOString();
-  const templateConfig = currentGanttTemplateConfig;
-  let transactionResults = [];
-
-  try {
-    // Revalidate authorization, modal/request state, selected week, and plan at the write boundary.
-    if (!isExcelImportAttemptCurrent(attemptToken, plan)
-      || !isPendingExcelImportCurrent(plan) || pendingExcelImportPlan !== plan
-      || plan.createdByUserKey !== getCurrentImportUserKey()
-      || getSelectedImportWeek()?.weekLabel !== targetWeekLabel) {
-      throw new Error('Import aborted because the target week or preview changed.');
-    }
-    const targetWeekRef = doc(db, 'weeks', targetWeekId);
-    const mergeResult = await runTransaction(db, async transaction => {
-      const targetSnapshot = await transaction.get(targetWeekRef);
-      if (!targetSnapshot.exists()) throw new Error('Import aborted because the target week is missing.');
-      const liveWeek = targetSnapshot.data();
-      if (liveWeek.weekLabel !== targetWeekLabel) {
-        throw new Error('Import aborted because the target week changed.');
-      }
-      const merged = mergeReadyImportRows(liveWeek.projects, plan.ready, {
-        confirmPmoCompleted,
-        timestamp,
-        templateConfig,
-      });
-      transactionResults = merged.results;
-      const updatedWeek = {
-        ...liveWeek,
-        projects: merged.projects,
-        lastModifiedBy: currentUser.email,
-        lastModifiedAt: timestamp,
-      };
-      assertReasonableWeekDocument(updatedWeek);
-      if (!isExcelImportAttemptCurrent(attemptToken, plan)
-        || !isPendingExcelImportCurrent(plan) || currentRole !== 'admin'
-        || plan.createdByUserKey !== getCurrentImportUserKey()
-        || pendingExcelImportPlan !== plan || getSelectedImportWeek()?.weekLabel !== targetWeekLabel) {
-        throw new Error('Import aborted because authorization, the modal, or target week changed.');
-      }
-      transaction.update(targetWeekRef, {
-        projects: merged.projects,
-        lastModifiedBy: currentUser.email,
-        lastModifiedAt: timestamp,
-      });
-      return merged;
-    }, { maxAttempts: 1 });
-
-    if (!isExcelImportAttemptCurrent(attemptToken, plan)) return;
-    const results = buildImportResults(plan, mergeResult.results);
-    showExcelImportResults(results, `Import completed for ${targetWeekLabel}. Download and retain the results CSV.`, targetWeekId);
-    pendingExcelImportPlan = null;
-    excelImportPreviewTarget = null;
-    excelImportRequestToken += 1;
-    document.getElementById('excelImportConfirmation').hidden = true;
-    showSaveToast('Excel import completed');
-  } catch (writeError) {
-    if (!isExcelImportAttemptCurrent(attemptToken, plan)) return;
-    const reason = writeError instanceof Error ? writeError.message : 'Firestore write failed.';
-    const results = buildImportResults(plan, transactionResults, reason);
-    showExcelImportResults(results, `Import failed for ${targetWeekLabel}. No success is reported; download the results CSV.`, targetWeekId);
-    document.getElementById('excelImportError').textContent = reason;
-  } finally {
-    if (!isExcelImportAttemptCurrent(attemptToken, plan)) return;
-    const selectedWeek = getSelectedImportWeek();
-    const targetChanged = selectedWeek?.weekLabel !== targetWeekLabel
-      || weekDocumentId(selectedWeek) !== targetWeekId;
-    activeExcelImportAttempt = null;
-    excelImportInFlight = false;
-    setExcelImportControlsDisabled(false);
-    if (targetChanged && pendingExcelImportPlan === plan) {
-      pendingExcelImportPlan = null;
-      excelImportPreviewTarget = null;
-      excelImportRequestToken += 1;
-      document.getElementById('excelImportFile').value = '';
-      document.getElementById('excelImportConfirmation').hidden = true;
-      document.getElementById('excelImportTargetWeek').textContent =
-        `Target week: ${selectedWeek?.weekLabel || 'none'} (preview required)`;
-    }
-    window.updateImportExecutionState();
-    document.getElementById('confirmImportBtn').disabled =
-      !isPendingExcelImportCurrent(pendingExcelImportPlan);
-  }
+window.closeProjectOverlayFromBackdrop = event => {
+  if (event.button !== 0 || event.target !== event.currentTarget) return;
+  closeModal(event.currentTarget.id);
 };
-window.downloadExcelImportResults = () => {
-  if (!lastExcelImportResults
-    || lastExcelImportResultsUserKey !== getCurrentImportUserKey()) return;
-  const csv = importResultsToCsv(lastExcelImportResults);
-  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `team-2-excel-import-results-${lastExcelImportTargetWeekId || 'completed'}.csv`;
-  document.body.append(link);
-  link.click();
-  link.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 0);
-};
-// END EXCEL IMPORT
 
 window.closeModal = id => {
-  if (id === 'excelImportOverlay' && excelImportInFlight) return;
   if (id === 'projEditOverlay' && projectMutationInFlight) return;
   if (id === 'ganttTemplateOverlay' && ganttTemplateSaveInFlight) return;
   const modal = document.getElementById(id);
-  if (id === 'excelImportOverlay') clearExcelImport();
   if (id === 'projEditOverlay') {
     projectEditorSession = null;
     editingProjCode = null;
@@ -7514,9 +7071,6 @@ window.openProjEdit = (code, isNew = false) => {
   document.getElementById('pe_location').value = p.location || '';
   document.getElementById('pe_project_level').value = p.projectLevel;
   document.getElementById('pe_lifecycle').value = p.lifecycle;
-  document.getElementById('pe_project_type').value = p.projectType;
-  document.getElementById('pe_classification').value = p.classification;
-  document.getElementById('pe_product_family').value = p.productFamily;
   document.querySelectorAll('.resource-editor-row').forEach(row => {
     const entry = normalizeResourceEntry(p.resources?.[row.dataset.resourceDiscipline]);
     row.querySelector('.resource-estimated').value = entry.estimated;
@@ -7662,7 +7216,13 @@ window.saveProjEdit = async () => {
     quarter: div.querySelector('.qms-quarter').value,
     goal: div.querySelector('.qms-goal').value,
     window: div.querySelector('.qms-window').value,
-    status: div.querySelector('.qms-status').value
+    progress: Number(div.querySelector('.qms-progress').value),
+    weight: div.querySelector('.qms-weight').value,
+    health: div.querySelector('.qms-health').value,
+    completedDate: div.querySelector('.qms-completed-date').value,
+    status: Number(div.querySelector('.qms-progress').value) === 100
+      ? 'done'
+      : div.querySelector('.qms-health').value === 'on-track' ? 'planned' : 'at-risk'
   })).filter(m => m.quarter || m.goal || m.window);
   const riskActions = collectRiskActionPairs();
   const riskText = riskActions.map(item => item.risk).filter(Boolean).join('\n');
@@ -7674,9 +7234,6 @@ window.saveProjEdit = async () => {
   const pData = {
     projectLevel: getEditorPortfolioValue('pe_project_level', previousProject?.projectLevel ?? 'system'),
     lifecycle: getEditorPortfolioValue('pe_lifecycle', previousProject?.lifecycle ?? 'active'),
-    projectType: getEditorPortfolioValue('pe_project_type', previousProject?.projectType ?? previousProject?.type ?? ''),
-    classification: getEditorPortfolioValue('pe_classification', previousProject?.classification ?? ''),
-    productFamily: getEditorPortfolioValue('pe_product_family', previousProject?.productFamily ?? ''),
     ganttWorkstreams,
     resources: editorResources,
     name: document.getElementById('pe_name').value,
@@ -7875,10 +7432,10 @@ window.addMilestoneRow = (name='', status='to-do', dateStr='', planData = null) 
 }
 
 window.addQuarterlyMilestoneRow = (item = {}) => {
-  const quarter = item.quarter || '';
-  const goal = item.goal || '';
-  const windowText = item.window || '';
-  const status = item.status || 'planned';
+  const normalized = normalizeQuarterlyMilestone(item);
+  const quarter = normalized.quarter;
+  const goal = normalized.goal;
+  const windowText = normalized.window;
   const selectedQuarter = quarter || nextQuarterLabelFromRows();
   const selectedMonth = windowText || quarterMonthOptions(selectedQuarter)[0] || '';
   const div = document.createElement('div');
@@ -7888,15 +7445,25 @@ window.addQuarterlyMilestoneRow = (item = {}) => {
     <select class="fs qms-quarter" aria-label="Quarter">${quarterSelectOptions(selectedQuarter).map(q => `<option value="${escHtml(q)}" ${q === selectedQuarter ? 'selected' : ''}>${escHtml(q)}</option>`).join('')}</select>
     <input class="fi qms-goal" value="${escHtml(goal || '')}" placeholder="Quarterly target / business objective" aria-label="Quarterly target">
     <select class="fs qms-window" aria-label="Target month">${monthSelectOptions(selectedQuarter, selectedMonth)}</select>
-    <select class="fs qms-status" aria-label="Quarterly status">
-      <option value="planned" ${status==='planned'||!status?'selected':''}>planned</option>
-      <option value="done" ${status==='done'?'selected':''}>done</option>
-      <option value="at-risk" ${status==='at-risk'||status==='risk'?'selected':''}>at-risk</option>
+    <select class="fs qms-progress" aria-label="Quarterly completion">
+      ${[0, 25, 50, 75, 100].map(value => `<option value="${value}" ${normalized.progress === value ? 'selected' : ''}>${value}%</option>`).join('')}
     </select>
+    <select class="fs qms-weight" aria-label="Quarterly weight">
+      <option value="low" ${normalized.weight === 'low' ? 'selected' : ''}>Low</option>
+      <option value="medium" ${normalized.weight === 'medium' ? 'selected' : ''}>Medium</option>
+      <option value="high" ${normalized.weight === 'high' ? 'selected' : ''}>High</option>
+    </select>
+    <select class="fs qms-health" aria-label="Quarterly health">
+      <option value="on-track" ${normalized.health === 'on-track' ? 'selected' : ''}>On Track</option>
+      <option value="at-risk" ${normalized.health === 'at-risk' ? 'selected' : ''}>At Risk</option>
+      <option value="delayed" ${normalized.health === 'delayed' ? 'selected' : ''}>Delayed</option>
+    </select>
+    <input class="fi qms-completed-date" type="date" value="${escHtml(normalized.completedDate)}" aria-label="Actual completion date">
     <button type="button" class="qms-delete" onclick="this.parentElement.remove();" title="Delete quarterly milestone" aria-label="Delete quarterly milestone">&#128465;&#65039;</button>
   `;
   const quarterSelect = div.querySelector('.qms-quarter');
   const monthSelect = div.querySelector('.qms-window');
+  const progressSelect = div.querySelector('.qms-progress');
   const deleteButton = div.querySelector('.qms-delete');
   const syncDeleteState = () => {
     const past = isPastQuarter(quarterSelect.value);
@@ -7909,9 +7476,30 @@ window.addQuarterlyMilestoneRow = (item = {}) => {
     sortQuarterlyMilestoneRows();
   };
   monthSelect.onchange = sortQuarterlyMilestoneRows;
+  progressSelect.onchange = () => updateQuarterlyCompletionDate(div);
+  updateQuarterlyCompletionDate(div, false);
   syncDeleteState();
   document.getElementById('qmsListContainer').appendChild(div);
   sortQuarterlyMilestoneRows();
+}
+
+function getSelectedReportingDate() {
+  const formatted = resolveProjectStatusDate({}, allWeeks[currentIdx] || {});
+  if (formatted === 'Not available') return '';
+  const date = new Date(formatted);
+  return Number.isNaN(date.getTime()) ? '' : date.toISOString().slice(0, 10);
+}
+
+function updateQuarterlyCompletionDate(row, autoFill = true) {
+  const progress = Number(row.querySelector('.qms-progress')?.value);
+  const completedDate = row.querySelector('.qms-completed-date');
+  if (!completedDate) return;
+  completedDate.disabled = progress !== 100;
+  if (progress === 100 && autoFill && !completedDate.value) {
+    completedDate.value = getSelectedReportingDate();
+  } else if (progress !== 100) {
+    completedDate.value = '';
+  }
 }
 
 function sortQuarterlyMilestoneRows() {

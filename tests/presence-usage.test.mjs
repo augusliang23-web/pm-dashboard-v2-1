@@ -151,3 +151,18 @@ test("dashboard wires dynamic scale, timeline lanes, and last-seen fallback", as
   assert.match(source, /ownerUid:\s*currentUser\.uid/);
   assert.match(source, /Activity detected \(time unknown\)/);
 });
+
+test("presence timeline keeps user names frozen while the chart scrolls horizontally", async () => {
+  const source = await readFile(
+    new URL("../team-2/index.html", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(
+    source,
+    /\.usage-chart-frozen-labels\s*\{[^}]*position:\s*sticky;[^}]*left:\s*0;/s,
+  );
+  assert.match(source, /class="usage-chart-frozen-labels"/);
+  assert.match(source, /class="usage-chart-frozen-label"/);
+  assert.match(source, /aria-label="User names"/);
+});

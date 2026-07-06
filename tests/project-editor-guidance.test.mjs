@@ -29,6 +29,19 @@ test('team rows explain allocation and enforce the documented range', () => {
   assert.match(html, /class="fi team-effort"[^>]*max="100"[^>]*aria-label="Allocation percent"/);
 });
 
+test('budget rule inputs shrink within their grid instead of overlapping budget linkage', () => {
+  assert.match(html, /class="budget-rule-fields"/);
+  assert.match(
+    html,
+    /\.budget-rule-fields\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s+minmax\(0,\s*1fr\)/s,
+  );
+  assert.match(html, /\.budget-rule-fields\s*>\s*\*\s*\{[^}]*min-width:\s*0/s);
+  assert.match(
+    html,
+    /\.budget-rule-fields\s+\.(?:fi|fs),\s*\.budget-rule-fields\s+\.(?:fi|fs)\s*\{[^}]*width:\s*100%/s,
+  );
+});
+
 test('dynamic Project Editor inputs have explicit accessible names and units', () => {
   for (const label of [
     'Risk or blocker',
@@ -39,7 +52,6 @@ test('dynamic Project Editor inputs have explicit accessible names and units', (
     'Quarter',
     'Quarterly target',
     'Target month',
-    'Quarterly status',
     'Planned month',
     'Planned category',
     'Planned currency',
@@ -59,7 +71,24 @@ test('dynamic Project Editor inputs have explicit accessible names and units', (
 test('ambiguous static Project Editor fields include visible or inline examples', () => {
   assert.match(html, /id="pe_customer"[^>]*placeholder="e\.g\. Internal or customer name"/);
   assert.match(html, /id="pe_location"[^>]*placeholder="e\.g\. Taiwan or Texas, US"/);
-  assert.match(html, /id="pe_project_type"[^>]*placeholder="e\.g\. Market Launch or Internal Use"/);
-  assert.match(html, /id="pe_classification"[^>]*placeholder="e\.g\. Major - Full NPD"/);
-  assert.match(html, /id="pe_product_family"[^>]*placeholder="e\.g\. Rectifier or EV Charger"/);
+});
+
+test('quarterly milestone rows expose completion, weight, health, and completion date', () => {
+  assert.match(html, /class="editor-row-head qms-row-head"/);
+  for (const heading of ['Quarter', 'Target', 'Target month', 'Completion', 'Weight', 'Health', 'Actual completion', 'Actions']) {
+    assert.match(html, new RegExp(`>${heading}<`));
+  }
+  for (const label of [
+    'Quarterly completion',
+    'Quarterly weight',
+    'Quarterly health',
+    'Actual completion date',
+  ]) {
+    assert.match(html, new RegExp(`aria-label="${label}"`));
+  }
+  assert.match(html, /\[0, 25, 50, 75, 100\]/);
+  assert.match(html, /value="medium"[^>]*>Medium/);
+  assert.match(html, /value="delayed"[^>]*>Delayed/);
+  assert.match(html, /function updateQuarterlyCompletionDate/);
+  assert.match(html, /getSelectedReportingDate\(\)/);
 });

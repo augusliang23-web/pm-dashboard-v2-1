@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 const html = await readFile(new URL('../team-2/index.html', import.meta.url), 'utf8');
-const detailStart = html.indexOf('<div class="overlay" id="projDetailOverlay">');
+const detailStart = html.indexOf('<div class="overlay" id="projDetailOverlay"');
 const detailEnd = html.indexOf('<div class="overlay" id="onePageStatusModal"', detailStart);
 const detail = html.slice(detailStart, detailEnd);
 
@@ -40,6 +40,15 @@ test('post-milestone sections follow the approved full-width order', () => {
   assert.ok(team < budget);
   assert.match(detail, /detail-full-width detail-resources-section/);
   assert.match(detail, /detail-full-width detail-resource-summary-section/);
+});
+
+test('team effort and budget snapshot use aligned semantic tables', () => {
+  assert.match(detail, /class="detail-rb-table-wrap" id="pd_team_effort"/);
+  assert.match(detail, /class="detail-rb-table-wrap" id="pd_budget_snapshot"/);
+  assert.match(html, /class="detail-summary-table team-effort-table"/);
+  assert.match(html, /<th>Name<\/th><th>Role<\/th><th>Allocation<\/th>/);
+  assert.match(html, /class="detail-summary-table budget-snapshot-table"/);
+  assert.match(html, /<th>Metric<\/th><th>Amount<\/th>/);
 });
 
 test('Gantt exposes descriptive scale controls and calendar guidance', () => {

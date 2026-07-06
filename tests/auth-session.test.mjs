@@ -104,7 +104,6 @@ test('an initialized user is quiesced before a replacement user waits for access
   assert.ok(quiesceSource.includes('stopPresenceSystem();'));
   assert.ok(quiesceSource.includes('weeksUnsub();'));
   assert.ok(quiesceSource.includes('stopGanttTemplateConfigSubscription();'));
-  assert.ok(quiesceSource.includes('clearExcelImportForAuthTransition();'));
   assert.ok(quiesceSource.includes('invalidateProjectEditorSession();'));
   assert.ok(quiesceSource.includes('invalidateGanttTemplateSession();'));
   assert.ok(quiesceSource.includes("currentRole = 'pending';"));

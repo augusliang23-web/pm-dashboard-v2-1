@@ -54,32 +54,28 @@ test('trims portfolio editor values while guarding controls not yet rendered', (
       "return control ? control.value.trim() : fallback;",
     ),
   );
-  assert.ok(
-    dashboard.includes(
-      "projectType: getEditorPortfolioValue('pe_project_type', previousProject?.projectType ?? previousProject?.type ?? '')",
-    ),
-  );
 });
 
-test('exposes portfolio scope, filter, and project editor controls', () => {
+test('exposes portfolio scope, keyword search, and project editor controls', () => {
   const requiredIds = [
     'portfolioScope',
     'projectSearch',
+    'pe_project_level',
+    'pe_lifecycle',
+  ];
+
+  for (const id of requiredIds) {
+    assert.match(dashboard, new RegExp(`id=["']${id}["']`));
+  }
+  for (const removedId of [
     'filterPm',
     'filterRag',
     'filterLifecycle',
     'filterProductFamily',
     'filterProjectType',
     'filterClassification',
-    'pe_project_level',
-    'pe_lifecycle',
-    'pe_project_type',
-    'pe_classification',
-    'pe_product_family',
-  ];
-
-  for (const id of requiredIds) {
-    assert.match(dashboard, new RegExp(`id=["']${id}["']`));
+  ]) {
+    assert.doesNotMatch(dashboard, new RegExp(`id=["']${removedId}["']`));
   }
 
   const toolbarPosition = dashboard.indexOf('id="portfolioScope"');
@@ -87,28 +83,24 @@ test('exposes portfolio scope, filter, and project editor controls', () => {
   assert.ok(toolbarPosition < dashboard.indexOf('id="execView"'));
 });
 
-test('wires safe dynamic project type and classification filters into portfolio rendering', () => {
+test('portfolio toolbar only wires scope and keyword search into portfolio rendering', () => {
   const filtersStart = dashboard.indexOf('function getPortfolioFilters()');
   const filtersEnd = dashboard.indexOf('function loadOverviewScopeForCurrentUser()', filtersStart);
   const filtersSource = dashboard.slice(filtersStart, filtersEnd);
-  assert.ok(filtersSource.includes("projectType: document.getElementById('filterProjectType')?.value || 'all'"));
-  assert.ok(filtersSource.includes("classification: document.getElementById('filterClassification')?.value || 'all'"));
+  assert.ok(filtersSource.includes('scope: portfolioScope'));
+  assert.ok(filtersSource.includes("search: document.getElementById('projectSearch')?.value || ''"));
+  assert.doesNotMatch(filtersSource, /filter(?:Pm|Rag|Lifecycle|ProductFamily|ProjectType|Classification)/);
 
   const refreshStart = dashboard.indexOf('function refreshPortfolioToolbar(projects)');
   const refreshEnd = dashboard.indexOf("document.querySelectorAll('#portfolioScope", refreshStart);
   const refreshSource = dashboard.slice(refreshStart, refreshEnd);
-  assert.ok(refreshSource.includes("replacePortfolioOptions('filterProjectType'"));
-  assert.ok(refreshSource.includes('normalizeProject(project).projectType'));
-  assert.ok(refreshSource.includes("replacePortfolioOptions('filterClassification'"));
-  assert.ok(refreshSource.includes('normalizeProject(project).classification'));
+  assert.doesNotMatch(refreshSource, /replacePortfolioOptions/);
 
-  assert.ok(dashboard.includes(
-    "['projectSearch', 'filterPm', 'filterRag', 'filterLifecycle', 'filterProductFamily', 'filterProjectType', 'filterClassification']",
-  ));
+  assert.match(
+    dashboard,
+    /document\.getElementById\('projectSearch'\)\?\.addEventListener\('input',\s*\(\)\s*=>\s*window\.render\(\)\)/,
+  );
   assert.ok(dashboard.includes('refreshPortfolioToolbar(roleVisibleProjects);'));
-  assert.ok(dashboard.includes('select.replaceChildren();'));
-  assert.ok(dashboard.includes('option.textContent = value;'));
-  assert.ok(dashboard.includes("select.value = uniqueValues.includes(selected) ? selected : 'all';"));
 });
 
 test('exposes an Overview-only scope control with an independent persisted System default', () => {
