@@ -39,6 +39,9 @@ test('resource analytics summarizes FTE by project level and function without ex
     'hardware-module': 0,
     software: 0,
   });
+  assert.equal(result.byFunction.find(item => item.role === 'PM')?.knownPeople, 1);
+  assert.equal(result.byFunction.find(item => item.role === 'PM')?.allocatedPeople, 1);
+  assert.equal(result.byFunction.find(item => item.role === 'PM')?.utilizationPct, 50);
   assert.equal(JSON.stringify(result).includes('Alex'), false);
 });
 
@@ -57,4 +60,31 @@ test('resource analytics treats role names case-insensitively and ignores blank 
   assert.equal(result.byFunction.length, 1);
   assert.equal(result.byFunction[0].role, 'QA');
   assert.equal(result.byFunction[0].totalFte, 1);
+  assert.equal(result.byFunction[0].knownPeople, 2);
+  assert.equal(result.byFunction[0].allocatedPeople, 2);
+  assert.equal(result.byFunction[0].utilizationPct, 50);
+});
+
+test('function utilization compares allocated FTE against known people capacity', () => {
+  const result = buildResourceAnalytics([
+    {
+      projectLevel: 'software',
+      teamMembers: [
+        { name: 'Only QA', role: 'Software QA', effortPct: 100 },
+        { name: 'Dev A', role: 'Software Engineer', effortPct: 100 },
+        { name: 'Dev B', role: 'Software Engineer', effortPct: 50 },
+      ],
+    },
+  ]);
+
+  const qa = result.byFunction.find(item => item.role === 'Software QA');
+  const dev = result.byFunction.find(item => item.role === 'Software Engineer');
+  assert.equal(qa.knownPeople, 1);
+  assert.equal(qa.allocatedPeople, 1);
+  assert.equal(qa.capacityFte, 1);
+  assert.equal(qa.totalFte, 1);
+  assert.equal(qa.utilizationPct, 100);
+  assert.equal(dev.knownPeople, 2);
+  assert.equal(dev.totalFte, 1.5);
+  assert.equal(dev.utilizationPct, 75);
 });

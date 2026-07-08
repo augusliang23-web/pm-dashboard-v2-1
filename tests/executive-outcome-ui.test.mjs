@@ -30,7 +30,7 @@ test('portfolio timeline displays evidence-based progress and relink warnings', 
   assert.match(dashboard, /class="exec-outcome-progress"/);
   assert.match(dashboard, /class="exec-outcome-progress-fill/);
   assert.match(dashboard, /Needs relink/);
-  assert.match(dashboard, /result\.mode === 'auto' \? 'Auto' : 'Manual'/);
+  assert.doesNotMatch(dashboard, /result\.mode === 'auto' \? 'Auto' : 'Manual'/);
   assert.match(dashboard, /Last reporting week/);
 });
 
@@ -56,10 +56,18 @@ test('executive progress bars keep a green fill and show Done at 100 percent', (
   assert.match(dashboard, /executiveOutcomeStatusLabel\(result\.progress, result\.health\)/);
   assert.match(
     dashboard,
-    /class="exec-outcome-progress-fill" style="width:\$\{result\.progress \?\? 0\}%"/,
+    /class="exec-outcome-progress-fill" style="--pct:\$\{result\.progress \?\? 0\}%"/,
   );
+  assert.match(dashboard, /\.exec-outcome-progress-fill \{[^}]*width:var\(--pct, 0%\)/s);
   assert.doesNotMatch(
     dashboard,
     /class="exec-outcome-progress-fill \$\{result\.health\}"/,
   );
+});
+
+test('executive timeline removes noisy manual labels and shows quarterly progress', () => {
+  assert.doesNotMatch(dashboard, /Leadership-level DCDC milestone timeline, separated from PM project milestone input\./);
+  assert.doesNotMatch(dashboard, /Manual<\/span>/);
+  assert.match(dashboard, /function calculateExecutiveQuarterSummary\(/);
+  assert.match(dashboard, /class="dcdc-quarter-progress"/);
 });

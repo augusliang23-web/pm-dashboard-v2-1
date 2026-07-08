@@ -607,6 +607,7 @@ export function buildResourceAnalytics(projects = []) {
       if (roleKey) {
         const item = functions.get(roleKey) || {
           role: roleLabel,
+          people: new Map(),
           levels: {
             [PROJECT_LEVEL.SYSTEM]: 0,
             [PROJECT_LEVEL.HARDWARE_MODULE]: 0,
@@ -614,6 +615,7 @@ export function buildResourceAnalytics(projects = []) {
           },
         };
         item.levels[level] += effort / 100;
+        if (name) item.people.set(name, (item.people.get(name) || 0) + effort);
         functions.set(roleKey, item);
       }
     });
@@ -626,11 +628,23 @@ export function buildResourceAnalytics(projects = []) {
     availableCapacityFte: oneDecimal(personLoads.reduce((sum, total) => sum + Math.max(100 - total, 0), 0) / 100),
     byLevel: Object.fromEntries(Object.entries(byLevel).map(([level, value]) => [level, oneDecimal(value)])),
     byFunction: [...functions.values()]
-      .map(item => ({
-        role: item.role,
-        levels: Object.fromEntries(Object.entries(item.levels).map(([level, value]) => [level, oneDecimal(value)])),
-        totalFte: oneDecimal(Object.values(item.levels).reduce((sum, value) => sum + value, 0)),
-      }))
+      .map(item => {
+        const totalFte = oneDecimal(Object.values(item.levels).reduce((sum, value) => sum + value, 0));
+        const knownPeople = item.people.size || Math.ceil(totalFte);
+        const allocatedPeople = item.people.size
+          ? [...item.people.values()].filter(total => total > 0).length
+          : knownPeople;
+        const capacityFte = oneDecimal(knownPeople);
+        return {
+          role: item.role,
+          levels: Object.fromEntries(Object.entries(item.levels).map(([level, value]) => [level, oneDecimal(value)])),
+          totalFte,
+          knownPeople,
+          allocatedPeople,
+          capacityFte,
+          utilizationPct: capacityFte ? Math.round((totalFte / capacityFte) * 100) : 0,
+        };
+      })
       .sort((a, b) => b.totalFte - a.totalFte || a.role.localeCompare(b.role)),
   };
 }

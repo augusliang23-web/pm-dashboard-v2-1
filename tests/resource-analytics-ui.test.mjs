@@ -11,13 +11,41 @@ test('Overview resource analytics shows executive KPIs and aggregated charts', (
     'Overallocated People',
     'Available Capacity',
     'FTE by project level',
-    'Function mix by project level',
+    'Function allocation by known capacity',
   ]) {
     assert.ok(dashboard.includes(label));
   }
   assert.ok(dashboard.includes('buildResourceAnalytics(resourceProjects)'));
+  assert.ok(dashboard.includes('getResourceAnalyticsProjects(projects)'));
   assert.ok(dashboard.includes('class="resource-level-donut"'));
   assert.ok(dashboard.includes('class="resource-function-track"'));
+  assert.ok(dashboard.includes('normalizeResourceFunctionRow(item)'));
+  assert.ok(dashboard.includes('metrics.allocatedPeople}/${metrics.knownPeople} people'));
+  assert.ok(dashboard.includes('metrics.utilizationPct'));
+});
+
+test('resource analytics never renders undefined function capacity values', () => {
+  assert.ok(dashboard.includes('function normalizeResourceFunctionRow(item = {})'));
+  assert.doesNotMatch(dashboard, /\$\{item\.allocatedPeople\}\/\$\{item\.knownPeople\}/);
+  assert.doesNotMatch(dashboard, /\$\{item\.utilizationPct\}%/);
+  assert.doesNotMatch(dashboard, /\$\{item\.totalFte\}\/\$\{item\.capacityFte\}/);
+});
+
+test('Project portfolio cards include a compact per-project resource snapshot', () => {
+  assert.ok(dashboard.includes('function summarizeProjectResourceSnapshot(project = {})'));
+  assert.ok(dashboard.includes('class="exec-resource-snapshot"'));
+  assert.ok(dashboard.includes('Resource load'));
+  assert.ok(dashboard.includes('snapshot.topRoles'));
+});
+
+test('Overview resource analytics includes pending team allocations while keeping maturity counts', () => {
+  const start = dashboard.indexOf('function getResourceAnalyticsProjects(');
+  const end = dashboard.indexOf('function getConfirmedBudgetPlanProjects', start);
+  const source = dashboard.slice(start, end);
+  assert.match(source, /teamMembers\?\.length/);
+  assert.match(source, /status\.team\.noAllocationRequired/);
+  assert.doesNotMatch(source, /status\.team\.state === 'confirmed'/);
+  assert.ok(dashboard.includes('pending included'));
 });
 
 test('Overview resource analytics no longer renders a member-name list', () => {

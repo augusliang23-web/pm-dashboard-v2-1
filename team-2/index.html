@@ -495,6 +495,12 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 .exec-signal.next .exec-signal-label::before { background:var(--blue); }
 .exec-signal .stext { margin:0; font-size:11px; line-height:1.45; color:var(--text-light); display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
 .exec-signal ul { margin:0; padding-left:14px; }
+.exec-resource-snapshot { margin-top:10px; padding:9px 10px; border:1px solid var(--border); border-radius:9px; background:#FBFDFF; }
+.exec-resource-summary { display:flex; align-items:center; justify-content:space-between; gap:10px; font-size:10px; font-weight:850; color:var(--text); }
+.exec-resource-summary span:first-child { color:var(--muted); text-transform:uppercase; letter-spacing:.07em; font-size:9px; }
+.exec-resource-chips { display:flex; flex-wrap:wrap; gap:5px; margin-top:7px; }
+.exec-resource-chip { display:inline-flex; align-items:center; gap:4px; max-width:160px; padding:4px 7px; border-radius:999px; background:var(--s3); color:var(--text-light); font-size:9px; font-weight:800; }
+.exec-resource-chip b { color:var(--text); font-family:'IBM Plex Mono',monospace; }
 .exec-project-milestones { padding:13px 22px 17px 26px; border-top:1px solid var(--border); background:linear-gradient(180deg,#FBFCFD 0%,#FFF 100%); }
 .exec-milestone-label { font-size:9px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; margin-bottom:8px; }
 
@@ -676,6 +682,11 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 .dcdc-cell { min-width:0; padding:14px 14px; border-right:1px solid #C8DDEB; border-bottom:1px solid #DCE6EF; background:#fff; }
 .dcdc-cell:nth-child(5n) { border-right:0; }
 .dcdc-quarter { padding:11px 14px; background:#005BAA; color:#fff; text-align:center; font-size:15px; font-weight:900; border-right:1px solid rgba(255,255,255,.25); border-bottom:0; }
+.dcdc-quarter-content { display:grid; gap:6px; }
+.dcdc-quarter-main { display:flex; justify-content:center; align-items:center; gap:7px; }
+.dcdc-quarter-percent { font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:800; opacity:.95; }
+.dcdc-quarter-progress { height:5px; border-radius:999px; overflow:hidden; background:rgba(255,255,255,.28); }
+.dcdc-quarter-progress-fill { display:block; height:100%; width:var(--pct, 0%); border-radius:inherit; background:var(--green); }
 .dcdc-corner { background:#fff; border-bottom:0; }
 .dcdc-row-label { font-size:14px; font-weight:900; line-height:1.25; color:var(--text); background:#F8FBFD; }
 .dcdc-list { margin:0; padding-left:18px; color:var(--text); }
@@ -689,7 +700,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 .exec-outcome-badge.unknown { color:var(--muted); background:var(--s3); }
 .exec-outcome-progress { display:flex; align-items:center; gap:7px; margin-top:5px; }
 .exec-outcome-progress-track { flex:1; height:5px; overflow:hidden; border-radius:999px; background:var(--s3); }
-.exec-outcome-progress-fill { height:100%; background:var(--green); border-radius:inherit; }
+.exec-outcome-progress-fill { display:block; height:100%; width:var(--pct, 0%); background:var(--green); border-radius:inherit; }
 .exec-outcome-progress-label { width:30px; text-align:right; color:var(--text-light); font-family:'IBM Plex Mono',monospace; font-size:9px; }
 .exec-outcome-relink { margin-top:3px; color:#A85454; font-size:9px; font-weight:700; }
 .exec-category-summary-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; padding:14px; background:#F7FAFC; border-bottom:1px solid var(--border); }
@@ -929,13 +940,14 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 .resource-level-swatch.hardware { background:#88C9AC; }
 .resource-level-swatch.software { background:#BCA5D8; }
 .resource-function-list { display:grid; gap:10px; }
-.resource-function-row { display:grid; grid-template-columns:minmax(100px,.7fr) minmax(220px,2fr) 58px; gap:10px; align-items:center; }
+.resource-function-row { display:grid; grid-template-columns:minmax(120px,.7fr) minmax(220px,2fr) 128px; gap:10px; align-items:center; }
 .resource-function-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text-light); font-size:10px; font-weight:800; }
 .resource-function-track { display:flex; height:12px; overflow:hidden; border-radius:999px; background:var(--s3); }
 .resource-function-segment.system { background:#7EAAC8; }
 .resource-function-segment.hardware-module { background:#88C9AC; }
 .resource-function-segment.software { background:#BCA5D8; }
-.resource-function-value { text-align:right; color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:800; }
+.resource-function-value { text-align:right; color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:800; line-height:1.25; }
+.resource-function-value small { display:block; color:var(--muted); font-family:'Noto Sans TC',sans-serif; font-size:9px; font-weight:750; }
 .print-preset-row { display:flex; flex-wrap:wrap; gap:7px; margin:12px 0; }
 .print-section-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 .print-section-grid label { display:flex; align-items:center; gap:8px; padding:10px 11px; border:1px solid var(--border); border-radius:8px; background:#fff; color:var(--text-light); font-size:11px; font-weight:750; cursor:pointer; }
@@ -1535,7 +1547,8 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
         <button type="button" class="btn btn-ghost" onclick="applyOverviewPrintPreset('all')">All</button>
         <button type="button" class="btn btn-ghost" onclick="applyOverviewPrintPreset('executive')">Executive</button>
         <button type="button" class="btn btn-ghost" onclick="applyOverviewPrintPreset('roadmap')">Roadmap</button>
-        <button type="button" class="btn btn-ghost" onclick="applyOverviewPrintPreset('resource')">Resource &amp; Budget</button>
+        <button type="button" class="btn btn-ghost" onclick="applyOverviewPrintPreset('resource')">Resource</button>
+        <button type="button" class="btn btn-ghost" onclick="applyOverviewPrintPreset('budget')">Budget</button>
         <button type="button" class="btn btn-ghost" onclick="applyOverviewPrintPreset('custom')">Custom</button>
       </div>
       <div class="print-section-grid" id="overviewPrintSections">
@@ -1546,7 +1559,8 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
         <label><input type="checkbox" value="risk-actions" checked> Risk actions</label>
         <label><input type="checkbox" value="quarterly-roadmap" checked> Quarterly roadmap</label>
         <label><input type="checkbox" value="project-portfolio" checked> Project portfolio</label>
-        <label><input type="checkbox" value="resource-budget" checked> Resource analytics &amp; budget</label>
+        <label><input type="checkbox" value="resource-analytics" checked> Resource analytics</label>
+        <label><input type="checkbox" value="budget-overview" checked> Budget overview</label>
       </div>
       <div class="resource-validation" id="overviewPrintValidation"></div>
     </div>
@@ -4029,6 +4043,13 @@ function getConfirmedResourceProjects(projects = []) {
   return projects.filter(project => normalizeResourceBudgetStatus(project).team.state === 'confirmed');
 }
 
+function getResourceAnalyticsProjects(projects = []) {
+  return projects.filter(project => {
+    const status = normalizeResourceBudgetStatus(project);
+    return !status.team.noAllocationRequired && Boolean(project.teamMembers?.length);
+  });
+}
+
 function getConfirmedBudgetPlanProjects(projects = []) {
   return projects.filter(project => normalizeResourceBudgetStatus(project).budgetPlan.state === 'confirmed');
 }
@@ -4345,31 +4366,82 @@ function allocationClass(pct) {
   return '';
 }
 
+function normalizeResourceFunctionRow(item = {}) {
+  const levels = item.levels || {};
+  const totalFte = Number.isFinite(Number(item.totalFte))
+    ? Number(item.totalFte)
+    : Object.values(levels).reduce((sum, value) => sum + (Number(value) || 0), 0);
+  const knownPeople = Number.isFinite(Number(item.knownPeople)) && Number(item.knownPeople) > 0
+    ? Number(item.knownPeople)
+    : Math.max(Math.ceil(totalFte), 1);
+  const allocatedPeople = Number.isFinite(Number(item.allocatedPeople)) && Number(item.allocatedPeople) >= 0
+    ? Number(item.allocatedPeople)
+    : knownPeople;
+  const capacityFte = Number.isFinite(Number(item.capacityFte)) && Number(item.capacityFte) > 0
+    ? Number(item.capacityFte)
+    : knownPeople;
+  return {
+    role: item.role || 'Unassigned',
+    levels: {
+      system: Number(levels.system) || 0,
+      'hardware-module': Number(levels['hardware-module']) || 0,
+      software: Number(levels.software) || 0,
+    },
+    totalFte: Math.round(totalFte * 10) / 10,
+    knownPeople,
+    allocatedPeople,
+    capacityFte: Math.round(capacityFte * 10) / 10,
+    utilizationPct: Number.isFinite(Number(item.utilizationPct))
+      ? Number(item.utilizationPct)
+      : Math.round((totalFte / capacityFte) * 100),
+  };
+}
+
+function summarizeProjectResourceSnapshot(project = {}) {
+  const members = Array.isArray(project.teamMembers) ? project.teamMembers : [];
+  const roles = new Map();
+  let totalPct = 0;
+  members.forEach(member => {
+    const effort = Math.max(0, Number(member?.effortPct ?? member?.effort) || 0);
+    const role = String(member?.roleName || member?.role || 'Unassigned').trim().replace(/\s+/g, ' ') || 'Unassigned';
+    totalPct += effort;
+    const current = roles.get(role) || 0;
+    roles.set(role, current + effort / 100);
+  });
+  return {
+    memberCount: members.length,
+    fte: Math.round(totalPct / 10) / 10,
+    topRoles: [...roles.entries()]
+      .map(([role, fte]) => ({ role, fte: Math.round(fte * 10) / 10 }))
+      .sort((a, b) => b.fte - a.fte || a.role.localeCompare(b.role))
+      .slice(0, 3),
+  };
+}
+
 function renderResourceBudgetOverview(projects) {
   if (!projects.length) {
     return '<div class="rb-overview-grid"><section class="exec-panel"><div class="empty-state">No projects in the selected Overview scope for resource or budget reporting.</div></section></div>';
   }
   const coverage = getResourceBudgetCoverage(projects);
-  const resourceProjects = getConfirmedResourceProjects(projects);
+  const resourceProjects = getResourceAnalyticsProjects(projects);
   const planProjects = getConfirmedBudgetPlanProjects(projects);
   const actualProjects = getConfirmedBudgetActualProjects(projects);
   const analytics = buildResourceAnalytics(resourceProjects);
   const budget = buildBudgetSummary(planProjects, actualProjects, overviewCurrency);
-  const allocationCoverage = projects.length ? Math.round((coverage.teamConfirmed / projects.length) * 100) : 0;
+  const allocationCoverage = projects.length ? Math.round((resourceProjects.length / projects.length) * 100) : 0;
   const totalLevelFte = Object.values(analytics.byLevel).reduce((sum, value) => sum + value, 0);
   const systemEnd = totalLevelFte ? (analytics.byLevel.system / totalLevelFte) * 100 : 0;
   const hardwareEnd = totalLevelFte ? systemEnd + (analytics.byLevel['hardware-module'] / totalLevelFte) * 100 : 0;
-  const maxFunctionFte = Math.max(...analytics.byFunction.map(item => item.totalFte), 1);
   const varianceClass = budget.variance > 0 ? 'red' : '';
   const planGapClass = budget.planGap < 0 ? 'red' : budget.planGap > 0 ? 'yellow' : '';
-  return `<div class="rb-overview-grid overview-resource-budget" data-print-section="resource-budget">
-    <section class="exec-panel resource-analytics-panel">
+  return `<div class="rb-overview-grid overview-resource-budget">
+    <section class="exec-panel resource-analytics-panel" data-print-section="resource-analytics">
       <div class="exec-panel-head">
         <div>
           <div class="exec-eyebrow">Resource Overview</div>
           <div class="exec-panel-title">Resource analytics</div>
         </div>
-        <div class="exec-panel-note">${coverage.teamConfirmed} confirmed · ${coverage.teamPending} pending</div>
+        <div class="exec-panel-note">${coverage.teamConfirmed} confirmed · ${coverage.teamPending} pending included</div>
       </div>
       <div class="rb-kpi-grid">
         <div class="rb-kpi"><div class="rb-kpi-label">Total Allocated FTE</div><div class="rb-kpi-value">${analytics.totalAllocatedFte}</div></div>
@@ -4388,22 +4460,26 @@ function renderResourceBudgetOverview(projects) {
           </div>
         </div>
         <div class="resource-function-card">
-          <div class="resource-analytics-subtitle">Function mix by project level</div>
-          <div class="resource-function-list">${analytics.byFunction.length ? analytics.byFunction.map(item => `
+          <div class="resource-analytics-subtitle">Function allocation by known capacity</div>
+          <div class="resource-function-list">${analytics.byFunction.length ? analytics.byFunction.map(item => {
+            const metrics = normalizeResourceFunctionRow(item);
+            const capacity = Math.max(metrics.capacityFte, 1);
+            return `
             <div class="resource-function-row">
-              <div class="resource-function-name" title="${escHtml(item.role)}">${escHtml(item.role)}</div>
-              <div class="resource-function-track" aria-label="${escHtml(item.role)} ${item.totalFte} FTE">
-                <span class="resource-function-segment system" style="width:${item.levels.system / maxFunctionFte * 100}%"></span>
-                <span class="resource-function-segment hardware-module" style="width:${item.levels['hardware-module'] / maxFunctionFte * 100}%"></span>
-                <span class="resource-function-segment software" style="width:${item.levels.software / maxFunctionFte * 100}%"></span>
+              <div class="resource-function-name" title="${escHtml(metrics.role)}">${escHtml(metrics.role)}</div>
+              <div class="resource-function-track" aria-label="${escHtml(metrics.role)} ${metrics.totalFte} of ${metrics.capacityFte} FTE allocated">
+                <span class="resource-function-segment system" style="width:${Math.min(metrics.levels.system / capacity * 100, 100)}%"></span>
+                <span class="resource-function-segment hardware-module" style="width:${Math.min(metrics.levels['hardware-module'] / capacity * 100, 100)}%"></span>
+                <span class="resource-function-segment software" style="width:${Math.min(metrics.levels.software / capacity * 100, 100)}%"></span>
               </div>
-              <div class="resource-function-value">${item.totalFte} FTE</div>
-            </div>`).join('') : '<div class="empty-state">No confirmed team allocation is available.</div>'}</div>
+              <div class="resource-function-value">${metrics.allocatedPeople}/${metrics.knownPeople} people · ${metrics.utilizationPct}%<small>${metrics.totalFte}/${metrics.capacityFte} FTE</small></div>
+            </div>`;
+          }).join('') : '<div class="empty-state">No team allocation is available.</div>'}</div>
         </div>
       </div>
     </section>
 
-    <section class="exec-panel">
+    <section class="exec-panel" data-print-section="budget-overview">
       <div class="exec-panel-head">
         <div>
           <div class="exec-eyebrow">Budget Overview</div>
@@ -5219,16 +5295,22 @@ function renderExecutiveOutcomeDisplay(source, catalog, reportingLabel) {
     <div class="exec-outcome-head">
       <span>${escHtml(outcome.text)}</span>
       <span class="exec-outcome-badges">
-        <span class="exec-outcome-badge">${result.mode === 'auto' ? 'Auto' : 'Manual'}</span>
         <span class="exec-outcome-badge ${result.health}">${escHtml(statusLabel)}</span>
       </span>
     </div>
     <div class="exec-outcome-progress">
-      <span class="exec-outcome-progress-track"><span class="exec-outcome-progress-fill" style="width:${result.progress ?? 0}%"></span></span>
+      <span class="exec-outcome-progress-track"><span class="exec-outcome-progress-fill" style="--pct:${result.progress ?? 0}%"></span></span>
       <span class="exec-outcome-progress-label">${progressLabel}</span>
     </div>
     ${result.missingSources.length ? '<div class="exec-outcome-relink">Needs relink</div>' : ''}
   </li>`;
+}
+
+function calculateExecutiveQuarterSummary(timeline, catalog, quarterIndex) {
+  const results = (timeline.rows || [])
+    .flatMap(row => row.cells?.[quarterIndex] || [])
+    .map(item => calculateExecutiveOutcome(normalizeExecutiveOutcome(item), catalog.lookup));
+  return calculateExecutiveCategory(results, {});
 }
 
 function renderExecutiveCategorySummaries(timeline, catalog) {
@@ -5245,7 +5327,7 @@ function renderExecutiveCategorySummaries(timeline, catalog) {
       </div>
       <div class="exec-category-summary-value">${label}</div>
       <div class="exec-category-summary-track"><div class="exec-category-summary-fill" style="width:${progress}%"></div></div>
-      <div class="exec-category-summary-note">${summary.overridden ? `Manual override · ${escHtml(summary.reason)}` : 'Equal-weight average of recorded outcomes'}</div>
+      <div class="exec-category-summary-note">${summary.overridden ? `Override · ${escHtml(summary.reason)}` : 'Equal-weight average of recorded outcomes'}</div>
     </article>`;
   }).join('')}</div>`;
 }
@@ -5259,7 +5341,6 @@ function renderExecutiveQuarterMilestones(projs, layer = getStrategyLayer(), act
     <div class="roadmap-block-head">
       <div>
         <div class="roadmap-block-title">Portfolio-wide executive timeline</div>
-        <div class="roadmap-block-note">Leadership-level DCDC milestone timeline, separated from PM project milestone input.</div>
       </div>
       <div style="display:flex; align-items:center; gap:8px;">
         <span class="reason-pill">${year}</span>
@@ -5271,7 +5352,17 @@ function renderExecutiveQuarterMilestones(projs, layer = getStrategyLayer(), act
       ${renderExecutiveCategorySummaries(timeline, catalog)}
       <div class="dcdc-grid">
         <div class="dcdc-cell dcdc-corner"></div>
-        ${quarters.map(q => `<div class="dcdc-cell dcdc-quarter">${escHtml(q)}</div>`).join('')}
+        ${quarters.map((q, index) => {
+          const summary = calculateExecutiveQuarterSummary(timeline, catalog, index);
+          const progress = summary.progress ?? 0;
+          const label = summary.progress === null ? 'N/A' : `${summary.progress}%`;
+          return `<div class="dcdc-cell dcdc-quarter">
+            <div class="dcdc-quarter-content">
+              <div class="dcdc-quarter-main"><span>${escHtml(q)}</span><span class="dcdc-quarter-percent">${label}</span></div>
+              <div class="dcdc-quarter-progress"><span class="dcdc-quarter-progress-fill" style="--pct:${progress}%"></span></div>
+            </div>
+          </div>`;
+        }).join('')}
         ${(timeline.rows || []).map(row => `
           <div class="dcdc-cell dcdc-row-label">${escHtml(row.label)}</div>
           ${(row.cells || []).map(items => `<div class="dcdc-cell"><ul class="dcdc-list">${(items || []).map(item => renderExecutiveOutcomeDisplay(item, catalog, reportingLabel)).join('')}</ul></div>`).join('')}
@@ -6214,6 +6305,7 @@ function renderExec(projs, summary, allProjects = projs) {
           const status = normalizeOverviewRagStatus(p.status);
           const progress = normalizeOverviewPercent(p.progress);
           const visibility = ['hidden', 'archived'].includes(p.visibility) ? p.visibility : '';
+          const snapshot = summarizeProjectResourceSnapshot(p);
           return `
           <article class="exec-project-card ${status}" data-project-code="${escHtml(p.code)}" title="Double click for details">
             <div class="exec-project-top">
@@ -6233,6 +6325,15 @@ function renderExec(projs, summary, allProjects = projs) {
                 </div>
                 <div class="exec-progress-track">
                   <div class="exec-progress-fill ${status}" style="width:${progress}%"></div>
+                </div>
+                <div class="exec-resource-snapshot">
+                  <div class="exec-resource-summary">
+                    <span>Resource load</span>
+                    <strong>${snapshot.memberCount} people · ${snapshot.fte} FTE</strong>
+                  </div>
+                  <div class="exec-resource-chips">
+                    ${snapshot.topRoles.length ? snapshot.topRoles.map(row => `<span class="exec-resource-chip" title="${escHtml(row.role)}">${escHtml(row.role)} <b>${row.fte} FTE</b></span>`).join('') : '<span class="exec-resource-chip">No allocation</span>'}
+                  </div>
                 </div>
               </div>
 
@@ -6713,10 +6814,11 @@ window.toggleOverview = () => {
 };
 
 const OVERVIEW_PRINT_PRESETS = {
-  all: ['health-focus', 'weekly-trend', 'executive-summary', 'attention-matrix', 'risk-actions', 'quarterly-roadmap', 'project-portfolio', 'resource-budget'],
+  all: ['health-focus', 'weekly-trend', 'executive-summary', 'attention-matrix', 'risk-actions', 'quarterly-roadmap', 'project-portfolio', 'resource-analytics', 'budget-overview'],
   executive: ['health-focus', 'weekly-trend', 'executive-summary', 'attention-matrix', 'risk-actions'],
   roadmap: ['quarterly-roadmap', 'project-portfolio'],
-  resource: ['resource-budget'],
+  resource: ['resource-analytics'],
+  budget: ['budget-overview'],
 };
 
 window.applyOverviewPrintPreset = preset => {
