@@ -5719,6 +5719,23 @@ function renderExecutiveOutcomeDisplay(source, catalog, reportingLabel) {
   </li>`;
 }
 
+// Keep the v2.0 executive milestone presentation intentionally compact and
+// text-first. The v2.0T outcome model still supplies evidence, status reasons,
+// permissions and relink metadata; those details remain available as a
+// tooltip instead of changing the leadership-facing DCDC table layout.
+function renderExecutiveOutcomeLegacy(source, catalog, reportingLabel) {
+  const outcome = normalizeExecutiveOutcome(source);
+  const result = calculateExecutiveOutcome(outcome, catalog.lookup);
+  const tooltip = [
+    ...result.validSources.map(item => item.label).filter(Boolean).map(label => `Evidence: ${label}`),
+    ...result.missingSources.map(reference => `Needs relink: ${reference.projectCode} / ${reference.milestoneId}`),
+    outcome.statusReason ? `Reason: ${outcome.statusReason}` : '',
+    `Status: ${executiveRagLabel(result.health)}`,
+    `Last reporting week: ${reportingLabel || 'Not available'}`,
+  ].filter(Boolean).join(' | ');
+  return `<li${tooltip ? ` title="${escHtml(tooltip)}"` : ''}>${escHtml(outcome.text || '-')}</li>`;
+}
+
 function calculateExecutiveQuarterSummary(timeline, catalog, quarterIndex, rows = timeline.rows || []) {
   const results = (timeline.rows || [])
     .filter(row => rows.includes(row))
@@ -5761,24 +5778,21 @@ function renderExecutiveQuarterMilestones(projs, layer = getStrategyLayer(), act
   const reportingLabel = allWeeks[currentIdx]?.weekLabel || getSelectedReportingDate();
   if (!visibleRows.length) return '';
   return `<section class="roadmap-block executive-milestone-block">
-    <div class="dcdc-timeline">
-      <div class="dcdc-print-lead">
-        <div class="dcdc-title">${escHtml(timeline.title || 'Selected 2026 DCDC Milestone Timeline')}</div>
-        ${renderExecutiveCategorySummaries(timeline, catalog, visibleRows)}
+    <div class="roadmap-block-head">
+      <div>
+        <div class="roadmap-block-title">Executive milestones</div>
+        <div class="roadmap-block-note">Leadership-level quarterly timeline, separate from PM project milestone input.</div>
       </div>
+      <span class="reason-pill">${year}</span>
+    </div>
+    <div class="dcdc-timeline">
+      <div class="dcdc-title">${escHtml(timeline.title || `Selected ${year} DCDC Milestone Timeline`)}</div>
       <div class="dcdc-grid">
         <div class="dcdc-cell dcdc-corner"></div>
-        ${quarters.map((q, index) => {
-          const health = calculateExecutiveQuarterRag(timeline, catalog, index, visibleRows);
-          return `<div class="dcdc-cell dcdc-quarter">
-            <div class="dcdc-quarter-content">
-              <span>${escHtml(q)}</span><span class="dcdc-quarter-rag ${health}">${escHtml(executiveRagLabel(health))}</span>
-            </div>
-          </div>`;
-        }).join('')}
+        ${quarters.map(q => `<div class="dcdc-cell dcdc-quarter">${escHtml(q)}</div>`).join('')}
         ${visibleRows.map(row => `
           <div class="dcdc-cell dcdc-row-label">${escHtml(row.label)}</div>
-          ${(row.cells || []).map(items => `<div class="dcdc-cell"><ul class="dcdc-list">${(items || []).map(item => renderExecutiveOutcomeDisplay(item, catalog, reportingLabel)).join('')}</ul></div>`).join('')}
+          ${(row.cells || []).map(items => `<div class="dcdc-cell"><ul class="dcdc-list">${(items || []).map(item => renderExecutiveOutcomeLegacy(item, catalog, reportingLabel)).join('')}</ul></div>`).join('')}
         `).join('')}
       </div>
       <div class="dcdc-phase-row">

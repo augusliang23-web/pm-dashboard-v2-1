@@ -76,11 +76,17 @@ test('executive timeline uses RAG labels instead of percentage bars', () => {
 });
 
 test('executive timeline removes noisy manual labels and shows quarterly RAG status', () => {
+  const start = dashboard.indexOf('function renderExecutiveQuarterMilestones(');
+  const end = dashboard.indexOf('function renderProjectQuarterItems(', start);
+  const source = dashboard.slice(start, end);
+  assert.match(dashboard, /function renderExecutiveOutcomeLegacy\(/);
+  assert.match(source, /class="dcdc-title"/);
+  assert.doesNotMatch(source, /renderExecutiveCategorySummaries\(/);
+  assert.doesNotMatch(source, /class="dcdc-quarter-rag/);
   assert.doesNotMatch(dashboard, /Leadership-level DCDC milestone timeline, separated from PM project milestone input\./);
   assert.doesNotMatch(dashboard, /Manual<\/span>/);
   assert.match(dashboard, /function calculateExecutiveQuarterSummary\(/);
   assert.match(dashboard, /function calculateExecutiveQuarterRag\(/);
-  assert.match(dashboard, /class="dcdc-quarter-rag/);
 });
 
 test('executive outcomes use compact rows with one inline detail disclosure', () => {

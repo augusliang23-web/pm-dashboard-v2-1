@@ -38,9 +38,10 @@ test('portfolio PDF fills its horizontal summary row with an optional budget sna
   assert.match(printCss, /\.project-portfolio-grid \.exec-project-signals\s*\{[^}]*grid-column:\s*1 \/ -1/);
 });
 
-test('roadmap PDF keeps the executive timeline title with its category summary', () => {
-  assert.match(dashboard, /class="dcdc-print-lead"/);
-  assert.match(printCss, /\.dcdc-print-lead\s*\{[^}]*break-inside:\s*avoid-page[^}]*page-break-inside:\s*avoid/);
+test('roadmap PDF keeps the v2.0 DCDC title and table units together', () => {
+  assert.match(dashboard, /class="dcdc-title"/);
+  assert.match(printCss, /\.dcdc-title\s*\{[^}]*break-after:\s*avoid-page[^}]*page-break-after:\s*avoid/);
+  assert.match(printCss, /\.dcdc-cell\s*\{[^}]*break-inside:\s*avoid-page[^}]*page-break-inside:\s*avoid/);
 });
 
 test('PDF reports render from dedicated presentation pages instead of the live dashboard layout', () => {
