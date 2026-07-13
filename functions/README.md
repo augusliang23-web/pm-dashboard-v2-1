@@ -1,6 +1,6 @@
 # Presence Session Aggregation
 
-The v2.0T client writes login sessions to `presenceSessions`. The scheduled
+The v2.1 client writes login sessions to `presenceSessions`. The scheduled
 `aggregatePresenceSessions` function converts closed or timed-out sessions into
 daily per-user documents in `presenceDailyRollups`.
 

@@ -18,7 +18,7 @@ const FIREBASE_CONFIG = {
   appId: "1:842441149281:web:ef2a9af8b37593451e1320",
   measurementId: "G-TW9FW819EY"
 };
-const DASHBOARD_RELEASE = 'v2.0T-portfolio';
+const DASHBOARD_RELEASE = 'v2.1';
 const DASHBOARD_BASE_COMMIT = '6d9f7bd';
 window.__dashboardBootStarted = false;
 window.__dashboardAuthObserved = false;
@@ -34,7 +34,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (authMsg) {
       authMsg.className = 'auth-msg error';
       authMsg.style.display = 'block';
-      authMsg.textContent = 'Dashboard is still waiting for secure access. Please refresh once, or use the online v2.0T link if this local preview keeps waiting.';
+      authMsg.textContent = 'Dashboard is still waiting for secure access. Please refresh once, or use the online v2.1 link if this local preview keeps waiting.';
     }
     if (loginOverlay) loginOverlay.style.display = 'flex';
     loader.style.opacity = '0';
@@ -1918,7 +1918,7 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
       <div class="hdr-logo">
         <div id="syncDot" class="sync-dot" title="Connecting..."></div>
         Project Dashboard
-        <span class="hdr-version">v2.0T</span>
+        <span class="hdr-version">v2.1</span>
       </div>
       <span class="hdr-sub">LITEON INTERNAL SECURE ACCESS</span>
       <span class="hdr-sub" id="dashboardVersion"></span>
@@ -3213,7 +3213,7 @@ function startPresenceSession() {
     userKey: getEmailKey(currentUser),
     displayName: getUserDisplayName(currentUser.email),
     role: currentRole,
-    environment: 'v2.0T',
+    environment: 'v2.1',
     startedAt: now,
     lastSeenAt: now,
     endedAt: null,

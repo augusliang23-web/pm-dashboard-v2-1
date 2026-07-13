@@ -79,7 +79,7 @@ async function aggregateSession(sessionDoc, now) {
         userKey: session.userKey || "unknown",
         displayName: session.displayName || session.userKey || "Unknown",
         role: session.role || "pm",
-        environment: session.environment || "v2.0T",
+        environment: session.environment || "v2.1",
         sessionCount: FieldValue.increment(1),
         onlineMs: FieldValue.increment(piece.onlineMs),
         activeMs: FieldValue.increment(piece.activeMs),
