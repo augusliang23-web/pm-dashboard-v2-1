@@ -4,6 +4,7 @@ import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 import { createReportHandler } from './app.js';
 import { renderPdfBuffer } from './pdf-renderer.js';
+import { applyCors, handlePreflight } from './cors.js';
 
 initializeApp({ credential: applicationDefault() });
 const db = getFirestore();
@@ -18,9 +19,9 @@ const handler = createReportHandler({
 });
 
 http.createServer((request, response) => {
+  if (handlePreflight(request, response, process.env.ALLOWED_ORIGIN)) return;
   if (request.method !== 'POST' || !['/v1/reports/project', '/v1/reports/overview'].includes(request.url)) return response.writeHead(404).end();
-  if (request.headers.origin !== process.env.ALLOWED_ORIGIN) return response.writeHead(403).end();
-  response.setHeader('Access-Control-Allow-Origin', process.env.ALLOWED_ORIGIN);
+  if (!applyCors(request, response, process.env.ALLOWED_ORIGIN)) return response.writeHead(403).end();
   let raw = '';
   request.setEncoding('utf8');
   request.on('data', chunk => { raw += chunk; if (raw.length > 65536) request.destroy(); });
