@@ -21,4 +21,5 @@ gcloud run deploy $ServiceName `
   --memory 1Gi `
   --timeout 120 `
   --service-account $ServiceAccount `
-  --set-env-vars "ALLOWED_ORIGIN=$AllowedOrigin"
+  --set-env-vars "ALLOWED_ORIGIN=$AllowedOrigin" `
+  --quiet

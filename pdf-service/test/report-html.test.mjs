@@ -22,6 +22,8 @@ test('report shell uses dashboard print tokens without remote assets', () => {
   assert.match(html, /--ink:#26384a/);
   assert.match(html, /--green:#57967f/);
   assert.match(html, /class="report-document overview"/);
+  assert.match(html, /\.report-page\s*\{[^}]*position:relative/);
+  assert.match(html, /\.report-footer\s*\{[^}]*position:absolute[^}]*bottom:9mm/);
   assert.doesNotMatch(html, /https?:\/\/|@font-face/);
 });
 

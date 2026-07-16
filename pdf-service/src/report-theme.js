@@ -28,6 +28,7 @@ export const REPORT_CSS = `
   h3 { margin-bottom:2mm; font-size:10pt; line-height:1.25; }
   .report-document { width:100%; }
   .report-page {
+    position:relative;
     width:297mm;
     min-height:210mm;
     padding:11mm 12mm 9mm;
@@ -56,6 +57,10 @@ export const REPORT_CSS = `
   .report-meta { color:var(--muted); font-size:8pt; white-space:nowrap; }
   .report-body { flex:1; min-height:0; padding-top:5mm; }
   .report-footer {
+    position:absolute;
+    left:12mm;
+    right:12mm;
+    bottom:9mm;
     display:flex;
     justify-content:space-between;
     gap:8mm;

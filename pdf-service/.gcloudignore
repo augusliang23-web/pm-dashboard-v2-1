@@ -1,0 +1,9 @@
+.gcloudignore
+.git
+.gitignore
+node_modules/
+test/
+scripts/
+npm-debug.log
+deploy.ps1
+README.md
