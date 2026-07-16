@@ -5,8 +5,25 @@ import {
   buildOverviewReportModel,
   buildProjectReportModel,
   disciplineRows,
+  formatReportingPeriod,
   normalizeProjectForReport
 } from '../src/report-model.js';
+
+test('formats a reporting week and date range together', () => {
+  assert.equal(
+    formatReportingPeriod({ weekLabel: 'W28 2026', weekDate: 'Jul 6 - Jul 12' }),
+    'W28 2026 · Jul 6–Jul 12, 2026'
+  );
+  assert.equal(formatReportingPeriod({ weekLabel: 'W28 2026' }), 'W28 2026');
+  assert.equal(formatReportingPeriod({ weekDate: 'Jul 6 - Jul 12, 2026' }), 'Jul 6–Jul 12, 2026');
+});
+
+test('uses the formatted period in both report models', () => {
+  const week = { weekLabel: 'W28 2026', weekDate: 'Jul 6 - Jul 12', projects: [] };
+
+  assert.equal(buildProjectReportModel({ week, project: {}, sections: [] }).period, 'W28 2026 · Jul 6–Jul 12, 2026');
+  assert.equal(buildOverviewReportModel({ week, sections: [] }).period, 'W28 2026 · Jul 6–Jul 12, 2026');
+});
 
 test('normalizes project values used by every selected project section', () => {
   const model = buildProjectReportModel({

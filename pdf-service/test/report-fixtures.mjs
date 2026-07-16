@@ -52,6 +52,7 @@ export function completeOverviewReportFixture() {
   return {
     week: {
       weekLabel: 'W28 2026',
+      weekDate: 'Jul 6 - Jul 12',
       executiveSummary: 'Pilot work is progressing with one supplier escalation.',
       projects: [project, secondProject]
     },

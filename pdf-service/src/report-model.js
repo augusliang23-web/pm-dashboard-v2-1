@@ -28,6 +28,20 @@ function lines(value) {
   return source.map(item => String(item || '').trim()).filter(Boolean);
 }
 
+function cleanPeriodPart(value) {
+  return String(value || '').trim().replace(/\s*(?:-|\u2013|\u2014)\s*/g, '\u2013');
+}
+
+export function formatReportingPeriod(week = {}) {
+  const label = cleanPeriodPart(week.weekLabel);
+  const date = cleanPeriodPart(week.weekDate);
+  if (!label) return date || 'Current reporting period';
+  if (!date) return label;
+  const year = label.match(/\b(20\d{2})\b/)?.[1];
+  const dated = /\b20\d{2}\b/.test(date) ? date : `${date}${year ? `, ${year}` : ''}`;
+  return `${label} \u00B7 ${dated}`;
+}
+
 function comparable(value) {
   return String(value || '').trim().replace(/\s+/g, ' ').toLowerCase();
 }
@@ -144,7 +158,7 @@ export function buildProjectReportModel({ week = {}, project = {}, sections = []
   const model = normalizeProjectForReport(project);
   return {
     ...model,
-    period: week.weekLabel || week.weekDate || 'Current reporting period',
+    period: formatReportingPeriod(week),
     sections: [...sections],
     disciplines: disciplineRows(model),
     budget: budgetTotals(model)
@@ -299,7 +313,7 @@ export function buildOverviewReportModel({ week = {}, trendWeeks = [], sections 
     quarter: String(item?.quarter || '').toUpperCase()
   })));
   return {
-    period: week.weekLabel || week.weekDate || 'Current reporting period',
+    period: formatReportingPeriod(week),
     sections: [...sections],
     overviewScope: scopeLevel(overviewScope),
     executiveSummary: String(week.executiveSummary || week.summary || week.overviewSummary || ''),
