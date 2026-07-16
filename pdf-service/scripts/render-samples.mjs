@@ -4,7 +4,8 @@ import { renderProjectReportHtml } from '../src/project-report.js';
 import { renderOverviewReportHtml } from '../src/overview-report.js';
 import {
   completeOverviewReportFixture,
-  completeProjectReportFixture
+  completeProjectReportFixture,
+  structuredExecutiveSummaryFixture
 } from '../test/report-fixtures.mjs';
 
 const SAMPLE_TARGET_BYTES = 1.5 * 1024 * 1024;
@@ -13,9 +14,15 @@ const outputDirectory = new URL('../../tmp/pdf-samples/', import.meta.url);
 await mkdir(outputDirectory, { recursive: true });
 
 try {
+  const overviewFixture = completeOverviewReportFixture();
+  overviewFixture.week.executiveSummary = structuredExecutiveSummaryFixture();
+  const executiveSummaryFixture = completeOverviewReportFixture();
+  executiveSummaryFixture.sections = ['executive-summary'];
+  executiveSummaryFixture.week.executiveSummary = structuredExecutiveSummaryFixture();
   const reports = [
     ['project.pdf', renderProjectReportHtml(completeProjectReportFixture())],
-    ['overview.pdf', renderOverviewReportHtml(completeOverviewReportFixture())]
+    ['overview.pdf', renderOverviewReportHtml(overviewFixture)],
+    ['executive-summary.pdf', renderOverviewReportHtml(executiveSummaryFixture)]
   ];
 
   for (const [name, html] of reports) {
