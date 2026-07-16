@@ -1,0 +1,85 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+
+let parseExecutiveSummaryBrief;
+try {
+  ({ parseExecutiveSummaryBrief } = await import('../src/executive-summary-brief.js'));
+} catch {
+  parseExecutiveSummaryBrief = undefined;
+}
+
+test('parses structured movement and management ask fields', () => {
+  assert.equal(typeof parseExecutiveSummaryBrief, 'function');
+  const brief = parseExecutiveSummaryBrief(`WEEKLY MOVEMENT
+Portfolio Summary: Delivery remains stable.
+- Project: Alpha
+  Movement: Validation completed.
+  Blocker: Supplier date remains open.
+  Next step: Confirm the recovery plan.
+- Project: Beta
+  Movement: Build started.
+  Blocker: None
+  Next step: Complete bring-up.
+MANAGEMENT ASK
+- Project: Beta
+  Decision / Support needed: Approve lab priority.
+  Business impact: Protects the launch date.`);
+
+  assert.equal(brief.portfolioSummary, 'Delivery remains stable.');
+  assert.deepEqual(brief.projects[0], {
+    projectName: 'Alpha',
+    movement: 'Validation completed.',
+    blocker: 'Supplier date remains open.',
+    nextStep: 'Confirm the recovery plan.'
+  });
+  assert.deepEqual(brief.managementAsks[0], {
+    projectName: 'Beta',
+    supportNeeded: 'Approve lab priority.',
+    businessImpact: 'Protects the launch date.'
+  });
+  assert.deepEqual(brief.priorityProjects.map(item => item.projectName), ['Beta', 'Alpha']);
+});
+
+test('maps legacy project bullets without requiring historical rewrites', () => {
+  const brief = parseExecutiveSummaryBrief(`## WEEKLY MOVEMENT
+Portfolio Summary: Stable portfolio.
+- Alpha: Progress increased and validation remains blocked.
+## MANAGEMENT ASK
+- Alpha: Confirm laboratory priority.`);
+
+  assert.deepEqual(brief.projects[0], {
+    projectName: 'Alpha',
+    movement: 'Progress increased and validation remains blocked.',
+    blocker: '',
+    nextStep: ''
+  });
+  assert.deepEqual(brief.managementAsks[0], {
+    projectName: 'Alpha',
+    supportNeeded: 'Confirm laboratory priority.',
+    businessImpact: ''
+  });
+});
+
+test('caps display content and reports additional details', () => {
+  const movement = Array.from({ length: 7 }, (_, index) =>
+    `- Project: P${index + 1}\n  Movement: M${index + 1}\n  Blocker: None\n  Next step: N${index + 1}`
+  ).join('\n');
+  const asks = Array.from({ length: 5 }, (_, index) =>
+    `- Project: P${index + 1}\n  Decision / Support needed: D${index + 1}\n  Business impact: I${index + 1}`
+  ).join('\n');
+  const brief = parseExecutiveSummaryBrief(`WEEKLY MOVEMENT\n${movement}\nMANAGEMENT ASK\n${asks}`);
+
+  assert.equal(brief.projects.length, 6);
+  assert.equal(brief.priorityProjects.length, 2);
+  assert.equal(brief.managementAsks.length, 4);
+  assert.equal(brief.hasAdditionalContent, true);
+});
+
+test('keeps malformed narrative as a safe fallback', () => {
+  const brief = parseExecutiveSummaryBrief('Portfolio execution remains stable without labelled fields.');
+
+  assert.equal(brief.portfolioSummary, 'Portfolio execution remains stable without labelled fields.');
+  assert.equal(brief.fallbackText, 'Portfolio execution remains stable without labelled fields.');
+  assert.deepEqual(brief.projects, []);
+  assert.deepEqual(brief.managementAsks, []);
+});
