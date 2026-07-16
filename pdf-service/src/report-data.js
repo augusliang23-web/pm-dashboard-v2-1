@@ -26,7 +26,7 @@ function includedProjectSections(project, sections) {
     if (section === 'resources') return hasResources(project);
     if (section === 'budget') return hasBudget(project);
     if (section === 'milestone') return Array.isArray(project?.milestones) && project.milestones.length > 0;
-    if (section === 'gantt') return Array.isArray(project?.workstreams) && project.workstreams.length > 0;
+    if (section === 'gantt') return Array.isArray(project?.ganttWorkstreams) && project.ganttWorkstreams.length > 0;
     return true;
   });
 }
@@ -41,7 +41,21 @@ export async function loadAuthorizedReport({ request, idToken, adapters }) {
   const access = authorizeReportAccess({ email, role: user?.role }, week, request);
 
   if (request.mode !== 'project') {
-    return { access, week, sections: request.sections, overviewScope: request.overviewScope || 'system' };
+    let trendWeeks = [];
+    if (request.sections.includes('weekly-trend') && typeof adapters.getTrendWeeks === 'function') {
+      const history = await adapters.getTrendWeeks(week);
+      trendWeeks = (Array.isArray(history) ? history : [])
+        .filter(item => item && typeof item === 'object')
+        .filter(item => access.role !== 'vip' || item.isReleased === true)
+        .slice(-6);
+    }
+    return {
+      access,
+      week,
+      trendWeeks,
+      sections: request.sections,
+      overviewScope: request.overviewScope || 'system'
+    };
   }
 
   const project = (week.projects || []).find(item => item?.code === request.projectCode);

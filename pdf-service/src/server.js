@@ -13,7 +13,15 @@ const handler = createReportHandler({
   adapters: {
     verifyIdToken: token => auth.verifyIdToken(token),
     getUserByEmail: async email => (await db.collection('users').doc(email).get()).data(),
-    getWeekById: async id => (await db.collection('weeks').doc(id).get()).data()
+    getWeekById: async id => (await db.collection('weeks').doc(id).get()).data(),
+    getTrendWeeks: async week => {
+      const snapshot = await db.collection('weeks')
+        .where('weekLabel', '<=', String(week.weekLabel || ''))
+        .orderBy('weekLabel', 'desc')
+        .limit(6)
+        .get();
+      return snapshot.docs.map(document => document.data()).reverse();
+    }
   },
   renderPdf: renderPdfBuffer
 });
