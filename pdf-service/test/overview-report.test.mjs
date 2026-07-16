@@ -8,47 +8,64 @@ import {
   verboseExecutiveSummaryFixture
 } from './report-fixtures.mjs';
 
-test('renders Executive Summary as a fixed two-page Decision Brief', () => {
-  const fixture = completeOverviewReportFixture();
-  fixture.sections = ['executive-summary'];
-  fixture.week.executiveSummary = compactExecutiveSummaryFixture();
-
-  const html = renderOverviewReportHtml(fixture);
-
-  assert.equal((html.match(/<section class="report-page" data-report-section="executive-summary-/g) || []).length, 2);
-  assert.match(html, /data-report-section="executive-summary-brief"/);
-  assert.match(html, /data-report-section="executive-summary-context"/);
-  assert.match(html, /Decision Brief/);
-  assert.match(html, /Project Context/);
-  assert.match(html, /Management decisions/);
-  assert.match(html, /Priority projects/);
-});
-
-test('creates formal continuation pages for six projects and four management decisions', () => {
-  const fixture = completeOverviewReportFixture();
-  fixture.sections = ['executive-summary'];
-  fixture.week.executiveSummary = verboseExecutiveSummaryFixture();
-
-  const html = renderOverviewReportHtml(fixture);
-
-  assert.equal((html.match(/<section class="report-page" data-report-section="executive-summary-/g) || []).length, 5);
-  assert.match(html, /data-report-section="executive-summary-brief-continuation"/);
-  assert.equal((html.match(/data-report-section="executive-summary-context-continuation"/g) || []).length, 2);
-  assert.equal((html.match(/class="report-page-head"/g) || []).length, 5);
-  assert.equal((html.match(/class="report-footer"/g) || []).length, 5);
-  assert.match(html, /Decision Brief[^<]*Continued/);
-  assert.match(html, /Project Context[^<]*Continued/);
-});
-
-test('puts a legacy unbulleted weekly summary into formal continuation pages', () => {
+test('emits Executive Summary as one ordered measurable flow', () => {
   const fixture = completeOverviewReportFixture();
   fixture.sections = ['executive-summary'];
   fixture.week.executiveSummary = legacyExecutiveSummaryFixture();
 
   const html = renderOverviewReportHtml(fixture);
 
-  assert.equal((html.match(/<section class="report-page" data-report-section="executive-summary-/g) || []).length, 5);
-  assert.equal((html.match(/class="report-page-head"/g) || []).length, 5);
+  assert.equal((html.match(/data-measured-flow="executive-summary"/g) || []).length, 1);
+  assert.equal((html.match(/data-pdf-flow-item(?:\s|>)/g) || []).length, 13);
+  assert.match(html, /data-flow-kind="portfolio-summary"/);
+  assert.match(html, /data-flow-kind="priority-project"/);
+  assert.match(html, /data-flow-kind="management-decision"/);
+  assert.match(html, /data-flow-kind="project-context"/);
+  const kinds = [...html.matchAll(/data-flow-kind="([^"]+)"/g)].map(match => match[1]);
+  assert.ok(kinds.indexOf('priority-project') < kinds.indexOf('management-decision'));
+  assert.ok(kinds.indexOf('management-decision') < kinds.indexOf('project-context'));
+});
+
+test('renders compact Executive Summary as one measurable source page', () => {
+  const fixture = completeOverviewReportFixture();
+  fixture.sections = ['executive-summary'];
+  fixture.week.executiveSummary = compactExecutiveSummaryFixture();
+
+  const html = renderOverviewReportHtml(fixture);
+
+  assert.equal((html.match(/<section class="report-page" data-report-section="executive-summary-/g) || []).length, 1);
+  assert.match(html, /data-report-section="executive-summary-brief"/);
+  assert.match(html, /data-page-section="executive-summary-context"/);
+  assert.match(html, /Decision Brief/);
+  assert.match(html, /Project Context/);
+  assert.match(html, /Management decisions/);
+  assert.match(html, /Priority projects/);
+});
+
+test('keeps verbose projects and management decisions in the measurable flow', () => {
+  const fixture = completeOverviewReportFixture();
+  fixture.sections = ['executive-summary'];
+  fixture.week.executiveSummary = verboseExecutiveSummaryFixture();
+
+  const html = renderOverviewReportHtml(fixture);
+
+  assert.equal((html.match(/<section class="report-page" data-report-section="executive-summary-/g) || []).length, 1);
+  assert.equal((html.match(/data-flow-kind="priority-project"/g) || []).length, 2);
+  assert.equal((html.match(/data-flow-kind="management-decision"/g) || []).length, 4);
+  assert.equal((html.match(/data-flow-kind="project-context"/g) || []).length, 6);
+  assert.equal((html.match(/class="report-page-head"/g) || []).length, 1);
+  assert.equal((html.match(/class="report-footer"/g) || []).length, 1);
+});
+
+test('puts a legacy unbulleted weekly summary into one measurable flow', () => {
+  const fixture = completeOverviewReportFixture();
+  fixture.sections = ['executive-summary'];
+  fixture.week.executiveSummary = legacyExecutiveSummaryFixture();
+
+  const html = renderOverviewReportHtml(fixture);
+
+  assert.equal((html.match(/<section class="report-page" data-report-section="executive-summary-/g) || []).length, 1);
+  assert.equal((html.match(/class="report-page-head"/g) || []).length, 1);
   assert.doesNotMatch(html, /class="empty-state"/);
 });
 
@@ -80,7 +97,7 @@ test('keeps overview signals together while giving Executive Summary dedicated p
     html.match(/data-report-section="overview-opening"[\s\S]*?<\/section>/)?.[0] || '',
     /data-section-unit="executive-summary"/
   );
-  assert.equal((html.match(/<section class="report-page" data-report-section="executive-summary-/g) || []).length, 2);
+  assert.equal((html.match(/<section class="report-page" data-report-section="executive-summary-/g) || []).length, 1);
   assert.match(html, /data-report-section="overview-management"[\s\S]*data-section-unit="attention-matrix"[\s\S]*data-section-unit="risk-actions"/);
 });
 

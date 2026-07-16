@@ -191,6 +191,10 @@ export const REPORT_CSS = `
   .report-page[data-report-section^="executive-summary-"] .report-body { padding-top:3mm; }
   .report-page[data-report-section^="executive-summary-"] .report-footer { left:10mm; right:10mm; bottom:7mm; }
   .executive-brief-copy { font-size:10.5pt; line-height:1.45; }
+  [data-pdf-flow-items] { display:grid; gap:3mm; }
+  [data-pdf-flow-item] { min-width:0; }
+  [data-pdf-flow-item] > :last-child { margin-bottom:0; }
+  [data-pdf-splittable],[data-pdf-field] { min-width:0; overflow-wrap:anywhere; word-break:break-word; }
   .executive-brief-metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:2.5mm; margin-bottom:2mm; }
   .executive-brief-metrics .metric-card { padding:2mm 3mm; }
   .executive-brief-metrics .metric-card-value { margin-top:.7mm; font-size:15pt; }

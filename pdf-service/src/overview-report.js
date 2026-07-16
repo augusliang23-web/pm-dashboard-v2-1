@@ -53,7 +53,7 @@ function renderWeeklyTrend(model) {
 
 function renderBriefField(label, value) {
   return value
-    ? `<div class="executive-brief-field"><strong>${escapeHtml(label)}</strong><p>${escapeHtml(value)}</p></div>`
+    ? `<div class="executive-brief-field" data-pdf-field><strong>${escapeHtml(label)}</strong><p>${escapeHtml(value)}</p></div>`
     : '';
 }
 
@@ -79,94 +79,58 @@ function renderAskCard(ask) {
   </article>`;
 }
 
-function renderDecisionBrief(model, brief, asks = brief.managementAsks) {
-  const projects = brief.priorityProjects.map(renderPriorityCard).join('');
-  const askCards = asks.map(renderAskCard).join('');
-  return `<section class="executive-brief-copy" data-section-unit="executive-summary">
-    ${decisionOverviewMarkup(model, brief)}
-    <div class="executive-brief-columns">
-      <section><h2 class="executive-brief-section-title">Priority projects</h2><div class="executive-priority-grid">${projects || emptyState('No project movement is available.')}</div></section>
-      <section><h2 class="executive-brief-section-title">Management decisions</h2><div class="executive-ask-grid">${askCards || emptyState('No immediate management decision is required this week.')}</div></section>
-    </div>
-  </section>`;
-}
-
-function renderProjectContext(brief) {
-  const projects = brief.projects.map(project => `<article class="executive-context-card card">
+function renderContextCard(project) {
+  return `<article class="executive-context-card card">
     <h2 class="executive-project-title">${escapeHtml(project.projectName)}</h2>
     ${renderBriefField('Movement', project.movement)}
     ${renderBriefField('Blocker', project.blocker)}
     ${renderBriefField('Next step', project.nextStep)}
-  </article>`).join('');
-  const note = brief.hasAdditionalContent
-    ? '<p class="executive-additional-note">Additional project details are available in the dashboard.</p>'
-    : '';
-  const emptyMessage = brief.fallbackText || 'No project context is available.';
-  return `<section class="executive-brief-copy"><p class="executive-context-intro">Supporting movement, blocker, and next-step detail for the current reporting period.</p><div class="executive-context-grid">${projects || emptyState(emptyMessage)}</div>${note}</section>`;
+  </article>`;
 }
 
-function contentWeight(item) {
-  return Object.values(item || {}).reduce((sum, value) => sum + String(value || '').length, 0);
+function flowItem({ kind, pageTitle, pageKicker, pageSection, body, splittable = false }) {
+  return `<div data-pdf-flow-item data-flow-kind="${escapeHtml(kind)}" data-page-title="${escapeHtml(pageTitle)}" data-page-kicker="${escapeHtml(pageKicker)}" data-page-section="${escapeHtml(pageSection)}"${splittable ? ' data-pdf-splittable' : ''}>${body}</div>`;
 }
 
-function chunkByWeight(items, { maxItems, maxWeight }) {
-  const groups = [];
-  let group = [];
-  let weight = 0;
-  items.forEach(item => {
-    const itemWeight = contentWeight(item);
-    if (group.length && (group.length >= maxItems || weight + itemWeight > maxWeight)) {
-      groups.push(group);
-      group = [];
-      weight = 0;
-    }
-    group.push(item);
-    weight += itemWeight;
-  });
-  if (group.length) groups.push(group);
-  return groups;
-}
-
-function renderDecisionContinuation(asks) {
-  return `<section class="executive-brief-copy executive-decision-continuation"><h2 class="executive-brief-section-title">Management decisions</h2><div class="executive-ask-grid">${asks.map(renderAskCard).join('')}</div></section>`;
-}
-
-function renderPriorityContinuation(projects) {
-  return `<section class="executive-brief-copy executive-decision-continuation"><h2 class="executive-brief-section-title">Priority projects</h2><div class="executive-priority-grid">${projects.map(renderPriorityCard).join('')}</div></section>`;
-}
-
-function renderExecutiveSummaryPages(model, brief) {
-  const openingAsks = brief.managementAsks.slice(0, 2);
-  const openingWeight = contentWeight({ portfolio: brief.portfolioSummary })
-    + brief.priorityProjects.reduce((sum, project) => sum + contentWeight(project), 0)
-    + openingAsks.reduce((sum, ask) => sum + contentWeight(ask), 0);
-  const combinedOpening = openingWeight <= 1500;
-  const pages = [reportPage({
-    section: 'executive-summary-brief', title: 'Decision Brief',
-    kicker: 'Executive Summary - Management-ready update', period: model.period,
-    body: combinedOpening
-      ? renderDecisionBrief(model, brief, openingAsks)
-      : `<section class="executive-brief-copy" data-section-unit="executive-summary">${decisionOverviewMarkup(model, brief)}</section>`
+function renderExecutiveSummaryFlow(model, brief) {
+  const decisionMeta = {
+    pageTitle: 'Decision Brief',
+    pageKicker: 'Executive Summary - Management-ready update',
+    pageSection: 'executive-summary-brief'
+  };
+  const contextMeta = {
+    pageTitle: 'Project Context',
+    pageKicker: 'Executive Summary - Supporting detail',
+    pageSection: 'executive-summary-context'
+  };
+  const blocks = [flowItem({
+    ...decisionMeta,
+    kind: 'portfolio-summary',
+    body: decisionOverviewMarkup(model, brief)
   })];
-  const priorityGroups = combinedOpening ? [] : chunkByWeight(brief.priorityProjects, { maxItems: 2, maxWeight: 900 });
-  priorityGroups.forEach(projects => pages.push(reportPage({
-    section: 'executive-summary-brief-continuation', title: 'Decision Brief',
-    kicker: 'Executive Summary - Management-ready update', period: model.period,
-    continuation: true, body: renderPriorityContinuation(projects)
+
+  brief.priorityProjects.forEach((project, index) => blocks.push(flowItem({
+    ...decisionMeta,
+    kind: 'priority-project',
+    splittable: true,
+    body: `${index ? '' : '<h2 class="executive-brief-section-title">Priority projects</h2>'}${renderPriorityCard(project)}`
   })));
-  const remainingAsks = combinedOpening ? brief.managementAsks.slice(2) : brief.managementAsks;
-  chunkByWeight(remainingAsks, { maxItems: 2, maxWeight: 850 }).forEach(asks => pages.push(reportPage({
-    section: 'executive-summary-brief-continuation', title: 'Decision Brief',
-    kicker: 'Executive Summary - Management-ready update', period: model.period,
-    continuation: true, body: renderDecisionContinuation(asks)
+  brief.managementAsks.forEach((ask, index) => blocks.push(flowItem({
+    ...decisionMeta,
+    kind: 'management-decision',
+    splittable: true,
+    body: `${index ? '' : '<h2 class="executive-brief-section-title">Management decisions</h2>'}${renderAskCard(ask)}`
   })));
-  const projectGroups = chunkByWeight(brief.projects, { maxItems: 2, maxWeight: 900 });
-  (projectGroups.length ? projectGroups : [[]]).forEach((projects, index) => pages.push(reportPage({
-    section: index ? 'executive-summary-context-continuation' : 'executive-summary-context',
-    title: 'Project Context', kicker: 'Executive Summary - Supporting detail', period: model.period,
-    continuation: index > 0, body: renderProjectContext({ ...brief, projects })
+
+  const contextProjects = brief.projects.length ? brief.projects : [null];
+  contextProjects.forEach((project, index) => blocks.push(flowItem({
+    ...contextMeta,
+    kind: 'project-context',
+    splittable: Boolean(project),
+    body: `${index ? '' : '<h2 class="executive-brief-section-title">Project Context</h2><p class="executive-context-intro">Supporting movement, blocker, and next-step detail for the current reporting period.</p>'}${project ? renderContextCard(project) : emptyState(brief.fallbackText || 'No project context is available.')}${brief.hasAdditionalContent && index === contextProjects.length - 1 ? '<p class="executive-additional-note">Additional project details are available in the dashboard.</p>' : ''}`
   })));
-  return pages;
+
+  return `<section class="executive-brief-copy" data-section-unit="executive-summary"><div data-pdf-flow-items>${blocks.join('')}</div></section>`;
 }
 
 function renderAttentionMatrix(model) {
@@ -268,7 +232,11 @@ export function renderOverviewReportHtml({ week, trendWeeks = [], sections, over
 
   if (selected.has('executive-summary')) {
     const brief = parseExecutiveSummaryBrief(model.executiveSummary);
-    pages.push(...renderExecutiveSummaryPages(model, brief));
+    pages.push(reportPage({
+      section: 'executive-summary-brief', title: 'Decision Brief',
+      kicker: 'Executive Summary - Management-ready update', period: model.period,
+      measuredFlow: 'executive-summary', body: renderExecutiveSummaryFlow(model, brief)
+    }));
   }
 
   const management = [];
