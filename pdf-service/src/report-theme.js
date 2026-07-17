@@ -54,6 +54,7 @@ export const REPORT_CSS = `
     text-transform:uppercase;
   }
   .report-title { margin:0; }
+  .report-page-context { margin-top:1.2mm; color:var(--muted); font-size:9pt; font-weight:700; overflow-wrap:anywhere; }
   .report-meta { color:var(--muted); font-size:8pt; white-space:nowrap; }
   .report-body { flex:1; min-height:0; padding-top:5mm; }
   .report-footer {
@@ -254,21 +255,30 @@ export const REPORT_CSS = `
   .quarter-item strong,.quarter-item small,.quarter-item span { display:block; }
   .quarter-item small { margin:1mm 0 2mm; color:var(--muted); }
   .quarter-item span { margin-top:1mm; color:var(--muted); font-size:7pt; }
-  .portfolio-project-card { display:flex; flex-direction:column; min-height:147mm; padding:5mm; border:1px solid var(--line); border-top:2.2mm solid var(--green); border-radius:4mm; background:var(--white); }
+  .project-portfolio-flow [data-pdf-flow-items] { gap:2.5mm; }
+  .portfolio-project-card { display:flex; flex-direction:column; padding:4mm; border:1px solid var(--line); border-top:2.2mm solid var(--green); border-radius:4mm; background:var(--white); }
   .portfolio-project-head { display:flex; justify-content:space-between; gap:8mm; }
   .portfolio-project-head h2 { margin-bottom:1mm; font-size:18pt; }
   .portfolio-owner { color:var(--muted); }
   .portfolio-project-status { display:flex; align-items:center; gap:4mm; }
   .portfolio-project-status > strong { font-size:24pt; }
   .portfolio-progress { margin:4mm 0; }
+  .portfolio-highlights { padding:3mm; background:var(--surface); }
+  .portfolio-highlights .report-list { margin-top:2mm; }
+  .portfolio-section-title { margin:0 0 2mm; font-size:13pt; }
+  .portfolio-risk-row { display:grid; grid-template-columns:1fr 1fr; gap:4mm; padding:3mm 4mm; border-left:1.2mm solid var(--red); }
+  .portfolio-risk-row span { color:var(--muted); font-size:7.5pt; font-weight:700; text-transform:uppercase; }
+  .portfolio-risk-row p { margin:1mm 0 0; font-size:9pt; line-height:1.35; overflow-wrap:anywhere; }
   .portfolio-signal-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:3mm; }
   .portfolio-signal-grid .risk { background:var(--red-soft); }
   .portfolio-signal-grid p { margin:2mm 0 0; line-height:1.35; }
-  .portfolio-snapshot-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:3mm; margin-top:auto; padding-top:4mm; }
+  .portfolio-snapshot-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:3mm; }
   .portfolio-snapshot-grid span,.portfolio-snapshot-grid strong,.portfolio-snapshot-grid small { display:block; }
   .portfolio-snapshot-grid span { color:var(--muted); font-size:7.5pt; text-transform:uppercase; }
   .portfolio-snapshot-grid strong { margin:2mm 0 1mm; }
   .portfolio-snapshot-grid small { color:var(--muted); }
+  .portfolio-gantt-heading { padding-top:1mm; }
+  .project-portfolio-flow .gantt-row { padding:2mm 3mm; border:1px solid var(--line); border-radius:2mm; background:var(--white); }
   .resource-analytics-layout { display:grid; grid-template-columns:.75fr 1.55fr; gap:4mm; margin-top:4mm; align-items:start; }
   .resource-level-donut { width:36mm; height:36mm; margin:3mm auto; border:9mm solid transparent; border-radius:50%; background:conic-gradient(var(--green) 0 var(--system),var(--yellow) var(--system) var(--module),var(--blue) var(--module) 100%) border-box; mask:linear-gradient(#000 0 0) padding-box exclude,linear-gradient(#000 0 0); }
   .resource-level-row { display:grid; grid-template-columns:4mm minmax(0,1fr) auto; gap:2mm; margin-top:2mm; }

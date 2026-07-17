@@ -9,6 +9,7 @@ import {
 } from './report-components.js';
 import { parseExecutiveSummaryBrief } from './executive-summary-brief.js';
 import { budgetTotals, buildOverviewReportModel } from './report-model.js';
+import { buildGanttRange, renderGanttAxis, renderGanttRow } from './project-visuals.js';
 
 function statusPresentation(status) {
   const values = {
@@ -192,6 +193,39 @@ function renderProjectPortfolioCard(project) {
   return `<article class="portfolio-project-card keep-together" data-section-unit="project-portfolio"><div class="portfolio-project-head"><div><div class="report-kicker">${escapeHtml(project.projectLevel)} · ${escapeHtml(project.code)}</div><h2>${escapeHtml(project.name)}</h2><div class="portfolio-owner">Owner: ${escapeHtml(project.owner || 'Unassigned')}</div></div><div class="portfolio-project-status">${statusBadge(tone, label)}<strong>${escapeHtml(project.progress)}%</strong></div></div><div class="portfolio-progress">${progressBar(project.progress, tone)}</div><div class="portfolio-signal-grid"><section class="card"><div class="metric-card-label">Highlight</div><p>${escapeHtml(project.highlights[0] || 'No highlight reported.')}</p></section><section class="card risk"><div class="metric-card-label">Risk / Blocker</div><p>${escapeHtml(project.risks[0] || 'No active blocker reported.')}</p></section><section class="card"><div class="metric-card-label">Next action</div><p>${escapeHtml(project.actions[0] || 'No next action reported.')}</p></section></div><div class="portfolio-snapshot-grid"><article class="card"><span>Next milestone</span><strong>${escapeHtml(milestone?.name || 'No milestone')}</strong><small>${escapeHtml(milestone?.date || 'No target date')}</small></article><article class="card"><span>Resource load</span><strong>${resource.members} people · ${resource.fte} FTE</strong><small>Current team allocation</small></article><article class="card"><span>Budget snapshot</span><strong>${escapeHtml(formatMoney(budget.actual, budget.currency))} / ${escapeHtml(formatMoney(budget.total, budget.currency))}</strong><small>${escapeHtml(budget.usedPct)}% used</small></article></div></article>`;
 }
 
+function portfolioFlowItem(project, kind, body) {
+  return `<div data-pdf-flow-item data-flow-kind="${escapeHtml(kind)}" data-page-title="Project Portfolio" data-page-kicker="Overview report · Project portfolio" data-page-section="project-portfolio" data-page-context="${escapeHtml(project.name)}">${body}</div>`;
+}
+
+function renderProjectPortfolioFlow(project) {
+  const [tone, label] = statusPresentation(project.status);
+  const resource = resourceSnapshot(project);
+  const budget = budgetTotals(project);
+  const milestone = [...project.milestones]
+    .sort((a, b) => String(a?.date || '').localeCompare(String(b?.date || '')))[0];
+  const highlights = project.highlights.length
+    ? `<ul class="report-list">${project.highlights.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`
+    : '<p>No highlight reported.</p>';
+  const blocks = [portfolioFlowItem(project, 'project-identity', `<article class="portfolio-project-card" data-section-unit="project-portfolio"><div class="portfolio-project-head"><div><div class="report-kicker">${escapeHtml(project.projectLevel)} · ${escapeHtml(project.code)}</div><h2>${escapeHtml(project.name)}</h2><div class="portfolio-owner">Owner: ${escapeHtml(project.owner || 'Unassigned')}</div></div><div class="portfolio-project-status">${statusBadge(tone, label)}<strong>${escapeHtml(project.progress)}%</strong></div></div><div class="portfolio-progress">${progressBar(project.progress, tone)}</div><section class="portfolio-highlights card"><div class="metric-card-label">Highlights</div>${highlights}</section></article>`)];
+
+  const pairs = project.riskActions.length
+    ? project.riskActions
+    : [{ risk: '', action: '', primary: true }];
+  pairs.forEach((pair, index) => blocks.push(portfolioFlowItem(project, 'project-risk-action', `${index ? '' : '<h2 class="portfolio-section-title">Risks &amp; required actions</h2>'}<article class="portfolio-risk-row card" data-pdf-split-unit><div><span>Risk / Blocker${pair.primary ? ' · Primary' : ''}</span><p>${escapeHtml(pair.risk || 'No active blocker reported.')}</p></div><div><span>Required action</span><p>${escapeHtml(pair.action || 'No required action reported.')}</p></div></article>`)));
+
+  blocks.push(portfolioFlowItem(project, 'project-snapshot', `<div class="portfolio-snapshot-grid"><article class="card"><span>Next milestone</span><strong>${escapeHtml(milestone?.name || 'No milestone')}</strong><small>${escapeHtml(milestone?.date || 'No target date')}</small></article><article class="card"><span>Resource load</span><strong>${resource.members} people · ${resource.fte} FTE</strong><small>Current team allocation</small></article><article class="card"><span>Budget snapshot</span><strong>${escapeHtml(formatMoney(budget.actual, budget.currency))} / ${escapeHtml(formatMoney(budget.total, budget.currency))}</strong><small>${escapeHtml(budget.usedPct)}% used</small></article></div>`));
+
+  if (project.workstreams.length) {
+    const range = buildGanttRange(project.workstreams);
+    blocks.push(portfolioFlowItem(project, 'project-gantt-heading', `<section class="portfolio-gantt-heading"><h2 class="portfolio-section-title">Gantt schedule</h2>${renderGanttAxis(range)}</section>`));
+    range.rows.forEach(item => {
+      blocks.push(portfolioFlowItem(project, 'project-gantt-row', renderGanttRow(item, range)));
+    });
+  }
+
+  return `<section class="project-portfolio-flow"><div data-pdf-flow-items>${blocks.join('')}</div></section>`;
+}
+
 function renderResourceAnalytics(model) {
   if (!model.projects.length) return '';
   const resource = model.resource;
@@ -281,9 +315,12 @@ export function renderOverviewReportHtml({
   }
 
   if (selected.has('project-portfolio')) {
-    model.projects.forEach((project, index) => pages.push(reportPage({
+    model.projects.forEach(project => pages.push(reportPage({
       section: 'project-portfolio', title: 'Project Portfolio', kicker: 'Overview report · Project portfolio',
-      period: model.period, continuation: index > 0, body: renderProjectPortfolioCard(project)
+      context: project.name,
+      period: model.period,
+      measuredFlow: `project-portfolio-${project.code.replace(/[^A-Za-z0-9_-]/g, '-') || 'project'}`,
+      body: renderProjectPortfolioFlow(project)
     })));
   }
 

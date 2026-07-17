@@ -38,8 +38,9 @@ export function dataTable({ headings = [], rows = [], className = '' } = {}) {
   return `<table${safeClass ? ` class="${safeClass}"` : ''}><thead><tr>${headings.map(heading => `<th>${escapeHtml(heading)}</th>`).join('')}</tr></thead><tbody>${rows.map(row => `<tr>${row.map(cell => `<td>${cell ?? ''}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
 }
 
-export function reportPage({ section = '', title = '', kicker = 'Project Dashboard', period = '', body = '', continuation = false, measuredFlow = '' } = {}) {
+export function reportPage({ section = '', title = '', context = '', kicker = 'Project Dashboard', period = '', body = '', continuation = false, measuredFlow = '' } = {}) {
   const suffix = continuation ? ' · Continued' : '';
   const flowAttribute = measuredFlow ? ` data-measured-flow="${escapeHtml(measuredFlow)}"` : '';
-  return `<section class="report-page" data-report-section="${escapeHtml(section)}"${flowAttribute}><header class="report-page-head"><div><div class="report-kicker">${escapeHtml(kicker)}</div><h1 class="report-title">${escapeHtml(title)}${suffix}</h1></div><div class="report-meta">${escapeHtml(period || 'Current reporting period')}</div></header><main class="report-body">${body}</main><footer class="report-footer"><span>LITEON Project Dashboard</span><span>${escapeHtml(period || '')}</span></footer></section>`;
+  const contextMarkup = context ? `<div class="report-page-context">${escapeHtml(context)}</div>` : '';
+  return `<section class="report-page" data-report-section="${escapeHtml(section)}"${flowAttribute}><header class="report-page-head"><div><div class="report-kicker">${escapeHtml(kicker)}</div><h1 class="report-title">${escapeHtml(title)}${suffix}</h1>${contextMarkup}</div><div class="report-meta">${escapeHtml(period || 'Current reporting period')}</div></header><main class="report-body">${body}</main><footer class="report-footer"><span>LITEON Project Dashboard</span><span>${escapeHtml(period || '')}</span></footer></section>`;
 }

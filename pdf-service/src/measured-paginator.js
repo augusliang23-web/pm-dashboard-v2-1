@@ -16,8 +16,10 @@ export function paginateMeasuredFlows({ safetyGapMm = 8, maxIterations = 1000 } 
     page.dataset.reportSection = item.dataset.pageSection || 'executive-summary';
     const kicker = page.querySelector('.report-kicker');
     const title = page.querySelector('.report-title');
+    const context = page.querySelector('.report-page-context');
     if (kicker) kicker.textContent = item.dataset.pageKicker || 'Executive Summary';
     if (title) title.textContent = `${item.dataset.pageTitle || 'Executive Summary'}${continued ? ' · Continued' : ''}`;
+    if (context) context.textContent = item.dataset.pageContext || '';
   }
 
   function fits(page) {

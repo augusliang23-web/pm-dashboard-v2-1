@@ -8,8 +8,7 @@ import {
   statusBadge
 } from './report-components.js';
 import { buildProjectReportModel } from './report-model.js';
-
-const DAY_MS = 86400000;
+import { buildGanttRange, renderGanttAxis, renderGanttRow } from './project-visuals.js';
 
 function statusPresentation(status) {
   const normalized = String(status || '').toLowerCase();
@@ -78,36 +77,10 @@ function renderMilestoneTimeline(model) {
   }).join('')}</ol>`;
 }
 
-function parseIsoDate(value) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ''))) return null;
-  const date = new Date(`${value}T00:00:00Z`);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
 function renderGantt(model) {
   if (!model.workstreams.length) return '';
-  const rows = model.workstreams.map(item => ({
-    ...item,
-    start: parseIsoDate(item.startDate),
-    end: parseIsoDate(item.endDate)
-  }));
-  const scheduled = rows.filter(item => item.start && item.end && item.start <= item.end);
-  const min = scheduled.length ? new Date(Math.min(...scheduled.map(item => item.start.getTime()))) : null;
-  const max = scheduled.length ? new Date(Math.max(...scheduled.map(item => item.end.getTime()))) : null;
-  const span = min && max ? Math.max(1, Math.round((max - min) / DAY_MS) + 1) : 1;
-  const axis = min && max
-    ? `<div class="gantt-axis"><span>${escapeHtml(min.toISOString().slice(0, 10))}</span><span>${escapeHtml(max.toISOString().slice(0, 10))}</span></div>`
-    : '';
-  const body = rows.map(item => {
-    const [tone, label] = statusPresentation(item.status);
-    if (!item.start || !item.end || item.start > item.end || !min) {
-      return `<article class="gantt-row keep-together"><div class="gantt-label"><strong>${escapeHtml(item.name)}</strong><small>Dates not scheduled</small></div><div class="gantt-track unscheduled">${statusBadge('neutral', 'Unscheduled')}</div></article>`;
-    }
-    const left = Math.max(0, ((item.start - min) / DAY_MS / span) * 100);
-    const width = Math.max(1.5, ((item.end - item.start) / DAY_MS + 1) / span * 100);
-    return `<article class="gantt-row keep-together"><div class="gantt-label"><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.startDate)} – ${escapeHtml(item.endDate)}</small></div><div class="gantt-track"><div class="gantt-bar ${tone}" style="left:${left.toFixed(2)}%;width:${Math.min(width, 100 - left).toFixed(2)}%"><span class="gantt-completed" style="width:${item.progress}%"></span><b>${escapeHtml(item.progress)}%</b></div></div><div class="gantt-state">${statusBadge(tone, label)}</div></article>`;
-  }).join('');
-  return `<section class="gantt-grid" data-section-unit="gantt">${axis}${body}</section>`;
+  const range = buildGanttRange(model.workstreams);
+  return `<section class="gantt-grid" data-section-unit="gantt">${renderGanttAxis(range)}${range.rows.map(item => renderGanttRow(item, range)).join('')}</section>`;
 }
 
 function renderTeamAllocation(model) {

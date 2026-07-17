@@ -117,13 +117,47 @@ test('keeps overview signals together while giving Executive Summary dedicated p
   assert.match(html, /data-report-section="overview-management"[\s\S]*data-section-unit="attention-matrix"[\s\S]*data-section-unit="risk-actions"/);
 });
 
-test('uses one complete project portfolio card per report page', () => {
+test('uses one measured source flow per project portfolio', () => {
   const html = renderOverviewReportHtml(completeOverviewReportFixture());
   const pageCount = (html.match(/data-report-section="project-portfolio"/g) || []).length;
 
   assert.equal(pageCount, 2);
-  assert.match(html, /Project Portfolio · Continued/);
-  assert.match(html, /portfolio-project-card keep-together/);
+  assert.equal((html.match(/data-measured-flow="project-portfolio-/g) || []).length, 2);
+  assert.match(html, /class="report-page-context"[^>]*>Platform Modernization<\/div>/);
+  assert.match(html, /class="report-page-context"[^>]*>Module Refresh<\/div>/);
+  assert.doesNotMatch(html, /Project Portfolio · Continued/);
+});
+
+test('renders complete project highlights, risk actions, and Gantt workstreams', () => {
+  const fixture = completeOverviewReportFixture();
+  const project = fixture.week.projects[0];
+  fixture.week.projects = [project];
+  fixture.sections = ['project-portfolio'];
+  project.highlight = ['HIGHLIGHT-ONE', 'HIGHLIGHT-TWO', 'HIGHLIGHT-THREE'].join('\n');
+  project.riskActions = Array.from({ length: 3 }, (_, index) => ({
+    risk: `RISK-${index + 1}`,
+    action: `ACTION-${index + 1}`,
+    primary: index === 0
+  }));
+  project.ganttWorkstreams = Array.from({ length: 12 }, (_, index) => ({
+    name: `WORKSTREAM-${index + 1}`,
+    startDate: `2026-07-${String(index + 1).padStart(2, '0')}`,
+    endDate: `2026-07-${String(index + 2).padStart(2, '0')}`,
+    status: 'in-progress',
+    progress: index * 5
+  }));
+
+  const html = renderOverviewReportHtml(fixture);
+
+  for (const marker of [
+    'HIGHLIGHT-ONE', 'HIGHLIGHT-TWO', 'HIGHLIGHT-THREE',
+    'RISK-1', 'RISK-2', 'RISK-3', 'ACTION-1', 'ACTION-2', 'ACTION-3',
+    ...Array.from({ length: 12 }, (_, index) => `WORKSTREAM-${index + 1}`)
+  ]) {
+    assert.equal((html.match(new RegExp(`${marker}(?!\\d)`, 'g')) || []).length, 1, `${marker} must appear once`);
+  }
+  assert.equal((html.match(/data-measured-flow="project-portfolio-PMS-001"/g) || []).length, 1);
+  assert.doesNotMatch(html, /Primary risk and action pair/);
 });
 
 test('omits Overview sections with no reportable data', () => {

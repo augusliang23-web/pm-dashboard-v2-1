@@ -41,3 +41,15 @@ test('shared components escape labels and clamp visual percentages', () => {
     /&lt;PMS&gt;/
   );
 });
+
+test('report pages render an escaped optional context beneath the title', () => {
+  const html = reportPage({
+    section: 'project-portfolio',
+    title: 'Project Portfolio',
+    context: '<Dense Project>',
+    period: 'W28',
+    body: '<p>Body</p>'
+  });
+
+  assert.match(html, /class="report-page-context"[^>]*>&lt;Dense Project&gt;<\/div>/);
+});

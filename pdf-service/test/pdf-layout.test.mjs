@@ -126,6 +126,52 @@ test('splits high-text Executive Summary cards before any wrapper exceeds A4 hei
   }
 });
 
+test('dense project portfolio keeps project context and footer clearance on continuations', { timeout: 60000 }, async () => {
+  const fixture = completeOverviewReportFixture();
+  const project = fixture.week.projects[0];
+  project.name = 'Dense Project';
+  project.code = 'DENSE-1';
+  project.highlight = Array.from({ length: 6 }, (_, index) => `Dense highlight ${index + 1}`).join('\n');
+  project.riskActions = Array.from({ length: 6 }, (_, index) => ({
+    risk: `Dense risk ${index + 1} ${'risk detail '.repeat(8)}`,
+    action: `Dense action ${index + 1} ${'action detail '.repeat(8)}`,
+    primary: index === 0
+  }));
+  project.ganttWorkstreams = Array.from({ length: 12 }, (_, index) => ({
+    name: `Dense workstream ${index + 1}`,
+    startDate: `2026-07-${String(index + 1).padStart(2, '0')}`,
+    endDate: `2026-07-${String(index + 3).padStart(2, '0')}`,
+    status: 'in-progress',
+    progress: index * 5
+  }));
+  fixture.week.projects = [project];
+  fixture.sections = ['project-portfolio'];
+  const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+  const page = await browser.newPage();
+
+  try {
+    await page.setContent(renderOverviewReportHtml(fixture), { waitUntil: 'networkidle0' });
+    await page.evaluate(paginateMeasuredFlows);
+    const pages = await page.evaluate(() => [...document.querySelectorAll('[data-measured-page="project-portfolio-DENSE-1"]')].map(node => {
+      const body = node.querySelector('[data-pdf-flow-items]').getBoundingClientRect();
+      const footer = node.querySelector('.report-footer').getBoundingClientRect();
+      return {
+        context: node.querySelector('.report-page-context')?.textContent.trim(),
+        title: node.querySelector('.report-title')?.textContent.trim(),
+        footerGap: footer.top - body.bottom
+      };
+    }));
+
+    assert.ok(pages.length > 1);
+    assert.ok(pages.every(item => item.context === 'Dense Project'));
+    assert.ok(pages.slice(1).every(item => /Continued$/.test(item.title)));
+    assert.ok(pages.every(item => item.footerGap >= 8 * 96 / 25.4 - 1));
+  } finally {
+    await page.close();
+    await browser.close();
+  }
+});
+
 test('full Overview and Project PDFs preserve explicit page parity and period metadata', { timeout: 60000 }, async () => {
   const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
   const cases = [
