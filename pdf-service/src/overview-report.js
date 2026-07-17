@@ -171,6 +171,13 @@ function renderQuarterlyRoadmap(model) {
   }).join('')}</div></section>`;
 }
 
+function renderExecutiveMilestones(model) {
+  const timeline = model.executiveMilestones;
+  if (!timeline.rows.length) return '';
+  const items = timeline.rows.map((row, rowIndex) => `<div data-pdf-flow-item data-pdf-splittable data-flow-kind="executive-milestone-category" data-page-title="Executive Milestones" data-page-kicker="Overview report Â· Leadership roadmap" data-page-section="executive-milestones">${rowIndex === 0 ? `<div class="executive-milestone-head"><div class="report-kicker">Executive milestone timeline</div><h2>${escapeHtml(timeline.title)}</h2></div>` : ''}<article class="executive-milestone-category card"><h3>${escapeHtml(row.label)}</h3><div class="executive-milestone-quarter-grid">${timeline.quarters.map((quarter, quarterIndex) => `<section class="executive-milestone-quarter"><header><strong>${escapeHtml(quarter)}</strong><span>${escapeHtml(timeline.phases[quarterIndex])}</span></header><ul>${row.cells[quarterIndex].length ? row.cells[quarterIndex].map(outcome => `<li data-pdf-split-unit>${escapeHtml(outcome)}</li>`).join('') : '<li class="executive-milestone-empty">No milestone</li>'}</ul></section>`).join('')}</div></article></div>`).join('');
+  return `<section class="overview-unit executive-milestones" data-section-unit="executive-milestones"><div data-pdf-flow-items>${items}</div></section>`;
+}
+
 function resourceSnapshot(project) {
   const members = project.teamMembers.filter(member => String(member?.name || '').trim());
   const effort = members.reduce((sum, member) => sum + (Number(member.effortPct ?? member.effort) || 0), 0);
@@ -214,8 +221,14 @@ function renderBudgetOverview(model) {
   }).join('') : emptyState('No actual spend categories are available.')}</article></div></section>`;
 }
 
-export function renderOverviewReportHtml({ week, trendWeeks = [], sections, overviewScope = 'system' }) {
-  const model = buildOverviewReportModel({ week, trendWeeks, sections, overviewScope });
+export function renderOverviewReportHtml({
+  week,
+  trendWeeks = [],
+  sections,
+  overviewScope = 'system',
+  executiveAudienceView = 'leadership'
+}) {
+  const model = buildOverviewReportModel({ week, trendWeeks, sections, overviewScope, executiveAudienceView });
   const selected = new Set(model.sections);
   const pages = [];
 
@@ -249,6 +262,15 @@ export function renderOverviewReportHtml({ week, trendWeeks = [], sections, over
     section: 'overview-management', title: 'Management Attention', kicker: 'Overview report · Decision view',
     period: model.period, body: management.join('')
   }));
+
+  if (selected.has('executive-milestones')) {
+    const milestones = renderExecutiveMilestones(model);
+    if (milestones) pages.push(reportPage({
+      section: 'executive-milestones', title: 'Executive Milestones',
+      kicker: 'Overview report Â· Leadership roadmap', period: model.period,
+      measuredFlow: 'executive-milestones', body: milestones
+    }));
+  }
 
   if (selected.has('quarterly-roadmap')) {
     const roadmap = renderQuarterlyRoadmap(model);

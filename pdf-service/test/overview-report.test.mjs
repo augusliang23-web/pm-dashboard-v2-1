@@ -69,11 +69,11 @@ test('puts a legacy unbulleted weekly summary into one measurable flow', () => {
   assert.doesNotMatch(html, /class="empty-state"/);
 });
 
-test('renders all nine selected Overview sections in dashboard reading order', () => {
+test('renders all ten selected Overview sections in dashboard reading order', () => {
   const html = renderOverviewReportHtml(completeOverviewReportFixture());
   const ids = [
     'health-focus', 'weekly-trend', 'executive-summary', 'attention-matrix',
-    'risk-actions', 'quarterly-roadmap', 'project-portfolio',
+    'risk-actions', 'executive-milestones', 'quarterly-roadmap', 'project-portfolio',
     'resource-analytics', 'budget-overview'
   ];
 
@@ -85,6 +85,22 @@ test('renders all nine selected Overview sections in dashboard reading order', (
   assert.match(html, /quarter-grid/);
   assert.match(html, /resource-function-bar/);
   assert.match(html, /budget-variance/);
+});
+
+test('renders permitted Executive milestones as a measured flow before Quarterly Roadmap', () => {
+  const fixture = completeOverviewReportFixture();
+  fixture.executiveAudienceView = 'pm-engineering';
+  fixture.sections = ['executive-milestones', 'quarterly-roadmap'];
+
+  const html = renderOverviewReportHtml(fixture);
+
+  assert.match(html, /data-measured-flow="executive-milestones"/);
+  assert.match(html, /2026 Executive Timeline/);
+  assert.match(html, /Shared delivery/);
+  assert.match(html, /Engineering/);
+  assert.match(html, /Public/);
+  assert.doesNotMatch(html, /Commercial Q3|Leadership Q4/);
+  assert.ok(html.indexOf('data-section-unit="executive-milestones"') < html.indexOf('data-section-unit="quarterly-roadmap"'));
 });
 
 test('keeps overview signals together while giving Executive Summary dedicated pages', () => {

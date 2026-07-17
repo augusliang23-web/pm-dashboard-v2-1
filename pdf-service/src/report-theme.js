@@ -231,6 +231,20 @@ export const REPORT_CSS = `
   .attention-empty { padding:3mm; color:var(--muted); font-size:8pt; text-align:center; }
   .risk-action-table { font-size:8pt; }
   .risk-action-table th,.risk-action-table td { padding:1.8mm; }
+  .executive-milestone-head { margin-bottom:3mm; }
+  .executive-milestone-head h2 { margin:0; font-size:16pt; }
+  .executive-milestone-category { padding:3.5mm; border-top:1.4mm solid var(--green); }
+  .executive-milestone-category h3 { margin-bottom:2.5mm; font-size:12pt; }
+  .executive-milestone-quarter-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:2.5mm; align-items:stretch; }
+  .executive-milestone-quarter { min-width:0; border:1px solid var(--line); border-radius:2.5mm; background:var(--surface); overflow:hidden; }
+  .executive-milestone-quarter header { min-height:13mm; padding:2.2mm 2.5mm; border-bottom:1px solid var(--line); background:var(--white); }
+  .executive-milestone-quarter header strong,.executive-milestone-quarter header span { display:block; }
+  .executive-milestone-quarter header strong { font-size:10pt; }
+  .executive-milestone-quarter header span { margin-top:.8mm; color:var(--muted); font-size:7.5pt; overflow-wrap:anywhere; }
+  .executive-milestone-quarter ul { margin:0; padding:2.5mm 2.5mm 2.5mm 7mm; }
+  .executive-milestone-quarter li { margin-bottom:1.8mm; font-size:9.5pt; line-height:1.35; overflow-wrap:anywhere; }
+  .executive-milestone-quarter li:last-child { margin-bottom:0; }
+  .executive-milestone-quarter .executive-milestone-empty { color:var(--muted); list-style:none; margin-left:-4mm; font-size:8.5pt; }
   .quarter-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:3mm; align-items:start; }
   .quarter-column { min-height:116mm; border:1px solid var(--line); border-radius:3mm; background:var(--surface); }
   .quarter-column > header { display:flex; justify-content:space-between; padding:3mm; border-bottom:1px solid var(--line); }

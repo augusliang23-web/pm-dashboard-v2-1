@@ -8,6 +8,7 @@ import {
   formatReportingPeriod,
   normalizeProjectForReport
 } from '../src/report-model.js';
+import { completeOverviewReportFixture } from './report-fixtures.mjs';
 
 test('formats a reporting week and date range together', () => {
   assert.equal(
@@ -86,4 +87,29 @@ test('builds scoped Overview metrics, risk rows, resources, budget and trend poi
   assert.equal(model.budget.actual, 700);
   assert.equal(model.quarterlyItems[0].quarter, 'Q3');
   assert.deepEqual(model.trend.map(point => point.label), ['W27', 'W28']);
+});
+
+test('filters Executive milestones for each authorized audience view', () => {
+  const fixture = completeOverviewReportFixture();
+  const labelsFor = executiveAudienceView => buildOverviewReportModel({
+    ...fixture,
+    executiveAudienceView
+  }).executiveMilestones.rows.map(row => row.label);
+
+  assert.deepEqual(labelsFor('leadership'), [
+    'Shared delivery', 'Engineering', 'Commercial', 'Leadership', 'Public'
+  ]);
+  assert.deepEqual(labelsFor('pm-engineering'), ['Shared delivery', 'Engineering', 'Public']);
+  assert.deepEqual(labelsFor('business-product'), ['Shared delivery', 'Commercial', 'Public']);
+  assert.deepEqual(labelsFor('all-working-team'), ['Shared delivery', 'Public']);
+  assert.deepEqual(labelsFor('everyone'), ['Public']);
+});
+
+test('normalizes Executive milestone outcomes to display text only', () => {
+  const fixture = completeOverviewReportFixture();
+  const model = buildOverviewReportModel({ ...fixture, executiveAudienceView: 'leadership' });
+  const engineering = model.executiveMilestones.rows.find(row => row.label === 'Engineering');
+
+  assert.deepEqual(engineering.cells, [[], ['Engineering Q2'], [], []]);
+  assert.equal(JSON.stringify(model.executiveMilestones).includes('Hidden evidence'), false);
 });

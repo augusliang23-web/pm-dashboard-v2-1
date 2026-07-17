@@ -302,7 +302,54 @@ function buildTrend(trendWeeks, scope) {
   });
 }
 
-export function buildOverviewReportModel({ week = {}, trendWeeks = [], sections = [], overviewScope = 'system' } = {}) {
+const EXECUTIVE_AUDIENCES_BY_VIEW = {
+  leadership: new Set(['all-working-team', 'pm-engineering', 'business-product', 'leadership-only', 'everyone']),
+  'all-working-team': new Set(['all-working-team', 'everyone']),
+  'pm-engineering': new Set(['all-working-team', 'pm-engineering', 'everyone']),
+  'business-product': new Set(['all-working-team', 'business-product', 'everyone']),
+  everyone: new Set(['everyone'])
+};
+
+function executiveTimelineCell(cells, index) {
+  if (Array.isArray(cells)) return cells[index];
+  return cells && typeof cells === 'object' ? cells[`q${index + 1}`] : undefined;
+}
+
+function executiveOutcomeText(value) {
+  if (value && typeof value === 'object') return String(value.text || value.label || '').trim();
+  return String(value || '').trim();
+}
+
+function normalizeExecutiveMilestones(week, executiveAudienceView) {
+  const source = week?.strategyLayer?.executiveMilestoneTimeline || week?.executiveMilestoneTimeline;
+  const allowedAudiences = EXECUTIVE_AUDIENCES_BY_VIEW[executiveAudienceView] || new Set();
+  const quarters = Array.from({ length: 4 }, (_, index) => String(source?.quarters?.[index] || `Q${index + 1}`));
+  const phases = Array.from({ length: 4 }, (_, index) => String(source?.phases?.[index] || ''));
+  const rows = (Array.isArray(source?.rows) ? source.rows : []).map(row => ({
+    label: String(row?.label || '').trim(),
+    audience: String(row?.audience || 'leadership-only').trim(),
+    cells: Array.from({ length: 4 }, (_, index) => {
+      const cell = executiveTimelineCell(row?.cells, index);
+      const values = Array.isArray(cell) ? cell : cell === undefined || cell === null ? [] : [cell];
+      return values.map(executiveOutcomeText).filter(Boolean);
+    })
+  })).filter(row => allowedAudiences.has(row.audience))
+    .filter(row => row.label || row.cells.some(cell => cell.length));
+  return {
+    title: String(source?.title || 'Executive Milestones').trim(),
+    quarters,
+    phases,
+    rows
+  };
+}
+
+export function buildOverviewReportModel({
+  week = {},
+  trendWeeks = [],
+  sections = [],
+  overviewScope = 'system',
+  executiveAudienceView = 'leadership'
+} = {}) {
   const projects = scopedProjects(week.projects, overviewScope);
   const attention = { action: [], monitor: [], strategy: [], watch: [] };
   projects.forEach(project => attention[project.attention].push(project));
@@ -321,6 +368,7 @@ export function buildOverviewReportModel({ week = {}, trendWeeks = [], sections 
     health: healthSummary(projects),
     attention,
     riskRows: buildRiskRows(projects),
+    executiveMilestones: normalizeExecutiveMilestones(week, executiveAudienceView),
     quarterlyItems,
     resource: buildResourceSummary(projects),
     budget: buildBudgetSummary(projects),

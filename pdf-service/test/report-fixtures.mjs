@@ -54,6 +54,20 @@ export function completeOverviewReportFixture() {
       weekLabel: 'W28 2026',
       weekDate: 'Jul 6 - Jul 12',
       executiveSummary: 'Pilot work is progressing with one supplier escalation.',
+      strategyLayer: {
+        executiveMilestoneTimeline: {
+          title: '2026 Executive Timeline',
+          quarters: ['Q1', 'Q2', 'Q3', 'Q4'],
+          phases: ['Foundation', 'Validation', 'Scale', 'Commercialization'],
+          rows: [
+            { label: 'Shared delivery', audience: 'all-working-team', cells: [[{ text: 'Shared Q1' }], [], [], []] },
+            { label: 'Engineering', audience: 'pm-engineering', cells: { q1: [], q2: [{ text: 'Engineering Q2', sources: [{ title: 'Hidden evidence' }] }], q3: [], q4: [] } },
+            { label: 'Commercial', audience: 'business-product', cells: [[], [], [{ text: 'Commercial Q3' }], []] },
+            { label: 'Leadership', audience: 'leadership-only', cells: [[], [], [], [{ text: 'Leadership Q4' }]] },
+            { label: 'Public', audience: 'everyone', cells: [[{ text: 'Everyone Q1' }], [], [], []] }
+          ]
+        }
+      },
       projects: [project, secondProject]
     },
     trendWeeks: [
@@ -62,10 +76,11 @@ export function completeOverviewReportFixture() {
     ],
     sections: [
       'health-focus', 'weekly-trend', 'executive-summary', 'attention-matrix',
-      'risk-actions', 'quarterly-roadmap', 'project-portfolio',
+      'risk-actions', 'executive-milestones', 'quarterly-roadmap', 'project-portfolio',
       'resource-analytics', 'budget-overview'
     ],
-    overviewScope: 'all'
+    overviewScope: 'all',
+    executiveAudienceView: 'leadership'
   };
 }
 
