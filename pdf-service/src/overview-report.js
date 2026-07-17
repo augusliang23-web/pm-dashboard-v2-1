@@ -141,10 +141,26 @@ function renderAttentionMatrix(model) {
     ['watch', 'Keep Watching', 'Lower urgency / lower impact'],
     ['strategy', 'Strategic Watch', 'Lower urgency / higher impact']
   ];
-  return `<section class="overview-unit" data-section-unit="attention-matrix"><div class="overview-unit-head"><div><div class="report-kicker">Management attention map</div><h2>Attention Matrix</h2></div><span class="overview-note">Static executive view</span></div><div class="attention-matrix">${quadrants.map(([key, title, detail]) => `<article class="attention-quadrant ${key}"><div class="attention-quadrant-head"><div><h3>${escapeHtml(title)}</h3><span>${escapeHtml(detail)}</span></div><b>${model.attention[key].length}</b></div>${model.attention[key].length ? model.attention[key].map(project => {
+  const meta = {
+    pageTitle: 'Management Attention',
+    pageKicker: 'Overview report · Decision view',
+    pageSection: 'overview-management'
+  };
+  const heading = flowItem({
+    ...meta,
+    kind: 'attention-heading',
+    body: '<div class="overview-unit-head" data-section-unit="attention-matrix"><div><div class="report-kicker">Management attention map</div><h2>Attention Matrix</h2></div><span class="overview-note">Static executive view</span></div>'
+  });
+  const items = quadrants.map(([key, title, detail]) => flowItem({
+    ...meta,
+    kind: `attention-quadrant-${key}`,
+    splittable: model.attention[key].length > 0,
+    body: `<article class="attention-quadrant ${key}"><div class="attention-quadrant-head"><div><h3 class="pdf-continuation-label">${escapeHtml(title)}</h3><span>${escapeHtml(detail)}</span></div><b>${model.attention[key].length}</b></div>${model.attention[key].length ? model.attention[key].map(project => {
     const [tone, label] = statusPresentation(project.status);
-    return `<div class="attention-project keep-together"><div><strong>${escapeHtml(project.name)}</strong><small>${escapeHtml(project.code)} · ${escapeHtml(project.owner || 'Unassigned')}</small></div>${statusBadge(tone, label)}<p>${escapeHtml(project.risks[0] || 'No active risk recorded.')}</p></div>`;
-  }).join('') : '<div class="attention-empty">No projects</div>'}</article>`).join('')}</div></section>`;
+    return `<div class="attention-project keep-together" data-pdf-split-unit><div><strong>${escapeHtml(project.name)}</strong><small>${escapeHtml(project.code)} · ${escapeHtml(project.owner || 'Unassigned')}</small></div>${statusBadge(tone, label)}<p>${escapeHtml(project.risks[0] || 'No active risk recorded.')}</p></div>`;
+  }).join('') : '<div class="attention-empty">No projects</div>'}</article>`
+  }));
+  return `${heading}${items.join('')}`;
 }
 
 function renderRiskActions(model) {
@@ -157,7 +173,17 @@ function renderRiskActions(model) {
     escapeHtml(row.action || '-'),
     escapeHtml(row.checkpoint || '-')
   ]);
-  return `<section class="overview-unit risk-actions" data-section-unit="risk-actions"><div class="overview-unit-head"><div><div class="report-kicker">Risk action table</div><h2>Risk Actions</h2></div><span class="overview-note">Primary risk and action pair</span></div>${dataTable({ headings: ['Project', 'Risk / Blocker', 'Escalation', 'Owner', 'Required action', 'Checkpoint'], rows, className: 'risk-action-table' })}</section>`;
+  const table = dataTable({ headings: ['Project', 'Risk / Blocker', 'Escalation', 'Owner', 'Required action', 'Checkpoint'], rows, className: 'risk-action-table' })
+    .replace('<tbody><tr>', '<tbody><tr data-pdf-split-unit>')
+    .replaceAll('</tr><tr>', '</tr><tr data-pdf-split-unit>');
+  return flowItem({
+    kind: 'risk-actions',
+    pageTitle: 'Management Attention',
+    pageKicker: 'Overview report · Decision view',
+    pageSection: 'overview-management',
+    splittable: true,
+    body: `<section class="overview-unit risk-actions" data-section-unit="risk-actions"><div class="overview-unit-head"><div><div class="report-kicker">Risk action table</div><h2 class="pdf-continuation-label">Risk Actions</h2></div><span class="overview-note">Primary risk and action pair</span></div>${table}</section>`
+  });
 }
 
 function renderQuarterlyRoadmap(model) {
@@ -294,7 +320,8 @@ export function renderOverviewReportHtml({
   }
   if (management.length) pages.push(reportPage({
     section: 'overview-management', title: 'Management Attention', kicker: 'Overview report · Decision view',
-    period: model.period, body: management.join('')
+    period: model.period, measuredFlow: 'management-attention',
+    body: `<section class="management-flow"><div data-pdf-flow-items>${management.join('')}</div></section>`
   }));
 
   if (selected.has('executive-milestones')) {

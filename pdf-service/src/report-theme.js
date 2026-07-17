@@ -227,6 +227,8 @@ export const REPORT_CSS = `
   .executive-context-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:3mm; }
   .executive-context-card { min-height:39mm; padding:3mm 4mm; border-top:1.2mm solid var(--green); }
   .executive-additional-note { margin:3mm 0 0; padding:2mm 3mm; border-radius:2mm; color:var(--muted); background:var(--surface); }
+  .management-flow [data-pdf-flow-items] { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:3mm; align-items:start; }
+  .management-flow [data-flow-kind="attention-heading"],.management-flow [data-flow-kind="risk-actions"],.management-flow [data-pdf-fragment] { grid-column:1 / -1; }
   .attention-matrix { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:3mm; }
   .attention-quadrant { border:1px solid var(--line); border-radius:3mm; background:var(--surface); padding:3mm; }
   .attention-quadrant.action { border-color:#e5b5b5; background:var(--red-soft); }

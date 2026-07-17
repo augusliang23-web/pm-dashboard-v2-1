@@ -174,6 +174,55 @@ test('dense project portfolio keeps project context and footer clearance on cont
   }
 });
 
+test('dense management attention and risk actions use titled measured pages', { timeout: 60000 }, async () => {
+  const fixture = completeOverviewReportFixture();
+  const baseProject = fixture.week.projects[0];
+  fixture.week.projects = Array.from({ length: 14 }, (_, index) => ({
+    ...baseProject,
+    name: `MANAGEMENT-PROJECT-${index + 1}`,
+    code: `MGT-${index + 1}`,
+    attention: index < 2 ? 'monitor' : 'watch',
+    risk: `MANAGEMENT-RISK-${index + 1} ${'risk detail '.repeat(5)}`,
+    weeklyActions: `MANAGEMENT-ACTION-${index + 1} ${'action detail '.repeat(5)}`,
+    riskActions: [{
+      risk: `MANAGEMENT-RISK-${index + 1} ${'risk detail '.repeat(5)}`,
+      action: `MANAGEMENT-ACTION-${index + 1} ${'action detail '.repeat(5)}`,
+      primary: true
+    }]
+  }));
+  fixture.sections = ['attention-matrix', 'risk-actions'];
+  const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+  const page = await browser.newPage();
+
+  try {
+    await page.setContent(renderOverviewReportHtml(fixture), { waitUntil: 'networkidle0' });
+    await page.evaluate(paginateMeasuredFlows);
+    const pages = await page.evaluate(() => [...document.querySelectorAll('[data-measured-page="management-attention"]')].map(node => {
+      const body = node.querySelector('[data-pdf-flow-items]').getBoundingClientRect();
+      const footer = node.querySelector('.report-footer').getBoundingClientRect();
+      return {
+        title: node.querySelector('.report-title').textContent.trim(),
+        blocks: node.querySelectorAll('[data-pdf-flow-item]').length,
+        riskRows: node.querySelectorAll('.risk-action-table tbody tr').length,
+        riskHeaders: node.querySelectorAll('.risk-action-table thead').length,
+        footerGap: footer.top - body.bottom
+      };
+    }));
+    const riskRows = await page.$$eval('.risk-action-table tbody tr', rows => rows.map(row => row.cells[0].textContent.trim()));
+
+    assert.ok(pages.length > 1);
+    assert.ok(pages.every(item => item.blocks > 0));
+    assert.ok(pages.every(item => item.title.startsWith('Management Attention')));
+    assert.ok(pages.slice(1).every(item => /Continued$/.test(item.title)));
+    assert.ok(pages.every(item => item.footerGap >= 8 * 96 / 25.4 - 1));
+    assert.ok(pages.filter(item => item.riskRows > 0).every(item => item.riskHeaders === 1));
+    assert.equal(riskRows.length, 14);
+  } finally {
+    await page.close();
+    await browser.close();
+  }
+});
+
 test('Project Update continuations preserve every list item and safe page spacing', { timeout: 60000 }, async () => {
   const fixture = completeProjectReportFixture();
   fixture.sections = ['project-brief', 'project-update'];
