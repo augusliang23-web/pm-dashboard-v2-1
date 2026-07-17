@@ -175,7 +175,7 @@ function renderQuarterlyRoadmap(model) {
 function renderExecutiveMilestones(model) {
   const timeline = model.executiveMilestones;
   if (!timeline.rows.length) return '';
-  const items = timeline.rows.map((row, rowIndex) => `<div data-pdf-flow-item data-pdf-splittable data-flow-kind="executive-milestone-category" data-page-title="Executive Milestones" data-page-kicker="Overview report Â· Leadership roadmap" data-page-section="executive-milestones">${rowIndex === 0 ? `<div class="executive-milestone-head"><div class="report-kicker">Executive milestone timeline</div><h2>${escapeHtml(timeline.title)}</h2></div>` : ''}<article class="executive-milestone-category card"><h3>${escapeHtml(row.label)}</h3><div class="executive-milestone-quarter-grid">${timeline.quarters.map((quarter, quarterIndex) => `<section class="executive-milestone-quarter"><header><strong>${escapeHtml(quarter)}</strong><span>${escapeHtml(timeline.phases[quarterIndex])}</span></header><ul>${row.cells[quarterIndex].length ? row.cells[quarterIndex].map(outcome => `<li data-pdf-split-unit>${escapeHtml(outcome)}</li>`).join('') : '<li class="executive-milestone-empty">No milestone</li>'}</ul></section>`).join('')}</div></article></div>`).join('');
+  const items = timeline.rows.map((row, rowIndex) => `<div data-pdf-flow-item data-pdf-splittable data-flow-kind="executive-milestone-category" data-page-title="Executive Milestones" data-page-kicker="Overview report · Leadership roadmap" data-page-section="executive-milestones">${rowIndex === 0 ? `<div class="executive-milestone-head"><div class="report-kicker">Executive milestone timeline</div><h2>${escapeHtml(timeline.title)}</h2></div>` : ''}<article class="executive-milestone-category card"><h3>${escapeHtml(row.label)}</h3><div class="executive-milestone-quarter-grid">${timeline.quarters.map((quarter, quarterIndex) => `<section class="executive-milestone-quarter"><header><strong>${escapeHtml(quarter)}</strong><span>${escapeHtml(timeline.phases[quarterIndex])}</span></header><ul>${row.cells[quarterIndex].length ? row.cells[quarterIndex].map(outcome => `<li data-pdf-split-unit>${escapeHtml(outcome)}</li>`).join('') : '<li class="executive-milestone-empty">No milestone</li>'}</ul></section>`).join('')}</div></article></div>`).join('');
   return `<section class="overview-unit executive-milestones" data-section-unit="executive-milestones"><div data-pdf-flow-items>${items}</div></section>`;
 }
 
@@ -301,7 +301,7 @@ export function renderOverviewReportHtml({
     const milestones = renderExecutiveMilestones(model);
     if (milestones) pages.push(reportPage({
       section: 'executive-milestones', title: 'Executive Milestones',
-      kicker: 'Overview report Â· Leadership roadmap', period: model.period,
+      kicker: 'Overview report · Leadership roadmap', period: model.period,
       measuredFlow: 'executive-milestones', body: milestones
     }));
   }

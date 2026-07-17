@@ -298,6 +298,13 @@ export function paginateMeasuredFlows({ safetyGapMm = 8, maxIterations = 1000 } 
 
       item.remove();
       if (flowItemCount(target)) {
+        if (item.hasAttribute('data-pdf-splittable')) {
+          const fragments = splitOversizedItem(item, current);
+          if (fragments.length) {
+            queue.unshift(...fragments);
+            continue;
+          }
+        }
         const next = cleanShell.cloneNode(true);
         preparePage(next, flowName);
         current.after(next);

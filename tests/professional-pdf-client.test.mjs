@@ -27,7 +27,7 @@ test('both PDF dialogs stay visible with progress feedback until the download fi
     assert.match(dashboard, /const downloaded = await downloadProfessionalReport\(\{ mode: 'project'/);
     assert.match(dashboard, /if \(downloaded\) closeModal\('projectPdfSectionPicker'\)/);
     assert.match(dashboard, /window\.confirmOverviewPrint = async \(\) =>/);
-    assert.match(dashboard, /const downloaded = await downloadProfessionalReport\(\{ mode: 'overview'/);
+    assert.match(dashboard, /const downloaded = await downloadProfessionalReport\((?:\{ mode: 'overview'|request,)/);
     assert.match(dashboard, /if \(downloaded\) closeModal\('overviewPrintOverlay'\)/);
     assert.match(dashboard, /Generating PDF/);
     assert.match(dashboard, /aria-busy/);

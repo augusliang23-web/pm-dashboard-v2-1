@@ -158,6 +158,7 @@ test('dense project portfolio keeps project context and footer clearance on cont
       return {
         context: node.querySelector('.report-page-context')?.textContent.trim(),
         title: node.querySelector('.report-title')?.textContent.trim(),
+        background: getComputedStyle(node).backgroundColor,
         footerGap: footer.top - body.bottom
       };
     }));
@@ -165,6 +166,7 @@ test('dense project portfolio keeps project context and footer clearance on cont
     assert.ok(pages.length > 1);
     assert.ok(pages.every(item => item.context === 'Dense Project'));
     assert.ok(pages.slice(1).every(item => /Continued$/.test(item.title)));
+    assert.ok(pages.every(item => item.background === 'rgb(255, 255, 255)'));
     assert.ok(pages.every(item => item.footerGap >= 8 * 96 / 25.4 - 1));
   } finally {
     await page.close();
@@ -198,12 +200,14 @@ test('Project Update continuations preserve every list item and safe page spacin
       return {
         title: node.querySelector('.report-title')?.textContent.trim(),
         headerGap: firstContent ? firstContent.top - headerRect.bottom : 0,
+        updateUnits: node.querySelectorAll('.project-update-card [data-pdf-split-unit]').length,
         cardsInside: cards.every(card => card.top >= pageRect.top && card.bottom <= footerRect.top - 8 * 96 / 25.4 + 1)
       };
     }));
     const text = await page.$$eval('[data-pdf-split-unit]', nodes => nodes.map(node => node.textContent.trim()));
 
     assert.ok(layout.length > 1);
+    assert.ok(layout[0].updateUnits > 0, 'Project Update should use the remaining space after Project brief');
     assert.ok(layout.every(item => item.title.startsWith('Long Project Update')));
     assert.ok(layout.slice(1).every(item => /Continued$/.test(item.title)));
     assert.ok(layout.every(item => item.headerGap >= 3 * 96 / 25.4 - 1));
@@ -211,6 +215,97 @@ test('Project Update continuations preserve every list item and safe page spacin
     for (const marker of [...highlights, ...risks, ...actions]) {
       assert.equal(text.filter(item => item === marker.trim()).length, 1, `${marker} must appear once`);
     }
+  } finally {
+    await page.close();
+    await browser.close();
+  }
+});
+
+test('long resource tables repeat headers and keep every row inside measured pages', { timeout: 60000 }, async () => {
+  const fixture = completeProjectReportFixture();
+  fixture.sections = ['team-allocation', 'resources'];
+  fixture.project.teamMembers = Array.from({ length: 24 }, (_, index) => ({
+    name: `RESOURCE-MEMBER-${index + 1}`,
+    roleName: `RESOURCE-ROLE-${index + 1}`,
+    effortPct: 50
+  }));
+  fixture.project.resources = Object.fromEntries(Array.from({ length: 24 }, (_, index) => [
+    `role_${index + 1}`,
+    { role: `RESOURCE-ROLE-${index + 1}`, estimated: 120, actual: 60 }
+  ]));
+  const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+  const page = await browser.newPage();
+
+  try {
+    await page.setContent(renderProjectReportHtml(fixture), { waitUntil: 'networkidle0' });
+    await page.evaluate(paginateMeasuredFlows);
+    const pages = await page.evaluate(() => [...document.querySelectorAll('[data-measured-page="resource"]')].map(node => {
+      const body = node.querySelector('[data-pdf-flow-items]').getBoundingClientRect();
+      const footer = node.querySelector('.report-footer').getBoundingClientRect();
+      return {
+        blocks: node.querySelectorAll('[data-pdf-flow-item]').length,
+        tableHeaders: node.querySelectorAll('thead').length,
+        footerGap: footer.top - body.bottom,
+        title: node.querySelector('.report-title').textContent.trim()
+      };
+    }));
+    const names = await page.$$eval('.team-allocation-table tbody tr', rows => rows.map(row => row.cells[0].textContent.trim()));
+    const roles = await page.$$eval('.discipline-hours-table tbody tr', rows => rows.map(row => row.cells[0].textContent.trim()));
+
+    assert.ok(pages.length > 1);
+    assert.ok(pages.every(item => item.blocks > 0 && item.tableHeaders > 0));
+    assert.ok(pages.slice(1).every(item => /Continued$/.test(item.title)));
+    assert.ok(pages.every(item => item.footerGap >= 8 * 96 / 25.4 - 1));
+    assert.deepEqual(names, Array.from({ length: 24 }, (_, index) => `RESOURCE-MEMBER-${index + 1}`));
+    assert.deepEqual(roles, Array.from({ length: 24 }, (_, index) => `RESOURCE-ROLE-${index + 1}`));
+  } finally {
+    await page.close();
+    await browser.close();
+  }
+});
+
+test('long milestone and Gantt sections retain rows, axes, titles, and footer clearance', { timeout: 60000 }, async () => {
+  const fixture = completeProjectReportFixture();
+  fixture.sections = ['milestone', 'gantt'];
+  fixture.project.name = 'Dense Delivery Plan';
+  fixture.project.milestones = Array.from({ length: 18 }, (_, index) => ({
+    name: `MILESTONE-LONG-${index + 1}`,
+    date: `2026-${String(Math.floor(index / 3) + 1).padStart(2, '0')}-15`,
+    status: index % 4 === 0 ? 'at-risk' : 'planned'
+  }));
+  fixture.project.ganttWorkstreams = Array.from({ length: 22 }, (_, index) => ({
+    name: `GANTT-LONG-${index + 1}`,
+    startDate: index === 20 ? 'invalid' : '2026-01-01',
+    endDate: index === 21 ? '' : '2026-12-31',
+    status: index % 3 === 0 ? 'at-risk' : 'in-progress',
+    progress: index * 4
+  }));
+  const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+  const page = await browser.newPage();
+
+  try {
+    await page.setContent(renderProjectReportHtml(fixture), { waitUntil: 'networkidle0' });
+    await page.evaluate(paginateMeasuredFlows);
+    const layout = await page.evaluate(() => [...document.querySelectorAll('[data-measured-page="milestone"],[data-measured-page="gantt"]')].map(node => {
+      const body = node.querySelector('[data-pdf-flow-items]').getBoundingClientRect();
+      const footer = node.querySelector('.report-footer').getBoundingClientRect();
+      return {
+        flow: node.dataset.measuredPage,
+        title: node.querySelector('.report-title').textContent.trim(),
+        axis: node.querySelectorAll('[data-pdf-repeat-on-page]').length,
+        footerGap: footer.top - body.bottom
+      };
+    }));
+    const milestones = await page.$$eval('.milestone-row strong', nodes => nodes.map(node => node.textContent.trim()));
+    const workstreams = await page.$$eval('.gantt-label strong', nodes => nodes.map(node => node.textContent.trim()));
+
+    assert.ok(layout.filter(item => item.flow === 'milestone').length > 1);
+    assert.ok(layout.filter(item => item.flow === 'gantt').length > 1);
+    assert.ok(layout.filter(item => item.flow === 'gantt').every(item => item.axis === 1));
+    assert.ok(layout.every(item => item.title.startsWith('Dense Delivery Plan')));
+    assert.ok(layout.every(item => item.footerGap >= 8 * 96 / 25.4 - 1));
+    assert.deepEqual(milestones, Array.from({ length: 18 }, (_, index) => `MILESTONE-LONG-${index + 1}`));
+    assert.deepEqual(workstreams, Array.from({ length: 22 }, (_, index) => `GANTT-LONG-${index + 1}`));
   } finally {
     await page.close();
     await browser.close();

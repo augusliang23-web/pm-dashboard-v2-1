@@ -100,6 +100,7 @@ test('renders permitted Executive milestones as a measured flow before Quarterly
   assert.match(html, /Engineering/);
   assert.match(html, /Public/);
   assert.doesNotMatch(html, /Commercial Q3|Leadership Q4/);
+  assert.doesNotMatch(html, /Â/);
   assert.ok(html.indexOf('data-section-unit="executive-milestones"') < html.indexOf('data-section-unit="quarterly-roadmap"'));
 });
 
@@ -168,6 +169,28 @@ test('omits Overview sections with no reportable data', () => {
   assert.match(html, /Portfolio Health &amp; Focus|Portfolio Health & Focus/);
   assert.doesNotMatch(html, /Project Portfolio/);
   assert.doesNotMatch(html, /Risk Actions/);
+});
+
+test('omits Executive milestones when no timeline is saved', () => {
+  const fixture = completeOverviewReportFixture();
+  fixture.sections = ['executive-milestones', 'quarterly-roadmap'];
+  delete fixture.week.strategyLayer.executiveMilestoneTimeline;
+
+  const html = renderOverviewReportHtml(fixture);
+
+  assert.doesNotMatch(html, /data-section-unit="executive-milestones"/);
+  assert.match(html, /data-section-unit="quarterly-roadmap"/);
+});
+
+test('renders a clear project risk fallback when no risks are stored', () => {
+  const fixture = completeOverviewReportFixture();
+  fixture.sections = ['project-portfolio'];
+  fixture.week.projects = [{ ...fixture.week.projects[0], risk: '', weeklyActions: '', riskActions: [] }];
+
+  const html = renderOverviewReportHtml(fixture);
+
+  assert.match(html, /No active blocker reported\./);
+  assert.match(html, /No required action reported\./);
 });
 
 test('escapes Overview project content and contains no interactive controls', () => {

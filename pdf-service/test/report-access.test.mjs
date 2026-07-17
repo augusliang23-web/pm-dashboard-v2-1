@@ -30,4 +30,5 @@ test('limits Executive milestone views to the authenticated role', () => {
     () => authorizeExecutiveAudienceView('engineering', 'business-product'),
     error => error instanceof ReportAccessError && error.statusCode === 403
   );
+  assert.equal(authorizeExecutiveAudienceView('unknown-role'), 'everyone');
 });

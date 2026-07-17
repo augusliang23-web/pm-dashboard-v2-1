@@ -33,8 +33,8 @@ export function authorizeReportAccess(identity, week) {
 }
 
 export function authorizeExecutiveAudienceView(role, requestedView) {
-  const normalizedRole = normalizeDashboardRole(role);
-  const allowedViews = EXECUTIVE_VIEWS_BY_ROLE[normalizedRole];
+  const candidateRole = String(role || '').trim().toLowerCase();
+  const allowedViews = EXECUTIVE_VIEWS_BY_ROLE[candidateRole] || ['everyone'];
   const selectedView = requestedView === undefined ? allowedViews[0] : String(requestedView).trim();
   if (!allowedViews.includes(selectedView)) {
     throw new ReportAccessError('The selected Executive milestone view is not available for this role.');

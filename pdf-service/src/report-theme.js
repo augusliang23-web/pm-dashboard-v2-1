@@ -31,6 +31,7 @@ export const REPORT_CSS = `
     position:relative;
     width:297mm;
     min-height:210mm;
+    background:var(--white);
     padding:11mm 12mm 9mm;
     break-after:page;
     display:flex;

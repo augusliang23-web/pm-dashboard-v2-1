@@ -61,7 +61,7 @@ export async function loadAuthorizedReport({ request, idToken, adapters }) {
       overviewScope: request.overviewScope || 'system'
     };
     if (request.sections.includes('executive-milestones')) {
-      report.executiveAudienceView = authorizeExecutiveAudienceView(access.role, request.executiveAudienceView);
+      report.executiveAudienceView = authorizeExecutiveAudienceView(user?.role, request.executiveAudienceView);
     }
     return report;
   }

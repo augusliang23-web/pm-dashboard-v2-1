@@ -99,3 +99,13 @@ test('propagates the authorized Executive milestone audience view', async () => 
 
   assert.equal(report.executiveAudienceView, 'business-product');
 });
+
+test('defaults an unknown stored role to the Everyone Executive milestone view', async () => {
+  const report = await loadAuthorizedReport({
+    request: { mode: 'overview', weekId: 'W28', sections: ['executive-milestones'] },
+    idToken: 'unknown@example.com',
+    adapters: { ...adapters, getUserByEmail: async () => ({ role: 'unknown-role' }) }
+  });
+
+  assert.equal(report.executiveAudienceView, 'everyone');
+});
