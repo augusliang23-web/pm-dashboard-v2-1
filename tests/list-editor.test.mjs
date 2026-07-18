@@ -14,6 +14,7 @@ test('normalizes legacy lines without inventing empty content', () => {
   assert.equal(normalizeListText('  \n'), '');
   assert.equal(normalizeListText('First\nSecond'), '• First\n• Second');
   assert.equal(normalizeListText('      • Too deep'), '• Too deep');
+  assert.equal(normalizeListText('• Kept\n• '), '• Kept');
 });
 
 test('renumbers adjacent ordered blocks at each level', () => {
@@ -51,6 +52,17 @@ test('Enter on an empty item outdents once and then exits the list', () => {
   });
   assert.deepEqual(handleListEnter('• Alpha\n• ', 10, 10), {
     value: '• Alpha\n', selectionStart: 8, selectionEnd: 8,
+  });
+});
+
+test('Enter and paste preserve plain text after a list is toggled off', () => {
+  const plain = applyListCommand('• Alpha', 0, 7, 'bullet');
+  assert.equal(plain.value, 'Alpha');
+  assert.deepEqual(handleListEnter(plain.value, 5, 5), {
+    value: 'Alpha\n', selectionStart: 6, selectionEnd: 6,
+  });
+  assert.deepEqual(handleListPaste('Existing', 8, 8, ' first\nsecond'), {
+    value: 'Existing first\nsecond', selectionStart: 21, selectionEnd: 21,
   });
 });
 

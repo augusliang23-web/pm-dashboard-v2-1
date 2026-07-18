@@ -37,7 +37,7 @@ function normalizeItems(value, { legacyAsBullets = true, trimTrailingBlank = tru
     .split('\n')
     .map(line => parseLine(line, legacyAsBullets));
   if (trimTrailingBlank) {
-    while (parsed.at(-1)?.blank) parsed.pop();
+    while (parsed.at(-1)?.blank || (parsed.at(-1) && !parsed.at(-1).text)) parsed.pop();
   }
   let previousLevel = 0;
   let hasPreviousItem = false;
@@ -159,7 +159,7 @@ export function handleListEnter(value, selectionStart, selectionEnd) {
   const nextBreak = source.indexOf('\n', boundedStart);
   const lineEnd = nextBreak < 0 ? source.length : nextBreak;
   const rawLine = source.slice(lineStart, lineEnd);
-  const item = parseLine(rawLine, true);
+  const item = parseLine(rawLine, false);
   const markerMatch = rawLine.match(/^( *)(?:([•*-])|(\d+)\.)[ \t]*/);
 
   if (!item.text && markerMatch) {
@@ -207,7 +207,7 @@ export function handleListPaste(value, selectionStart, selectionEnd, pastedText)
   const lineStart = source.lastIndexOf('\n', Math.max(0, boundedStart - 1)) + 1;
   const nextBreak = source.indexOf('\n', boundedStart);
   const lineEnd = nextBreak < 0 ? source.length : nextBreak;
-  const current = parseLine(source.slice(lineStart, lineEnd), true);
+  const current = parseLine(source.slice(lineStart, lineEnd), false);
   const pastedLines = String(pastedText ?? '').replace(/\r\n?/g, '\n').split('\n');
   const marker = markerFor(current, 1);
   const replacement = pastedLines

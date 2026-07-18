@@ -34,8 +34,8 @@ test('Risk and Required Action inputs resize vertically without escaping their g
   );
   assert.doesNotMatch(html, /\.risk-list-cell \.ft\s*\{[^}]*resize:\s*(?:both|horizontal)/s);
   assert.match(html, /\.risk-pair-row\s*\{[^}]*align-items:\s*start/s);
-  assert.match(html, /class="risk-list-cell"><textarea class="ft rap-risk"/);
-  assert.match(html, /class="risk-list-cell"><textarea class="ft rap-action"/);
+  assert.match(html, /class="risk-list-cell"[^>]*><textarea class="ft rap-risk"/);
+  assert.match(html, /class="risk-list-cell"[^>]*><textarea class="ft rap-action"/);
 });
 
 test('Project Editor normalizes list values when loading and saving', () => {
@@ -69,4 +69,15 @@ test('Single Project preview renders paired Risk and Required Action rows', () =
 test('Single Project paired table stays two-column and scrollable at narrow widths', () => {
   assert.match(html, /\.project-risk-table-wrap\s*\{[^}]*overflow-x:\s*auto/s);
   assert.match(html, /\.project-risk-table\s*\{[^}]*min-width:\s*620px[^}]*table-layout:\s*fixed/s);
+});
+
+test('Risk/Action editors stack with reachable wrapped toolbars on phone widths', () => {
+  assert.match(
+    html,
+    /@media\s*\(max-width:\s*760px\)[\s\S]*?\.risk-pair-row\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s+34px/s,
+  );
+  assert.match(html, /@media\s*\(max-width:\s*760px\)[\s\S]*?\.risk-list-cell\s*\{[^}]*grid-column:\s*1/s);
+  assert.match(html, /@media\s*\(max-width:\s*760px\)[\s\S]*?\.list-editor-toolbar\s*\{[^}]*flex-wrap:\s*wrap/s);
+  assert.match(html, /class="risk-list-cell" data-list-label="Risk \/ Blocker"/);
+  assert.match(html, /class="risk-list-cell" data-list-label="Required Action"/);
 });

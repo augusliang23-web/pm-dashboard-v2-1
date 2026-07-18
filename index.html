@@ -694,6 +694,15 @@ details[open] .settings-summary { border-bottom-left-radius: 0; border-bottom-ri
 .list-editor-hint { padding:4px 8px 6px; color:var(--muted); font-size:9px; line-height:1.35; }
 .risk-list-cell { min-width:0; }
 .risk-list-cell .ft { width:100%; min-width:0; resize:vertical; box-sizing:border-box; }
+@media (max-width:760px) {
+  .risk-pair-head { display:none; }
+  .risk-pair-row { grid-template-columns:minmax(0,1fr) 34px; }
+  .risk-primary-control { grid-column:1; }
+  .risk-pair-delete { grid-column:2; grid-row:1; }
+  .risk-list-cell { grid-column:1; }
+  .risk-list-cell::before { content:attr(data-list-label); display:block; margin:4px 0; font-size:9px; font-weight:800; color:var(--muted); text-transform:uppercase; }
+  .list-editor-toolbar { flex-wrap:wrap; }
+}
 .structured-list { margin:0; padding-left:18px; }
 .structured-list li { margin-bottom:4px; }
 .structured-list ul, .structured-list ol { margin:4px 0; padding-left:20px; }
@@ -8213,8 +8222,8 @@ window.addRiskActionPairRow = (item = {}) => {
   row.dataset.riskActionId = item.id || newEditorRowId('risk-action');
   row.innerHTML = `
     <label class="risk-primary-control"><input type="radio" name="riskActionPrimary" class="rap-primary" ${primary || isFirst ? 'checked' : ''}> Primary</label>
-    <div class="risk-list-cell"><textarea class="ft rap-risk" rows="2" placeholder="Risk / Blocker shown in Overview" aria-label="Risk or blocker"></textarea></div>
-    <div class="risk-list-cell"><textarea class="ft rap-action" rows="2" placeholder="Required Action shown in Overview" aria-label="Required action"></textarea></div>
+    <div class="risk-list-cell" data-list-label="Risk / Blocker"><textarea class="ft rap-risk" rows="2" placeholder="Risk / Blocker shown in Overview" aria-label="Risk or blocker"></textarea></div>
+    <div class="risk-list-cell" data-list-label="Required Action"><textarea class="ft rap-action" rows="2" placeholder="Required Action shown in Overview" aria-label="Required action"></textarea></div>
     <button type="button" class="risk-pair-delete" onclick="this.parentElement.remove(); ensurePrimaryRiskActionPair();" title="Delete risk/action pair" aria-label="Delete risk/action pair">&#128465;&#65039;</button>
   `;
   container.appendChild(row);
