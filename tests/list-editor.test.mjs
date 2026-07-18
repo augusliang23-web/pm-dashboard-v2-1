@@ -89,3 +89,9 @@ test('multiline paste inherits the current list type and level', () => {
   const nested = handleListPaste('1. Parent\n  1. Existing', 24, 24, ' First\nSecond');
   assert.equal(nested.value, '1. Parent\n  1. Existing First\n  2. Second');
 });
+
+test('multiline paste preserves internal blank lines without empty list markers', () => {
+  const result = handleListPaste('\u2022 Existing', 10, 10, ' A\n\nB');
+  assert.equal(result.value, '\u2022 Existing A\n\n\u2022 B');
+  assert.equal(result.selectionStart, result.selectionEnd);
+});

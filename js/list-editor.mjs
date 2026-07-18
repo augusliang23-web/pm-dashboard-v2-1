@@ -211,7 +211,7 @@ export function handleListPaste(value, selectionStart, selectionEnd, pastedText)
   const pastedLines = String(pastedText ?? '').replace(/\r\n?/g, '\n').split('\n');
   const marker = markerFor(current, 1);
   const replacement = pastedLines
-    .map((line, index) => index ? `${marker}${line.trim()}` : line)
+    .map((line, index) => index && line.trim() ? `${marker}${line.trim()}` : line)
     .join('\n');
   const rawValue = `${source.slice(0, boundedStart)}${replacement}${source.slice(boundedEnd)}`;
   const normalized = normalizeListText(rawValue, { legacyAsBullets: false, trimTrailingBlank: false });
