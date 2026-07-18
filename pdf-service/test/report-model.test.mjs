@@ -60,6 +60,18 @@ test('resource and budget helpers preserve unknown actuals and zero-valued budge
   });
 });
 
+test('removes stored list markers before building PDF list items', () => {
+  const project = normalizeProjectForReport({
+    highlight: '• Parent\n  1. Child',
+    weeklyActions: '1. First\n2. Second',
+    riskActions: [{ risk: '• Risk', action: '  • Action', primary: true }],
+  });
+
+  assert.deepEqual(project.highlights, ['Parent', 'Child']);
+  assert.deepEqual(project.actions, ['First', 'Second']);
+  assert.deepEqual(project.riskActions, [{ risk: 'Risk', action: 'Action', primary: true }]);
+});
+
 test('builds scoped Overview metrics, risk rows, resources, budget and trend points', () => {
   const systemProject = {
     code: 'SYS-1', name: 'System One', projectLevel: 'system', status: 'red', progress: 40,

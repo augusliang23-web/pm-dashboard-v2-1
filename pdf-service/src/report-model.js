@@ -23,9 +23,15 @@ function round(value, digits = 1) {
   return Math.round((Number(value) || 0) * factor) / factor;
 }
 
+function listItemText(value) {
+  return String(value || '').replace(/^\s*(?:[•*-]|\d+\.)\s+/, '').trim();
+}
+
 function lines(value) {
-  const source = Array.isArray(value) ? value : String(value || '').split('\n');
-  return source.map(item => String(item || '').trim()).filter(Boolean);
+  const source = Array.isArray(value)
+    ? value.flatMap(item => String(item || '').split('\n'))
+    : String(value || '').split('\n');
+  return source.map(listItemText).filter(Boolean);
 }
 
 function cleanPeriodPart(value) {
@@ -63,7 +69,7 @@ function riskActionPairs(source, risks, actions) {
     ? source.riskActions
     : Array.isArray(source.riskPairs) ? source.riskPairs : [];
   const structured = stored.map((item, index) => ({
-    risk: String(item?.risk || item?.description || '').trim(),
+    risk: lines(item?.risk || item?.description).join('\n'),
     action: lines(item?.action || item?.actions || item?.mitigation || item?.requiredAction).join('\n'),
     primary: item?.primary === true || item?.isPrimary === true || index === 0
   })).filter(item => item.risk || item.action);
